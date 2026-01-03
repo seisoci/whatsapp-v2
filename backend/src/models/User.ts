@@ -127,8 +127,81 @@ export class User {
     this.lockUntil = null;
   }
 
+  /**
+   * Permission Helper Methods (mirip Laravel HasPermissionsTrait)
+   */
+
+  /**
+   * Check if user has specific permission (through role)
+   * @param permissionSlug - Permission slug to check
+   */
+  hasPermissionTo(permissionSlug: string): boolean {
+    if (!this.role || !this.role.permissions) return false;
+    return this.role.hasPermission(permissionSlug);
+  }
+
+  /**
+   * Check if user has any of the permissions
+   * @param permissionSlugs - Array of permission slugs
+   */
+  hasAnyPermission(permissionSlugs: string[]): boolean {
+    if (!this.role || !this.role.permissions) return false;
+    return this.role.hasAnyPermission(permissionSlugs);
+  }
+
+  /**
+   * Check if user has all permissions
+   * @param permissionSlugs - Array of permission slugs
+   */
+  hasAllPermissions(permissionSlugs: string[]): boolean {
+    if (!this.role || !this.role.permissions) return false;
+    return this.role.hasAllPermissions(permissionSlugs);
+  }
+
+  /**
+   * Check if user has specific role
+   * @param roleSlug - Role slug to check
+   */
+  hasRole(roleSlug: string): boolean {
+    if (!this.role) return false;
+    return this.role.slug === roleSlug;
+  }
+
+  /**
+   * Check if user has any of the roles
+   * @param roleSlugs - Array of role slugs
+   */
+  hasAnyRole(roleSlugs: string[]): boolean {
+    if (!this.role) return false;
+    return roleSlugs.includes(this.role.slug);
+  }
+
+  /**
+   * Check if user is super admin
+   */
+  isSuperAdmin(): boolean {
+    return this.roleId === '1' || this.hasRole('super-admin');
+  }
+
+  /**
+   * Get all permission slugs for this user
+   */
+  getPermissionSlugs(): string[] {
+    if (!this.role) return [];
+    return this.role.getPermissionSlugs();
+  }
+
+  /**
+   * Check if user has permission through their role
+   * Alias for hasPermissionTo for Laravel compatibility
+   */
+  hasPermissionThroughRole(permissionSlug: string): boolean {
+    return this.hasPermissionTo(permissionSlug);
+  }
+
   toJSON() {
     const { password, passwordResetToken, passwordResetExpires, ...user } = this;
     return user;
   }
 }
+

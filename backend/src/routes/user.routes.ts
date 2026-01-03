@@ -1,25 +1,25 @@
 import { Hono } from 'hono';
-import { UserController } from '../controllers/user.controller';
-import { authMiddleware, isSuperAdmin, canIndex, canStore, canUpdate, canDestroy } from '../middlewares';
+import { UserControllerWithPermissions as UserController } from '../controllers/user.controller';
+import { authMiddleware } from '../middlewares';
 
 const userRouter = new Hono();
 
 // All routes require authentication
 userRouter.use('*', authMiddleware);
 
-// Get all users (need user-index permission)
-userRouter.get('/', canIndex('user'), UserController.index);
+// Get all users (permission check in controller)
+userRouter.get('/', UserController.index);
 
-// Get single user (need user-show permission)
-userRouter.get('/:id', canIndex('user'), UserController.show);
+// Get single user (permission check in controller)
+userRouter.get('/:id', UserController.show);
 
-// Create user (need user-store permission or super admin)
-userRouter.post('/', canStore('user'), UserController.store);
+// Create user (permission check in controller)
+userRouter.post('/', UserController.store);
 
-// Update user (need user-update permission or super admin)
-userRouter.put('/:id', canUpdate('user'), UserController.update);
+// Update user (permission check in controller)
+userRouter.put('/:id', UserController.update);
 
-// Delete user (need user-destroy permission or super admin)
-userRouter.delete('/:id', canDestroy('user'), UserController.destroy);
+// Delete user (permission check in controller)
+userRouter.delete('/:id', UserController.destroy);
 
 export default userRouter;

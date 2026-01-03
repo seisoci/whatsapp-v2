@@ -9,53 +9,83 @@ import {
   createCrudPermissionsSchema,
 } from '../validators';
 import { z } from 'zod';
+import { withPermissions } from '../utils/controller.decorator';
 
 export class PermissionController {
   /**
-   * Get all permissions with pagination
+   * Permission definitions (mirip Laravel constructor middleware)
+   */
+  static permissions = {
+    index: 'role-index',
+    show: 'role-index',
+    groupedByMenu: 'role-index',
+    store: ['permission-store', 'super-admin'],
+    createCrudPermissions: ['permission-create-crud', 'super-admin'],
+    update: ['permission-update', 'super-admin'],
+    destroy: ['permission-destroy', 'super-admin'],
+  };
+
+  /**
+   * Get all menu managers with their permissions (grouped)
    */
   static async index(c: Context) {
     try {
       const query = c.req.query();
       const validated = getPermissionsQuerySchema.parse(query);
 
-      const permissionRepo = AppDataSource.getRepository(Permission);
+      const menuRepo = AppDataSource.getRepository(MenuManager);
 
-      const queryBuilder = permissionRepo
-        .createQueryBuilder('permission')
-        .leftJoinAndSelect('permission.menu', 'menu')
-        .leftJoinAndSelect('permission.roles', 'roles');
+      const queryBuilder = menuRepo
+        .createQueryBuilder('menu')
+        .leftJoinAndSelect('menu.permissions', 'permissions')
+        .orderBy('menu.sort', 'ASC')
+        .addOrderBy('menu.createdAt', 'DESC');
 
-      // Search
+      // Search by menu title or permissions
       if (validated.search) {
-        queryBuilder.where('permission.name ILIKE :search OR permission.slug ILIKE :search', {
-          search: `%${validated.search}%`,
-        });
+        queryBuilder.where(
+          '(menu.title ILIKE :search OR menu.slug ILIKE :search OR permissions.name ILIKE :search OR permissions.slug ILIKE :search)',
+          { search: `%${validated.search}%` }
+        );
       }
 
-      // Filter by menu
+      // Filter by specific menu
       if (validated.menuId) {
-        queryBuilder.andWhere('permission.menuManagerId = :menuId', { menuId: validated.menuId });
+        queryBuilder.andWhere('menu.id = :menuId', { menuId: validated.menuId });
       }
 
-      // Filter by action
+      // Filter by action - check if any permission has this action
       if (validated.action) {
-        queryBuilder.andWhere('permission.slug LIKE :action', { action: `%-${validated.action}` });
+        queryBuilder.andWhere('permissions.slug LIKE :action', { action: `%-${validated.action}` });
       }
 
-      // Count total
+      // Count total menus
       const total = await queryBuilder.getCount();
 
-      // Pagination
-      const permissions = await queryBuilder
-        .orderBy(`permission.${validated.sortBy || 'createdAt'}`, validated.sortOrder)
+      // Apply pagination
+      const menus = await queryBuilder
         .skip((validated.page - 1) * validated.limit)
         .take(validated.limit)
         .getMany();
 
+      // Transform data to match frontend expectations
+      const transformedData = menus.map((menu) => ({
+        id: menu.id,
+        menuManagerId: menu.id,
+        menu: {
+          id: menu.id,
+          title: menu.title,
+          slug: menu.slug,
+          pathUrl: menu.pathUrl,
+          icon: menu.icon,
+        },
+        permissions: menu.permissions || [],
+        createdAt: menu.createdAt,
+      }));
+
       return c.json({
         success: true,
-        data: permissions,
+        data: transformedData,
         meta: {
           page: validated.page,
           limit: validated.limit,
@@ -67,7 +97,7 @@ export class PermissionController {
       if (error instanceof z.ZodError) {
         return c.json({ success: false, message: 'Validation error', errors: error.errors }, 400);
       }
-      console.error('Get permissions error:', error);
+      console.error('Get menu managers with permissions error:', error);
       return c.json({ success: false, message: 'Internal server error' }, 500);
     }
   }
@@ -97,51 +127,118 @@ export class PermissionController {
   }
 
   /**
-   * Create new permission
+   * Create new permission(s)
+   * If 'resource' and 'actions' are provided, creates CRUD permissions
+   * Otherwise creates a single permission
    */
   static async store(c: Context) {
     try {
       const body = await c.req.json();
-      const validated = createPermissionSchema.parse(body);
 
-      const permissionRepo = AppDataSource.getRepository(Permission);
-      const menuRepo = AppDataSource.getRepository(MenuManager);
+      // Check if this is a CRUD permissions request
+      if (body.resource && body.actions) {
+        // Create CRUD permissions with auto-created MenuManager
+        const validated = createCrudPermissionsSchema.parse(body);
+        const permissionRepo = AppDataSource.getRepository(Permission);
+        const menuRepo = AppDataSource.getRepository(MenuManager);
 
-      // Check if slug already exists
-      const existingPermission = await permissionRepo.findOne({ where: { slug: validated.slug } });
-      if (existingPermission) {
-        return c.json({ success: false, message: 'Permission with this slug already exists' }, 400);
+        // Auto-generate slug from title if not provided
+        const slug = validated.slug || validated.title.toLowerCase().replace(/\s+/g, '-');
+
+        // Auto-generate pathUrl from slug if not provided
+        const pathUrl = validated.pathUrl || `/${slug}`;
+
+        // Create MenuManager first
+        const menuManager = menuRepo.create({
+          title: validated.title,
+          slug,
+          pathUrl,
+          icon: validated.icon || '',
+          type: 'module',
+          position: '',
+          sort: 0,
+        });
+
+        await menuRepo.save(menuManager);
+
+        const createdPermissions = [];
+        const actionNames: Record<string, string> = {
+          index: 'List',
+          store: 'Create',
+          update: 'Update',
+          destroy: 'Delete',
+        };
+
+        for (const action of validated.actions) {
+          const permSlug = `${validated.resource}-${action}`;
+          const name = `${validated.title} ${actionNames[action]}`;
+
+          // Check if permission already exists
+          const existing = await permissionRepo.findOne({ where: { slug: permSlug } });
+          if (existing) {
+            continue; // Skip if already exists
+          }
+
+          const permission = permissionRepo.create({
+            menuManagerId: menuManager.id,
+            name,
+            slug: permSlug,
+            description: `${actionNames[action]} ${validated.title}`,
+          });
+
+          await permissionRepo.save(permission);
+          createdPermissions.push(permission);
+        }
+
+        return c.json({
+          success: true,
+          data: createdPermissions,
+          message: `Created ${createdPermissions.length} CRUD permissions`,
+        }, 201);
+      } else {
+        // Create single permission
+        const validated = createPermissionSchema.parse(body);
+        const permissionRepo = AppDataSource.getRepository(Permission);
+        const menuRepo = AppDataSource.getRepository(MenuManager);
+
+        // Check if slug already exists
+        const existingPermission = await permissionRepo.findOne({ where: { slug: validated.slug } });
+        if (existingPermission) {
+          return c.json({ success: false, message: 'Permission with this slug already exists' }, 400);
+        }
+
+        // Check if menu exists (if provided)
+        if (validated.menuManagerId) {
+          const menu = await menuRepo.findOne({ where: { id: validated.menuManagerId } });
+          if (!menu) {
+            return c.json({ success: false, message: 'Menu not found' }, 404);
+          }
+        }
+
+        // Create permission
+        const permission = permissionRepo.create({
+          menuManagerId: validated.menuManagerId,
+          name: validated.name,
+          slug: validated.slug,
+          description: validated.description,
+        });
+
+        await permissionRepo.save(permission);
+
+        // Reload with relations
+        const savedPermission = await permissionRepo.findOne({
+          where: { id: permission.id },
+          relations: ['menu', 'roles'],
+        });
+
+        return c.json({ success: true, data: savedPermission, message: 'Permission created successfully' }, 201);
       }
-
-      // Check if menu exists
-      const menu = await menuRepo.findOne({ where: { id: validated.menuManagerId } });
-      if (!menu) {
-        return c.json({ success: false, message: 'Menu not found' }, 404);
-      }
-
-      // Create permission
-      const permission = permissionRepo.create({
-        menuManagerId: validated.menuManagerId,
-        name: validated.name,
-        slug: validated.slug,
-        description: validated.description,
-      });
-
-      await permissionRepo.save(permission);
-
-      // Reload with relations
-      const savedPermission = await permissionRepo.findOne({
-        where: { id: permission.id },
-        relations: ['menu', 'roles'],
-      });
-
-      return c.json({ success: true, data: savedPermission, message: 'Permission created successfully' }, 201);
     } catch (error) {
       if (error instanceof z.ZodError) {
         return c.json({ success: false, message: 'Validation error', errors: error.errors }, 400);
       }
       console.error('Create permission error:', error);
-      return c.json({ success: false, message: 'Internal server error' }, 500);
+      return c.json({ success: false, message: error instanceof Error ? error.message : 'Internal server error' }, 500);
     }
   }
 
@@ -207,73 +304,97 @@ export class PermissionController {
   }
 
   /**
-   * Update permission
+   * Update menu manager and all related permissions
    */
   static async update(c: Context) {
     try {
-      const id = c.req.param('id');
+      const menuManagerId = c.req.param('menuManagerId');
       const body = await c.req.json();
-      const validated = updatePermissionSchema.parse(body);
 
+      const menuRepo = AppDataSource.getRepository(MenuManager);
       const permissionRepo = AppDataSource.getRepository(Permission);
 
-      const permission = await permissionRepo.findOne({ where: { id } });
-
-      if (!permission) {
-        return c.json({ success: false, message: 'Permission not found' }, 404);
+      // Find menu manager
+      const menuManager = await menuRepo.findOne({ where: { id: menuManagerId } });
+      if (!menuManager) {
+        return c.json({ success: false, message: 'Menu not found' }, 404);
       }
 
-      // Check slug uniqueness if changed
-      if (validated.slug && validated.slug !== permission.slug) {
-        const existingPermission = await permissionRepo.findOne({ where: { slug: validated.slug } });
-        if (existingPermission) {
-          return c.json({ success: false, message: 'Permission with this slug already exists' }, 400);
-        }
-      }
+      // Update menu manager
+      menuManager.title = body.title;
+      menuManager.slug = body.slug;
+      menuManager.pathUrl = body.pathUrl;
+      menuManager.icon = body.icon || '';
 
-      // Update fields
-      if (validated.menuManagerId) permission.menuManagerId = validated.menuManagerId;
-      if (validated.name) permission.name = validated.name;
-      if (validated.slug) permission.slug = validated.slug;
-      if (validated.description !== undefined) permission.description = validated.description;
+      await menuRepo.save(menuManager);
 
-      await permissionRepo.save(permission);
-
-      // Reload with relations
-      const updatedPermission = await permissionRepo.findOne({
-        where: { id },
-        relations: ['menu', 'roles'],
+      // Update all related permissions
+      const permissions = await permissionRepo.find({
+        where: { menuManagerId },
+        order: { id: 'ASC' }
       });
 
-      return c.json({ success: true, data: updatedPermission, message: 'Permission updated successfully' });
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return c.json({ success: false, message: 'Validation error', errors: error.errors }, 400);
+      const actionNames: Record<string, string> = {
+        index: 'List',
+        store: 'Create',
+        update: 'Update',
+        destroy: 'Delete',
+      };
+
+      for (const permission of permissions) {
+        // Extract action from current slug (e.g., "user-index" -> "index")
+        const parts = permission.slug.split('-');
+        const action = parts[parts.length - 1];
+
+        // Update permission with new slug and name
+        permission.slug = `${body.slug}-${action}`;
+        permission.name = `${body.title} ${actionNames[action] || action}`;
+
+        await permissionRepo.save(permission);
       }
-      console.error('Update permission error:', error);
+
+      return c.json({
+        success: true,
+        data: { menuManager, permissions },
+        message: 'Menu and permissions updated successfully'
+      });
+    } catch (error) {
+      console.error('Update menu manager error:', error);
       return c.json({ success: false, message: 'Internal server error' }, 500);
     }
   }
 
   /**
-   * Delete permission
+   * Delete menu manager and all related permissions
    */
   static async destroy(c: Context) {
     try {
-      const id = c.req.param('id');
+      const menuManagerId = c.req.param('id');
+      const menuRepo = AppDataSource.getRepository(MenuManager);
       const permissionRepo = AppDataSource.getRepository(Permission);
 
-      const permission = await permissionRepo.findOne({ where: { id } });
+      // Find menu manager
+      const menuManager = await menuRepo.findOne({
+        where: { id: menuManagerId },
+        relations: ['permissions']
+      });
 
-      if (!permission) {
-        return c.json({ success: false, message: 'Permission not found' }, 404);
+      if (!menuManager) {
+        return c.json({ success: false, message: 'Menu not found' }, 404);
       }
 
-      await permissionRepo.remove(permission);
+      // Count how many permissions will be deleted
+      const permissionsCount = menuManager.permissions?.length || 0;
 
-      return c.json({ success: true, message: 'Permission deleted successfully' });
+      // Delete menu manager (will cascade delete all related permissions)
+      await menuRepo.remove(menuManager);
+
+      return c.json({
+        success: true,
+        message: `Menu and ${permissionsCount} related permissions deleted successfully`
+      });
     } catch (error) {
-      console.error('Delete permission error:', error);
+      console.error('Delete menu manager error:', error);
       return c.json({ success: false, message: 'Internal server error' }, 500);
     }
   }
@@ -304,3 +425,10 @@ export class PermissionController {
     }
   }
 }
+
+// Export wrapped controller dengan permission checks
+export const PermissionControllerWithPermissions = withPermissions(
+  PermissionController,
+  PermissionController.permissions
+);
+

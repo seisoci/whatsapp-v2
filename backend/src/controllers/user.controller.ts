@@ -2,8 +2,20 @@ import { Context } from 'hono';
 import { AppDataSource } from '../config/database';
 import { User } from '../models/User';
 import { paginationSchema } from '../validators/common.validator';
+import { withPermissions } from '../utils/controller.decorator';
 
 export class UserController {
+  /**
+   * Permission definitions (mirip Laravel constructor middleware)
+   */
+  static permissions = {
+    index: 'user-index',
+    show: 'user-index',
+    store: 'user-store',
+    update: 'user-update',
+    destroy: 'user-destroy',
+  };
+
   /**
    * Get all users with pagination
    */
@@ -316,3 +328,10 @@ export class UserController {
     }
   }
 }
+
+// Export wrapped controller dengan permission checks
+export const UserControllerWithPermissions = withPermissions(
+  UserController,
+  UserController.permissions
+);
+

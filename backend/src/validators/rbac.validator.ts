@@ -198,7 +198,10 @@ export type CheckPermissionsInput = z.infer<typeof checkPermissionsSchema>;
 
 // Create multiple permissions for a menu (CRUD)
 export const createCrudPermissionsSchema = z.object({
-  menuManagerId: z.string().min(1, 'Menu ID harus diisi'),
+  title: z.string().min(2, 'Title must be at least 2 characters'),
+  slug: z.string().optional(), // Will be auto-generated from title if not provided
+  pathUrl: z.string().optional(), // Will be auto-generated from slug if not provided
+  icon: z.string().optional(),
   resource: z
     .string()
     .min(2, 'Resource name minimal 2 karakter')
@@ -208,6 +211,7 @@ export const createCrudPermissionsSchema = z.object({
     .array(z.enum(['index', 'store', 'show', 'update', 'destroy']))
     .min(1, 'Minimal 1 action harus dipilih')
     .default(['index', 'store', 'show', 'update', 'destroy']),
+  menuManagerId: z.string().optional(), // Optional, will be created if not provided
 });
 
 export type CreateCrudPermissionsInput = z.infer<typeof createCrudPermissionsSchema>;

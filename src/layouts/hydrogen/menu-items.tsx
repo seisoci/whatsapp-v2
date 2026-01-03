@@ -5,6 +5,8 @@ import {
   PiPlugsConnectedDuotone,
   PiWarningCircleDuotone,
   PiCheckCircleDuotone,
+  PiShieldCheckDuotone,
+  PiLockKeyDuotone,
 } from 'react-icons/pi';
 
 export const menuItems = [
@@ -57,5 +59,15 @@ export const menuItems = [
     name: 'Users',
     href: routes.users,
     icon: <PiUserDuotone />,
+  },
+  {
+    name: 'Roles',
+    href: routes.roles,
+    icon: <PiShieldCheckDuotone />,
+  },
+  {
+    name: 'Permissions',
+    href: routes.permissions,
+    icon: <PiLockKeyDuotone />,
   },
 ];

@@ -11,8 +11,22 @@ import {
   getRolesQuerySchema,
 } from '../validators';
 import { z } from 'zod';
+import { withPermissions } from '../utils/controller.decorator';
 
 export class RoleController {
+  /**
+   * Permission definitions (mirip Laravel constructor middleware)
+   */
+  static permissions = {
+    index: 'role-index',
+    show: 'role-index',
+    store: ['role-store', 'super-admin'],           // role-store OR super-admin
+    update: ['role-update', 'super-admin'],         // role-update OR super-admin
+    destroy: ['role-destroy', 'super-admin'],       // role-destroy OR super-admin
+    assignPermissions: ['role-assign-permissions', 'super-admin'],
+    assignMenus: ['role-assign-menus', 'super-admin'],
+  };
+
   /**
    * Get all roles with pagination
    */
@@ -330,3 +344,10 @@ export class RoleController {
     }
   }
 }
+
+// Export wrapped controller dengan permission checks
+export const RoleControllerWithPermissions = withPermissions(
+  RoleController,
+  RoleController.permissions
+);
+
