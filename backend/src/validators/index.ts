@@ -14,3 +14,6 @@ export * from './upload.validator';
 
 // User validators
 export * from './user.validator';
+
+// RBAC validators
+export * from './rbac.validator';

@@ -1,6 +1,9 @@
 import { DataSource } from 'typeorm';
 import { User } from '../models/User';
 import { RefreshToken } from '../models/RefreshToken';
+import { Role } from '../models/Role';
+import { Permission } from '../models/Permission';
+import { MenuManager } from '../models/MenuManager';
 
 export const AppDataSource = new DataSource({
   type: 'postgres',
@@ -9,10 +12,11 @@ export const AppDataSource = new DataSource({
   username: process.env.DB_USERNAME || 'postgres',
   password: process.env.DB_PASSWORD,
   database: process.env.DB_DATABASE || 'auth_db',
-  synchronize: process.env.NODE_ENV === 'development',
+  synchronize: false, // Disable auto-sync, use migrations instead
   logging: process.env.NODE_ENV === 'development',
-  entities: [User, RefreshToken],
-  migrations: ['src/migrations/**/*.ts'],
+  entities: [User, RefreshToken, Role, Permission, MenuManager],
+  migrations: [__dirname + '/../migrations/**/*.ts'],
+  migrationsRun: false, // Run migrations manually in index.ts
   subscribers: [],
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
   extra: {

@@ -8,9 +8,12 @@ import {
   BeforeUpdate,
   Index,
   OneToMany,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
 import bcrypt from 'bcryptjs';
-import { RefreshToken } from './RefreshToken';
+import type { RefreshToken } from './RefreshToken';
+import type { Role } from './Role';
 
 @Entity('users')
 export class User {
@@ -52,8 +55,18 @@ export class User {
   @Column({ type: 'timestamp', nullable: true })
   passwordResetExpires: Date | null;
 
-  @OneToMany(() => RefreshToken, (refreshToken) => refreshToken.user)
+  @Column({ type: 'bigint', unsigned: true, nullable: true })
+  roleId: string | null;
+
+  @OneToMany('RefreshToken', 'user')
   refreshTokens: RefreshToken[];
+
+  @ManyToOne('Role', 'users', {
+    onDelete: 'SET NULL',
+    onUpdate: 'CASCADE',
+  })
+  @JoinColumn({ name: 'roleId' })
+  role: Role;
 
   @CreateDateColumn()
   createdAt: Date;

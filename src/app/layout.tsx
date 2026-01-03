@@ -1,5 +1,5 @@
 import { Toaster } from 'react-hot-toast';
-import { AuthProvider } from '@/lib/auth-context';
+import { AuthProvider } from '@/lib/auth-context-new';
 import AuthGuard from '@/components/auth-guard';
 import GlobalDrawer from '@/app/shared/drawer-views/container';
 import GlobalModal from '@/app/shared/modal-views/container';
@@ -14,7 +14,7 @@ import 'swiper/css/navigation';
 import '@/app/globals.css';
 
 export const metadata = {
-  metadataBase: new URL(process.env.NEXTAUTH_URL),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'),
   title: siteConfig.title,
   description: siteConfig.description,
   icons: {

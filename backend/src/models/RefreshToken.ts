@@ -7,7 +7,7 @@ import {
   JoinColumn,
   Index,
 } from 'typeorm';
-import { User } from './User';
+import type { User } from './User';
 
 @Entity('refresh_tokens')
 export class RefreshToken {
@@ -18,7 +18,7 @@ export class RefreshToken {
   @Index()
   userId: string;
 
-  @ManyToOne(() => User, (user) => user.refreshTokens, { onDelete: 'CASCADE' })
+  @ManyToOne('User', 'refreshTokens', { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'userId' })
   user: User;
 

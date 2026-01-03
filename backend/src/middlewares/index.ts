@@ -40,3 +40,26 @@ export {
   ApiCache,
   invalidateCache,
 } from './cache.middleware';
+
+// RBAC middlewares
+export {
+  hasPermission,
+  canAccess,
+  canAccessAny,
+  canAccessAll,
+  canIndex,
+  canStore,
+  canShow,
+  canUpdate,
+  canDestroy,
+  hasFullAccess,
+} from './permission.middleware';
+
+export {
+  hasRole,
+  isSuperAdmin,
+  isAdmin,
+  isUser,
+  isAnyAdmin,
+  canAccessMenu,
+} from './role.middleware';

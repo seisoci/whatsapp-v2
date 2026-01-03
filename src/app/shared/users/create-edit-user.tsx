@@ -7,7 +7,7 @@ import { Form } from '@core/ui/form';
 import { Input, Button, ActionIcon, Title } from 'rizzui';
 import { CreateUserInput, UpdateUserInput, createUserSchema, updateUserSchema } from '@/validators/user.schema';
 import { useModal } from '@/app/shared/modal-views/use-modal';
-import { createUser, updateUser } from '@/lib/sanctum-api';
+import { usersApi } from '@/lib/api-client';
 import toast from 'react-hot-toast';
 
 type CreateEditUserProps = {
@@ -39,35 +39,42 @@ export default function CreateEditUser({ user, onSuccess }: CreateEditUserProps)
       setLoading(true);
 
       if (isEdit) {
-        // Update user
+        // Update user - backend expects username instead of name
         const updateData: any = {
-          name: data.name,
+          username: data.name,
           email: data.email,
         };
 
         // Only include password if it's not empty
         if (data.password && data.password.length > 0) {
           updateData.password = data.password;
-          updateData.password_confirmation = data.password_confirmation;
         }
 
-        await updateUser(user.id, updateData);
-        toast.success('User updated successfully');
+        const response = await usersApi.update(user.id, updateData);
+        if (response.success) {
+          toast.success(response.message || 'User updated successfully');
+        } else {
+          toast.error(response.message || 'Failed to update user');
+        }
       } else {
-        // Create user
-        await createUser({
-          name: data.name,
+        // Create user - backend expects username instead of name
+        const response = await usersApi.create({
+          username: data.name,
           email: data.email,
           password: data.password,
-          password_confirmation: (data as CreateUserInput).password_confirmation,
         });
-        toast.success('User created successfully');
+        if (response.success) {
+          toast.success(response.message || 'User created successfully');
+        } else {
+          toast.error(response.message || 'Failed to create user');
+        }
       }
 
       closeModal();
       onSuccess?.();
     } catch (error: any) {
-      toast.error(error?.message || `Failed to ${isEdit ? 'update' : 'create'} user`);
+      const errorMessage = error?.response?.data?.message || error?.message || `Failed to ${isEdit ? 'update' : 'create'} user`;
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }

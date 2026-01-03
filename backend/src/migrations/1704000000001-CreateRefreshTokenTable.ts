@@ -55,34 +55,26 @@ export class CreateRefreshTokenTable1704000000001 implements MigrationInterface 
             default: 'now()',
           },
         ],
+        foreignKeys: [
+          {
+            columnNames: ['userId'],
+            referencedColumnNames: ['id'],
+            referencedTableName: 'users',
+            onDelete: 'CASCADE',
+          },
+        ],
+        indices: [
+          {
+            name: 'IDX_REFRESH_TOKEN_USER',
+            columnNames: ['userId'],
+          },
+          {
+            name: 'IDX_REFRESH_TOKEN_TOKEN',
+            columnNames: ['token'],
+          },
+        ],
       }),
       true
-    );
-
-    await queryRunner.createForeignKey(
-      'refresh_tokens',
-      new TableForeignKey({
-        columnNames: ['userId'],
-        referencedColumnNames: ['id'],
-        referencedTableName: 'users',
-        onDelete: 'CASCADE',
-      })
-    );
-
-    await queryRunner.createIndex(
-      'refresh_tokens',
-      new TableIndex({
-        name: 'IDX_REFRESH_TOKEN_USER',
-        columnNames: ['userId'],
-      })
-    );
-
-    await queryRunner.createIndex(
-      'refresh_tokens',
-      new TableIndex({
-        name: 'IDX_REFRESH_TOKEN_TOKEN',
-        columnNames: ['token'],
-      })
     );
   }
 

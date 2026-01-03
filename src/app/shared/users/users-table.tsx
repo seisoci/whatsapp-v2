@@ -10,7 +10,7 @@ import { PiMagnifyingGlassBold } from 'react-icons/pi';
 import { Flex, Input, Title, Loader, Select, Button } from 'rizzui';
 import { useModal } from '@/app/shared/modal-views/use-modal';
 import CreateEditUser from './create-edit-user';
-import { getUsers, deleteUser } from '@/lib/sanctum-api';
+import { usersApi } from '@/lib/api-client';
 import toast from 'react-hot-toast';
 
 export default function UsersTable() {
@@ -46,25 +46,29 @@ export default function UsersTable() {
       const sortOrder = sorting.length > 0 ? (sorting[0].desc ? 'desc' : 'asc') : undefined;
 
       try {
-        const response = await getUsers({
+        const response = await usersApi.getAll({
           page: currentPage,
-          per_page: currentPerPage,
+          limit: currentPerPage,
           search: currentSearch || undefined,
-          sort_by: sortBy,
-          sort_order: sortOrder,
+          sortBy: sortBy,
+          sortOrder: sortOrder,
         });
 
-        // Handle Laravel Resource pagination
-        const userData = response.data || [];
-        const metaData = response.meta;
+        // Handle backend API response
+        if (response.success && response.data) {
+          const userData = response.data || [];
+          const metaData = response.meta;
 
-        // Set total records from pagination metadata
-        if (metaData?.total !== undefined) {
-          setTotalRecords(metaData.total);
-        }
+          // Set total records from pagination metadata
+          if (metaData?.total !== undefined) {
+            setTotalRecords(metaData.total);
+          }
 
-        if (Array.isArray(userData)) {
-          setUserData(userData);
+          if (Array.isArray(userData)) {
+            setUserData(userData);
+          } else {
+            setUserData([]);
+          }
         } else {
           setUserData([]);
         }
@@ -168,11 +172,16 @@ export default function UsersTable() {
 
   const handleDeleteUser = async (id: string) => {
     try {
-      await deleteUser(id);
-      toast.success('User deleted successfully');
-      fetchUserData(pagination.pageIndex + 1, pagination.pageSize, searchQuery, false);
+      const response = await usersApi.delete(id);
+      if (response.success) {
+        toast.success(response.message || 'User deleted successfully');
+        fetchUserData(pagination.pageIndex + 1, pagination.pageSize, searchQuery, false);
+      } else {
+        toast.error(response.message || 'Failed to delete user');
+      }
     } catch (error: any) {
-      toast.error(error?.message || 'Failed to delete user');
+      const errorMessage = error?.response?.data?.message || error?.message || 'Failed to delete user';
+      toast.error(errorMessage);
     }
   };
 

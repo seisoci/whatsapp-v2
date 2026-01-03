@@ -7,6 +7,8 @@ import { redisClient } from './config/redis';
 import { storageService } from './services';
 import authRouter from './routes/auth.routes';
 import uploadRouter from './routes/upload.routes';
+import roleRouter from './routes/role.routes';
+import permissionRouter from './routes/permission.routes';
 import {
   securityHeaders,
   corsMiddleware,
@@ -37,6 +39,8 @@ app.get('/health', (c) => {
 // API routes
 app.route(`${env.API_PREFIX}/auth`, authRouter);
 app.route(`${env.API_PREFIX}/upload`, uploadRouter);
+app.route(`${env.API_PREFIX}/roles`, roleRouter);
+app.route(`${env.API_PREFIX}/permissions`, permissionRouter);
 
 // 404 handler
 app.notFound((c) => {
@@ -68,11 +72,9 @@ const startServer = async () => {
     await AppDataSource.initialize();
     console.log('✅ Database connected successfully');
 
-    // Run migrations in production
-    if (env.NODE_ENV === 'production') {
-      await AppDataSource.runMigrations();
-      console.log('✅ Migrations executed successfully');
-    }
+    // Run migrations automatically
+    await AppDataSource.runMigrations();
+    console.log('✅ Migrations executed successfully');
 
     // Initialize Storage Service (MinIO)
     try {
@@ -97,6 +99,8 @@ const startServer = async () => {
     console.log('\nAvailable Services:');
     console.log(`  - Authentication: ${env.API_PREFIX}/auth`);
     console.log(`  - File Upload: ${env.API_PREFIX}/upload`);
+    console.log(`  - Role Management: ${env.API_PREFIX}/roles`);
+    console.log(`  - Permission Management: ${env.API_PREFIX}/permissions`);
     console.log(`  - Redis: ${process.env.REDIS_HOST}:${process.env.REDIS_PORT}`);
     console.log(`  - MinIO: ${process.env.MINIO_ENDPOINT}:${process.env.MINIO_PORT}`);
 

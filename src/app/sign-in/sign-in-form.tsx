@@ -9,23 +9,25 @@ import { useMedia } from '@core/hooks/use-media';
 import { Form } from '@core/ui/form';
 import { routes } from '@/config/routes';
 import { loginSchema, LoginSchema } from '@/validators/login.schema';
-import { useAuth } from '@/lib/auth-context';
+import { useAuth } from '@/lib/auth-context-new';
 import toast from 'react-hot-toast';
-import Turnstile, { TurnstileRef } from '@/components/turnstile';
 
-const initialValues: LoginSchema = {
+const initialValues = {
   email: '',
   password: '',
   rememberMe: false,
-  turnstileToken: '',
+};
+
+type SignInFormData = {
+  email: string;
+  password: string;
+  rememberMe?: boolean;
 };
 
 export default function SignInForm() {
   const router = useRouter();
   const isMedium = useMedia('(max-width: 1200px)', false);
   const [isLoading, setIsLoading] = useState(false);
-  const [turnstileToken, setTurnstileToken] = useState('');
-  const turnstileRef = useRef<TurnstileRef>(null);
   const { user, loading, login } = useAuth();
 
   // Redirect if already logged in
@@ -35,39 +37,30 @@ export default function SignInForm() {
     }
   }, [user, loading, router]);
 
-  const onSubmit: SubmitHandler<LoginSchema> = async (data) => {
-    if (!turnstileToken) {
-      toast.error('Please complete the CAPTCHA verification');
-      return;
-    }
-
+  const onSubmit = async (data: SignInFormData) => {
     setIsLoading(true);
 
     try {
-      await login(data.email, data.password, data.rememberMe, turnstileToken);
+      await login(data.email, data.password);
       toast.success('Login successful!');
       // Redirect will happen in auth context
     } catch (error: any) {
-      toast.error(error?.message || 'Login failed. Please check your credentials.');
-
-      setTurnstileToken('');
-      turnstileRef.current?.reset();
-
+      const errorMessage = error?.response?.data?.message || error?.message || 'Login failed. Please check your credentials.';
+      toast.error(errorMessage);
       setIsLoading(false);
     }
   };
 
   return (
     <>
-      <Form<LoginSchema>
-        validationSchema={loginSchema}
+      <Form<SignInFormData>
         onSubmit={onSubmit}
         useFormProps={{
           mode: 'onChange',
           defaultValues: initialValues,
         }}
       >
-        {({ register, formState: { errors }, setValue }) => (
+        {({ register, formState: { errors } }) => (
           <div className="space-y-5 lg:space-y-6">
             <Input
               type="email"
@@ -75,7 +68,13 @@ export default function SignInForm() {
               label="Email"
               placeholder="Enter your email"
               className="[&>label>span]:font-medium"
-              {...register('email')}
+              {...register('email', {
+                required: 'Email is required',
+                pattern: {
+                  value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                  message: 'Invalid email address',
+                },
+              })}
               error={errors.email?.message}
             />
             <Password
@@ -83,32 +82,15 @@ export default function SignInForm() {
               placeholder="Enter your password"
               size={isMedium ? 'lg' : 'xl'}
               className="[&>label>span]:font-medium"
-              {...register('password')}
+              {...register('password', {
+                required: 'Password is required',
+                minLength: {
+                  value: 6,
+                  message: 'Password must be at least 6 characters',
+                },
+              })}
               error={errors.password?.message}
             />
-
-            <Turnstile
-              ref={turnstileRef}
-              siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || ''}
-              onSuccess={(token) => {
-                setTurnstileToken(token);
-                setValue('turnstileToken', token);
-              }}
-              onError={() => {
-                toast.error('CAPTCHA verification failed. Please try again.');
-                setTurnstileToken('');
-                setValue('turnstileToken', '');
-              }}
-              onExpire={() => {
-                toast.warning('CAPTCHA expired. Please verify again.');
-                setTurnstileToken('');
-                setValue('turnstileToken', '');
-              }}
-              theme="auto"
-            />
-            {errors.turnstileToken && (
-              <p className="text-sm text-red-500">{errors.turnstileToken.message}</p>
-            )}
 
             <div className="flex items-center justify-between pb-1">
               <Checkbox
@@ -129,7 +111,6 @@ export default function SignInForm() {
               type="submit"
               size={isMedium ? 'lg' : 'xl'}
               isLoading={isLoading}
-              disabled={!turnstileToken}
             >
               Sign In
             </Button>

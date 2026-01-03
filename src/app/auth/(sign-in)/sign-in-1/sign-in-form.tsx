@@ -8,7 +8,7 @@ import { Checkbox, Password, Button, Input, Text } from 'rizzui';
 import { Form } from '@core/ui/form';
 import { routes } from '@/config/routes';
 import { loginSchema, LoginSchema } from '@/validators/login.schema';
-import { useAuth } from '@/lib/auth-context';
+import { useAuth } from '@/lib/auth-context-new';
 import toast from 'react-hot-toast';
 
 const initialValues: LoginSchema = {
@@ -27,11 +27,12 @@ export default function SignInForm() {
     setIsLoading(true);
 
     try {
-      await login(data.email, data.password, data.rememberMe);
+      await login(data.email, data.password);
       toast.success('Login successful!');
     } catch (error: any) {
       console.error('Login error:', error);
-      toast.error(error?.message || 'Login failed. Please check your credentials.');
+      const errorMessage = error?.response?.data?.message || error?.message || 'Login failed. Please check your credentials.';
+      toast.error(errorMessage);
       setIsLoading(false);
     }
   };

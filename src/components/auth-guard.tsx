@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { useAuth } from '@/lib/auth-context';
+import { useAuth } from '@/lib/auth-context-new';
 import Loader from '@/components/ui/loader';
 
 const publicPaths = [
