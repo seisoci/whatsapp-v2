@@ -1,0 +1,38 @@
+export interface OnuDetail {
+  olt: string;
+  olt_id: number;
+  board: number;
+  port: number;
+  onu: string;
+  pon_type: string;
+  channel: string;
+  sn_or_mac: string;
+  onu_type: string;
+  zone: string;
+  zone_id: number | null;
+  odb: string;
+  odb_id: number | null;
+  odb_port: number | null;
+  name: string;
+  description: string;
+  contact: string;
+  latitude: string | null;
+  longitude: string | null;
+  auth_date: string;
+  onu_external_id: string;
+  onu_status: string;
+  last_status_change: string | null;
+  onu_signal_value: string;
+  distance: string;
+  attached_vlans: string;
+  attached_vlans_name: string;
+  onu_image: string;
+  onu_mode: string;
+  wan_vlan_id: string;
+  tr069: string;
+  mgmt_ip: string;
+  wan_setup_mode: string;
+  pppoe_username: string | null;
+  pppoe_password: string | null;
+  admin_state_enabled: boolean;
+}

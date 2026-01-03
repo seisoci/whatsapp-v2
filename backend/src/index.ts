@@ -1,0 +1,113 @@
+import 'reflect-metadata';
+import { Hono } from 'hono';
+import { logger } from 'hono/logger';
+import { AppDataSource } from './config/database';
+import { env } from './config/env';
+import { redisClient } from './config/redis';
+import { storageService } from './services';
+import authRouter from './routes/auth.routes';
+import uploadRouter from './routes/upload.routes';
+import {
+  securityHeaders,
+  corsMiddleware,
+  sanitizeMiddleware,
+  ipFilter,
+  rateLimiter,
+} from './middlewares';
+
+const app = new Hono();
+
+// Global middlewares
+app.use('*', logger());
+app.use('*', securityHeaders);
+app.use('*', corsMiddleware);
+app.use('*', ipFilter);
+app.use('*', sanitizeMiddleware);
+app.use('*', rateLimiter(parseInt(env.RATE_LIMIT_WINDOW) * 60 * 1000, parseInt(env.RATE_LIMIT_MAX)));
+
+// Health check
+app.get('/health', (c) => {
+  return c.json({
+    success: true,
+    message: 'Server is running',
+    timestamp: new Date().toISOString(),
+  });
+});
+
+// API routes
+app.route(`${env.API_PREFIX}/auth`, authRouter);
+app.route(`${env.API_PREFIX}/upload`, uploadRouter);
+
+// 404 handler
+app.notFound((c) => {
+  return c.json(
+    {
+      success: false,
+      message: 'Endpoint tidak ditemukan',
+    },
+    404
+  );
+});
+
+// Error handler
+app.onError((err, c) => {
+  console.error('Unhandled error:', err);
+  return c.json(
+    {
+      success: false,
+      message: env.NODE_ENV === 'production' ? 'Internal server error' : err.message,
+    },
+    500
+  );
+});
+
+// Initialize database and start server
+const startServer = async () => {
+  try {
+    // Initialize database
+    await AppDataSource.initialize();
+    console.log('✅ Database connected successfully');
+
+    // Run migrations in production
+    if (env.NODE_ENV === 'production') {
+      await AppDataSource.runMigrations();
+      console.log('✅ Migrations executed successfully');
+    }
+
+    // Initialize Storage Service (MinIO)
+    try {
+      await storageService.initialize();
+    } catch (error) {
+      console.warn('⚠️  Storage service initialization failed (optional service):', error);
+    }
+
+    // Test Redis connection
+    try {
+      await redisClient.ping();
+      console.log('✅ Redis connection successful');
+    } catch (error) {
+      console.warn('⚠️  Redis connection failed (optional service):', error);
+    }
+
+    // Start server
+    const port = parseInt(env.PORT);
+    console.log(`🚀 Server is running on http://localhost:${port}`);
+    console.log(`📝 API Documentation: http://localhost:${port}${env.API_PREFIX}`);
+    console.log(`🌍 Environment: ${env.NODE_ENV}`);
+    console.log('\nAvailable Services:');
+    console.log(`  - Authentication: ${env.API_PREFIX}/auth`);
+    console.log(`  - File Upload: ${env.API_PREFIX}/upload`);
+    console.log(`  - Redis: ${process.env.REDIS_HOST}:${process.env.REDIS_PORT}`);
+    console.log(`  - MinIO: ${process.env.MINIO_ENDPOINT}:${process.env.MINIO_PORT}`);
+
+    Bun.serve({
+      fetch: app.fetch,
+      port,
+    });
+  } catch (error) {
+    console.error('❌ Failed to start server:', error);
+    process.exit(1);
+  }
+};
+
+startServer();
