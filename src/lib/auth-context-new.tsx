@@ -61,8 +61,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Fetch fresh user data from API
       const response = await authApi.me();
-      if (response.data.success && response.data.data) {
-        const userData = response.data.data;
+      if (response.success && response.data) {
+        const userData = response.data;
         setUser(userData);
         saveUser(userData);
       } else {
@@ -82,20 +82,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const response = await authApi.login({ email, password });
 
-      if (response.data.success && response.data.data) {
-        const { user: userData, accessToken, refreshToken } = response.data.data;
+      // Response already contains { success, message, data }
+      if (response.success && response.data) {
+        const { user: userData, tokens } = response.data;
 
         // Save tokens
-        setTokens(accessToken, refreshToken);
+        setTokens(tokens.accessToken, tokens.refreshToken);
 
         // Save user data
         setUser(userData);
         saveUser(userData);
 
-        // Redirect to home
-        router.push('/');
+        // Force page reload to home after login
+        window.location.href = '/';
       } else {
-        throw new Error(response.data.message || 'Login failed');
+        throw new Error(response.message || 'Login failed');
       }
     } catch (error: any) {
       console.error('Login error:', error);

@@ -389,6 +389,7 @@ export class AuthController {
       const userRepository = AppDataSource.getRepository(User);
       const userData = await userRepository.findOne({
         where: { id: user.userId },
+        relations: ['role', 'role.permissions', 'role.menus'],
       });
 
       if (!userData) {
@@ -410,6 +411,13 @@ export class AuthController {
             username: userData.username,
             isActive: userData.isActive,
             emailVerified: userData.emailVerified,
+            role: userData.role ? {
+              id: userData.role.id,
+              name: userData.role.name,
+              slug: userData.role.slug,
+              permissions: userData.role.permissions || [],
+              menus: userData.role.menus || [],
+            } : null,
             createdAt: userData.createdAt,
             updatedAt: userData.updatedAt,
           },

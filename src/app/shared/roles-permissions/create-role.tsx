@@ -1,48 +1,50 @@
 'use client';
 
 import { useState } from 'react';
-import { PiChecksBold, PiFilesBold, PiXBold } from 'react-icons/pi';
-import { RgbaColorPicker } from 'react-colorful';
-import { Controller, SubmitHandler } from 'react-hook-form';
+import { PiXBold } from 'react-icons/pi';
+import { SubmitHandler } from 'react-hook-form';
 import { Form } from '@core/ui/form';
-import { Input, Button, Tooltip, ActionIcon, Title } from 'rizzui';
-import { useCopyToClipboard } from '@core/hooks/use-copy-to-clipboard';
-import {
-  CreateRoleInput,
-  createRoleSchema,
-} from '@/validators/create-role.schema';
+import { Input, Button, ActionIcon, Title, Textarea } from 'rizzui';
 import { useModal } from '@/app/shared/modal-views/use-modal';
+import { rolesApi } from '@/lib/api-client';
+import toast from 'react-hot-toast';
+import { z } from 'zod';
 
-export default function CreateRole() {
+const createRoleSchema = z.object({
+  name: z.string().min(3, 'Role name must be at least 3 characters'),
+  slug: z.string().min(3, 'Slug must be at least 3 characters'),
+  description: z.string().optional(),
+});
+
+type CreateRoleInput = z.infer<typeof createRoleSchema>;
+
+export default function CreateRole({ onSuccess }: { onSuccess?: () => void }) {
   const { closeModal } = useModal();
-  const [reset, setReset] = useState({});
   const [isLoading, setLoading] = useState(false);
-  const [isCopied, setIsCopied] = useState(false);
-  const [state, copyToClipboard] = useCopyToClipboard();
 
-  console.log('state', state);
-
-  const onSubmit: SubmitHandler<CreateRoleInput> = (data) => {
-    // set timeout ony required to display loading state of the create category button
+  const onSubmit: SubmitHandler<CreateRoleInput> = async (data) => {
     setLoading(true);
-    setTimeout(() => {
-      console.log('data', data);
-      setLoading(false);
-      setReset({
-        roleName: '',
-        roleColor: '',
+    try {
+      const response = await rolesApi.create({
+        name: data.name,
+        slug: data.slug,
+        description: data.description || '',
+        isActive: true,
       });
-      closeModal();
-    }, 600);
-  };
 
-  const handleCopyToClipboard = (rgba: string) => {
-    copyToClipboard(rgba);
-
-    setIsCopied(() => true);
-    setTimeout(() => {
-      setIsCopied(() => false);
-    }, 3000);
+      if (response.success) {
+        toast.success('Role created successfully');
+        closeModal();
+        onSuccess?.();
+      } else {
+        toast.error(response.message || 'Failed to create role');
+      }
+    } catch (error: any) {
+      console.error('Create role error:', error);
+      toast.error(error.message || 'Failed to create role');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -51,11 +53,7 @@ export default function CreateRole() {
       validationSchema={createRoleSchema}
       className="flex flex-grow flex-col gap-6 p-6 @container [&_.rizzui-input-label]:font-medium [&_.rizzui-input-label]:text-gray-900"
     >
-      {({ register, control, watch, formState: { errors } }) => {
-        const getColor = watch('roleColor');
-        const colorCode = `rgba(${getColor?.r ?? 0}, ${getColor?.g ?? 0}, ${
-          getColor?.b ?? 0
-        }, ${getColor?.a ?? 0})`;
+      {({ register, formState: { errors } }) => {
         return (
           <>
             <div className="flex items-center justify-between">
@@ -66,46 +64,27 @@ export default function CreateRole() {
                 <PiXBold className="h-auto w-5" />
               </ActionIcon>
             </div>
+
             <Input
               label="Role Name"
-              placeholder="Role name"
-              {...register('roleName')}
-              error={errors.roleName?.message}
+              placeholder="e.g. Manager, Developer"
+              {...register('name')}
+              error={errors.name?.message}
             />
+
             <Input
-              label="Role Color"
-              placeholder="Role Color"
-              readOnly
-              inputClassName="hover:border-muted"
-              suffix={
-                <Tooltip
-                  size="sm"
-                  content={isCopied ? 'Copied to Clipboard' : 'Click to Copy'}
-                  placement="top"
-                  className="z-[1000]"
-                >
-                  <ActionIcon
-                    variant="text"
-                    title="Click to Copy"
-                    onClick={() => handleCopyToClipboard(colorCode)}
-                    className="-mr-3"
-                  >
-                    {isCopied ? (
-                      <PiChecksBold className="h-[18px] w-[18px]" />
-                    ) : (
-                      <PiFilesBold className="h-4 w-4" />
-                    )}
-                  </ActionIcon>
-                </Tooltip>
-              }
-              value={colorCode}
+              label="Slug"
+              placeholder="e.g. manager, developer"
+              {...register('slug')}
+              error={errors.slug?.message}
             />
-            <Controller
-              control={control}
-              name="roleColor"
-              render={({ field: { onChange, value } }) => (
-                <RgbaColorPicker color={value} onChange={onChange} />
-              )}
+
+            <Textarea
+              label="Description"
+              placeholder="Enter role description"
+              {...register('description')}
+              error={errors.description?.message}
+              textareaClassName="h-20"
             />
 
             <div className="flex items-center justify-end gap-4">

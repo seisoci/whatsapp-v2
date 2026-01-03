@@ -16,9 +16,10 @@ import { Role } from '../models/Role';
 export const hasPermission = (permissions: string | string[], requireAll: boolean = false) => {
   return async (c: Context, next: Next) => {
     try {
-      const userId = c.get('userId');
+      // Get decoded token from authMiddleware
+      const decoded = c.get('user');
 
-      if (!userId) {
+      if (!decoded || !decoded.userId) {
         return c.json(
           {
             success: false,
@@ -31,7 +32,7 @@ export const hasPermission = (permissions: string | string[], requireAll: boolea
       // Get user with role and permissions
       const userRepository = AppDataSource.getRepository(User);
       const user = await userRepository.findOne({
-        where: { id: userId },
+        where: { id: decoded.userId },
         relations: ['role', 'role.permissions'],
       });
 
@@ -64,6 +65,15 @@ export const hasPermission = (permissions: string | string[], requireAll: boolea
           },
           403
         );
+      }
+
+      // Super admin (roleId === 1) bypasses all permission checks
+      if (user.roleId === 1) {
+        // Store user and role in context for later use
+        c.set('user', user);
+        c.set('role', user.role);
+        await next();
+        return;
       }
 
       // Normalize permissions to array

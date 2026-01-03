@@ -4,23 +4,36 @@ import { useState, useEffect } from 'react';
 import { PiXBold } from 'react-icons/pi';
 import { Controller, SubmitHandler } from 'react-hook-form';
 import { Form } from '@core/ui/form';
-import { Input, Button, ActionIcon, Title, Select, Password } from 'rizzui';
+import { Input, Button, ActionIcon, Title, Select } from 'rizzui';
 import { useModal } from '@/app/shared/modal-views/use-modal';
 import { usersApi, rolesApi } from '@/lib/api-client';
 import toast from 'react-hot-toast';
 import { z } from 'zod';
 
-const createUserSchema = z.object({
+const editUserSchema = z.object({
   username: z.string().min(3, 'Username must be at least 3 characters'),
   email: z.string().email('Invalid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
   roleId: z.string().min(1, 'Role is required'),
   isActive: z.string().optional(),
 });
 
-type CreateUserInput = z.infer<typeof createUserSchema>;
+type EditUserInput = z.infer<typeof editUserSchema>;
 
-export default function CreateUser({ onSuccess }: { onSuccess?: () => void }) {
+interface EditUserProps {
+  user: {
+    id: string;
+    username: string;
+    email: string;
+    isActive: boolean;
+    role?: {
+      id: string;
+      name: string;
+    };
+  };
+  onSuccess?: () => void;
+}
+
+export default function EditUser({ user, onSuccess }: EditUserProps) {
   const { closeModal } = useModal();
   const [isLoading, setLoading] = useState(false);
   const [roles, setRoles] = useState<any[]>([]);
@@ -45,28 +58,26 @@ export default function CreateUser({ onSuccess }: { onSuccess?: () => void }) {
     }
   };
 
-  const onSubmit: SubmitHandler<CreateUserInput> = async (data) => {
+  const onSubmit: SubmitHandler<EditUserInput> = async (data) => {
     setLoading(true);
     try {
-      const response = await usersApi.create({
+      const response = await usersApi.update(user.id, {
         username: data.username,
         email: data.email,
-        password: data.password,
         roleId: parseInt(data.roleId),
         isActive: data.isActive === 'active',
-        emailVerified: true,
       });
 
       if (response.success) {
-        toast.success('User created successfully');
+        toast.success('User updated successfully');
         closeModal();
         onSuccess?.();
       } else {
-        toast.error(response.message || 'Failed to create user');
+        toast.error(response.message || 'Failed to update user');
       }
     } catch (error: any) {
-      console.error('Create user error:', error);
-      toast.error(error.message || 'Failed to create user');
+      console.error('Update user error:', error);
+      toast.error(error.message || 'Failed to update user');
     } finally {
       setLoading(false);
     }
@@ -78,12 +89,15 @@ export default function CreateUser({ onSuccess }: { onSuccess?: () => void }) {
   ];
 
   return (
-    <Form<CreateUserInput>
+    <Form<EditUserInput>
       onSubmit={onSubmit}
-      validationSchema={createUserSchema}
+      validationSchema={editUserSchema}
       useFormProps={{
         defaultValues: {
-          isActive: 'active',
+          username: user.username,
+          email: user.email,
+          roleId: user.role?.id || '',
+          isActive: user.isActive ? 'active' : 'inactive',
         },
       }}
       className="grid grid-cols-1 gap-6 p-6 @container md:grid-cols-2 [&_.rizzui-input-label]:font-medium [&_.rizzui-input-label]:text-gray-900"
@@ -93,7 +107,7 @@ export default function CreateUser({ onSuccess }: { onSuccess?: () => void }) {
           <>
             <div className="col-span-full flex items-center justify-between">
               <Title as="h4" className="font-semibold">
-                Add a new User
+                Edit User
               </Title>
               <ActionIcon size="sm" variant="text" onClick={closeModal}>
                 <PiXBold className="h-auto w-5" />
@@ -114,14 +128,6 @@ export default function CreateUser({ onSuccess }: { onSuccess?: () => void }) {
               className="col-span-full"
               {...register('email')}
               error={errors.email?.message}
-            />
-
-            <Password
-              label="Password"
-              placeholder="Enter password"
-              className="col-span-full"
-              {...register('password')}
-              error={errors.password?.message}
             />
 
             <Controller
@@ -182,7 +188,7 @@ export default function CreateUser({ onSuccess }: { onSuccess?: () => void }) {
                 isLoading={isLoading}
                 className="w-full @xl:w-auto"
               >
-                Create User
+                Update User
               </Button>
             </div>
           </>

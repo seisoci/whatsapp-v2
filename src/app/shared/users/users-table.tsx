@@ -9,7 +9,7 @@ import { createUsersColumns } from './columns';
 import { PiMagnifyingGlassBold } from 'react-icons/pi';
 import { Flex, Input, Title, Loader, Select, Button } from 'rizzui';
 import { useModal } from '@/app/shared/modal-views/use-modal';
-import CreateEditUser from './create-edit-user';
+import EditUser from '@/app/shared/roles-permissions/edit-user';
 import { usersApi } from '@/lib/api-client';
 import toast from 'react-hot-toast';
 
@@ -113,7 +113,7 @@ export default function UsersTable() {
         // Show info toast only on first load
         if (isInitialLoad) {
           toast.error(
-            'API backend not available. Using local dummy data. Please setup Laravel backend to use real API.',
+            'Users API endpoint not available yet. Using local dummy data. Backend /api/v1/users endpoint needs to be implemented.',
             { duration: 5000 }
           );
         }
@@ -165,8 +165,8 @@ export default function UsersTable() {
 
   const handleEditUser = (user: User) => {
     openModal({
-      view: <CreateEditUser user={user} onSuccess={() => fetchUserData(pagination.pageIndex + 1, pagination.pageSize, searchQuery, false)} />,
-      customSize: '600px',
+      view: <EditUser user={user} onSuccess={() => fetchUserData(pagination.pageIndex + 1, pagination.pageSize, searchQuery, false)} />,
+      customSize: 600,
     });
   };
 

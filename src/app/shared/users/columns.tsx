@@ -23,12 +23,12 @@ export const createUsersColumns = ({
     cell: ({ row }) => (
       <div className="flex items-center gap-3">
         <Avatar
-          name={row.original.name}
+          name={row.original.username || row.original.email}
           size="sm"
         />
         <div>
           <Text className="font-medium text-gray-900">
-            {row.original.name}
+            {row.original.username}
           </Text>
           <Text className="text-sm text-gray-500">{row.original.email}</Text>
         </div>

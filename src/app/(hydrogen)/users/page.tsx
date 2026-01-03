@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { PiPlusBold } from 'react-icons/pi';
 import { Button } from 'rizzui/button';
 import PageHeader from '@/app/shared/page-header';
@@ -7,7 +8,7 @@ import UsersTable from '@/app/shared/users/users-table';
 import { usersData } from '@/data/users-data';
 import ExportButton from '@/app/shared/export-button';
 import { useModal } from '@/app/shared/modal-views/use-modal';
-import CreateEditUser from '@/app/shared/users/create-edit-user';
+import CreateUser from '@/app/shared/roles-permissions/create-user';
 
 const pageHeader = {
   title: 'Users',
@@ -24,10 +25,11 @@ const pageHeader = {
 
 export default function UsersPage() {
   const { openModal } = useModal();
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const handleCreateUser = () => {
     openModal({
-      view: <CreateEditUser />,
+      view: <CreateUser onSuccess={() => setRefreshKey(prev => prev + 1)} />,
       customSize: 600,
     });
   };
@@ -52,7 +54,7 @@ export default function UsersPage() {
       </PageHeader>
 
       <div className="@container mt-6">
-        <UsersTable />
+        <UsersTable key={refreshKey} />
       </div>
     </>
   );

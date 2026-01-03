@@ -5,8 +5,8 @@ import { PiPlusBold } from 'react-icons/pi';
 import { Button } from 'rizzui/button';
 import PageHeader from '@/app/shared/page-header';
 import { useModal } from '@/app/shared/modal-views/use-modal';
+import CreateRole from '@/app/shared/roles-permissions/create-role';
 import RolesTable from '@/app/shared/roles/roles-table';
-import CreateEditRole from '@/app/shared/roles/create-edit-role';
 
 const pageHeader = {
   title: 'Role Management',
@@ -23,10 +23,11 @@ const pageHeader = {
 
 export default function RolesPage() {
   const { openModal } = useModal();
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const handleCreateRole = () => {
     openModal({
-      view: <CreateEditRole />,
+      view: <CreateRole onSuccess={() => setRefreshKey(prev => prev + 1)} />,
       customSize: 800,
     });
   };
@@ -46,7 +47,7 @@ export default function RolesPage() {
       </PageHeader>
 
       <div className="@container mt-6">
-        <RolesTable />
+        <RolesTable key={refreshKey} />
       </div>
     </>
   );

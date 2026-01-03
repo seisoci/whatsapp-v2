@@ -43,7 +43,7 @@ export default function SignInForm() {
     try {
       await login(data.email, data.password);
       toast.success('Login successful!');
-      // Redirect will happen in auth context
+      // Note: Don't set isLoading to false here - redirect will happen via useEffect
     } catch (error: any) {
       const errorMessage = error?.response?.data?.message || error?.message || 'Login failed. Please check your credentials.';
       toast.error(errorMessage);

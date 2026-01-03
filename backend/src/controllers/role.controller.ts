@@ -44,8 +44,9 @@ export class RoleController {
       const total = await queryBuilder.getCount();
 
       // Pagination
+      const sortOrder = validated.sortOrder?.toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
       const roles = await queryBuilder
-        .orderBy(`role.${validated.sortBy || 'createdAt'}`, validated.sortOrder)
+        .orderBy(`role.${validated.sortBy || 'createdAt'}`, sortOrder)
         .skip((validated.page - 1) * validated.limit)
         .take(validated.limit)
         .getMany();

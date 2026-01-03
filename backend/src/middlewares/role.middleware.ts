@@ -14,9 +14,10 @@ import { User } from '../models/User';
 export const hasRole = (roles: string | string[]) => {
   return async (c: Context, next: Next) => {
     try {
-      const userId = c.get('userId');
+      // Get decoded token from authMiddleware
+      const decoded = c.get('user');
 
-      if (!userId) {
+      if (!decoded || !decoded.userId) {
         return c.json(
           {
             success: false,
@@ -29,7 +30,7 @@ export const hasRole = (roles: string | string[]) => {
       // Get user with role
       const userRepository = AppDataSource.getRepository(User);
       const user = await userRepository.findOne({
-        where: { id: userId },
+        where: { id: decoded.userId },
         relations: ['role'],
       });
 

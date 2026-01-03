@@ -25,6 +25,10 @@ export const setTokens = (accessToken: string, refreshToken: string) => {
   if (typeof window !== 'undefined') {
     localStorage.setItem('accessToken', accessToken);
     localStorage.setItem('refreshToken', refreshToken);
+
+    // Also set cookies for middleware authentication
+    document.cookie = `accessToken=${accessToken}; path=/; max-age=${15 * 60}`; // 15 minutes
+    document.cookie = `refreshToken=${refreshToken}; path=/; max-age=${7 * 24 * 60 * 60}`; // 7 days
   }
 };
 
@@ -33,6 +37,10 @@ export const clearTokens = () => {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('user');
+
+    // Also clear cookies
+    document.cookie = 'accessToken=; path=/; max-age=0';
+    document.cookie = 'refreshToken=; path=/; max-age=0';
   }
 };
 
@@ -109,8 +117,12 @@ async function refreshAccessToken(): Promise<string | null> {
       const data = await response.json();
 
       if (data.success && data.data) {
-        const { accessToken, refreshToken: newRefreshToken } = data.data;
-        setTokens(accessToken, newRefreshToken);
+        const { accessToken } = data.data;
+        // Update only accessToken, keep existing refreshToken
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('accessToken', accessToken);
+          document.cookie = `accessToken=${accessToken}; path=/; max-age=${15 * 60}`;
+        }
         return accessToken;
       }
 
