@@ -2,12 +2,15 @@ import { routes } from '@/config/routes';
 import { IconType } from 'react-icons/lib';
 import { atom } from 'jotai';
 import {
-  PiHouse,
-  PiUserDuotone,
+  PiHouseDuotone,
+  PiChatsDuotone,
+  PiWhatsappLogoDuotone,
+  PiDeviceMobileDuotone,
+  PiEnvelopeDuotone,
   PiUserGearDuotone,
-  PiPlugsConnectedDuotone,
-  PiWarningCircleDuotone,
-  PiCheckCircleDuotone,
+  PiUserDuotone,
+  PiShieldCheckDuotone,
+  PiLockKeyDuotone,
 } from 'react-icons/pi';
 
 export interface SubMenuItemType {
@@ -37,56 +40,53 @@ export interface MenuItemsType {
 export const berylliumMenuItems: MenuItemsType[] = [
   {
     id: '1',
-    name: 'Network',
-    title: 'Network Management',
-    icon: PiHouse,
+    name: 'Main',
+    title: 'Main Menu',
+    icon: PiHouseDuotone,
     menuItems: [
       {
-        name: 'OLT',
-        href: routes.olt.dashboard,
-        icon: PiPlugsConnectedDuotone,
+        name: 'Dashboard',
+        href: '/',
+        icon: PiHouseDuotone,
       },
       {
-        name: 'Unconfigured',
-        href: routes.unconfigured,
-        icon: PiWarningCircleDuotone,
+        name: 'Chat',
+        href: '#',
+        icon: PiChatsDuotone,
       },
       {
-        name: 'Configured',
-        href: routes.configured.onus,
-        icon: PiCheckCircleDuotone,
-      },
-      {
-        name: 'Settings',
-        description: 'Network Settings',
-        icon: PiUserGearDuotone,
+        name: 'WhatsApp',
+        description: 'WhatsApp Business',
+        icon: PiWhatsappLogoDuotone,
         subMenuItems: [
           {
-            name: 'OLT',
-            href: routes.olt.dashboard,
+            name: 'Phone Numbers',
+            href: routes.phoneNumbers,
           },
           {
-            name: 'Speed Profiles',
-            href: routes.speedProfiles,
-          },
-          {
-            name: 'Zones',
-            href: routes.zones,
-          },
-          {
-            name: 'ODbs',
-            href: routes.odbs,
-          },
-          {
-            name: 'ONU Types',
-            href: routes.onuTypes,
+            name: 'Templates',
+            href: routes.templates,
           },
         ],
       },
       {
-        name: 'Users',
-        href: routes.users,
-        icon: PiUserDuotone,
+        name: 'Management',
+        description: 'System Management',
+        icon: PiUserGearDuotone,
+        subMenuItems: [
+          {
+            name: 'Users',
+            href: routes.users,
+          },
+          {
+            name: 'Roles',
+            href: routes.roles,
+          },
+          {
+            name: 'Permissions',
+            href: routes.permissions,
+          },
+        ],
       },
     ],
   },

@@ -1,77 +1,72 @@
 import { routes } from '@/config/routes';
 import {
-  PiUserDuotone,
+  PiHouseDuotone,
+  PiChatsDuotone,
+  PiWhatsappLogoDuotone,
+  PiDeviceMobileDuotone,
+  PiEnvelopeDuotone,
   PiUserGearDuotone,
-  PiPlugsConnectedDuotone,
-  PiWarningCircleDuotone,
-  PiCheckCircleDuotone,
+  PiUserDuotone,
+  PiShieldCheckDuotone,
+  PiLockKeyDuotone,
 } from 'react-icons/pi';
 
 export const menuItems = [
   {
-    name: 'Network Management',
-  },
-  {
-    name: 'OLT',
-    href: routes.olt.dashboard,
-    icon: PiPlugsConnectedDuotone,
+    name: 'Dashboard',
+    href: '/',
+    icon: PiHouseDuotone,
     shortcut: {
       modifiers: 'alt',
       key: '1',
     },
   },
   {
-    name: 'Unconfigured',
-    href: routes.unconfigured,
-    icon: PiWarningCircleDuotone,
+    name: 'Chat',
+    href: '#',
+    icon: PiChatsDuotone,
     shortcut: {
       modifiers: 'alt',
       key: '2',
     },
   },
   {
-    name: 'Configured',
-    href: routes.configured.onus,
-    icon: PiCheckCircleDuotone,
-    shortcut: {
-      modifiers: 'alt',
-      key: '3',
-    },
-  },
-  {
-    name: 'Settings',
+    name: 'WhatsApp',
     href: '#',
-    icon: PiUserGearDuotone,
+    icon: PiWhatsappLogoDuotone,
     dropdownItems: [
       {
-        name: 'OLT',
-        href: routes.olt.dashboard,
+        name: 'Phone Numbers',
+        href: routes.phoneNumbers,
+        icon: PiDeviceMobileDuotone,
       },
       {
-        name: 'Speed Profiles',
-        href: routes.speedProfiles,
-      },
-      {
-        name: 'Zones',
-        href: routes.zones,
-      },
-      {
-        name: 'ODbs',
-        href: routes.odbs,
-      },
-      {
-        name: 'ONU Types',
-        href: routes.onuTypes,
+        name: 'Templates',
+        href: routes.templates,
+        icon: PiEnvelopeDuotone,
       },
     ],
   },
   {
-    name: 'Users',
-    href: routes.users,
-    icon: PiUserDuotone,
-    shortcut: {
-      modifiers: 'alt',
-      key: '4',
-    },
+    name: 'Management',
+    href: '#',
+    icon: PiUserGearDuotone,
+    dropdownItems: [
+      {
+        name: 'Users',
+        href: routes.users,
+        icon: PiUserDuotone,
+      },
+      {
+        name: 'Roles',
+        href: routes.roles,
+        icon: PiShieldCheckDuotone,
+      },
+      {
+        name: 'Permissions',
+        href: routes.permissions,
+        icon: PiLockKeyDuotone,
+      },
+    ],
   },
 ];

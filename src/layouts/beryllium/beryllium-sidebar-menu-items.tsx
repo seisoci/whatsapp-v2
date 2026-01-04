@@ -1,61 +1,64 @@
 import { routes } from '@/config/routes';
 import {
-  PiUserDuotone,
+  PiHouseDuotone,
+  PiChatsDuotone,
+  PiWhatsappLogoDuotone,
+  PiDeviceMobileDuotone,
+  PiEnvelopeDuotone,
   PiUserGearDuotone,
-  PiPlugsConnectedDuotone,
-  PiWarningCircleDuotone,
-  PiCheckCircleDuotone,
+  PiUserDuotone,
+  PiShieldCheckDuotone,
+  PiLockKeyDuotone,
 } from 'react-icons/pi';
 
 export const berylliumSidebarMenuItems = [
   {
-    name: 'Network Management',
+    name: 'Dashboard',
+    href: '/',
+    icon: <PiHouseDuotone />,
   },
   {
-    name: 'OLT',
-    href: routes.olt.dashboard,
-    icon: <PiPlugsConnectedDuotone />,
-  },
-  {
-    name: 'Unconfigured',
-    href: routes.unconfigured,
-    icon: <PiWarningCircleDuotone />,
-  },
-  {
-    name: 'Configured',
-    href: routes.configured.onus,
-    icon: <PiCheckCircleDuotone />,
-  },
-  {
-    name: 'Settings',
+    name: 'Chat',
     href: '#',
-    icon: <PiUserGearDuotone />,
+    icon: <PiChatsDuotone />,
+  },
+  {
+    name: 'WhatsApp',
+    href: '#',
+    icon: <PiWhatsappLogoDuotone />,
     dropdownItems: [
       {
-        name: 'OLT',
-        href: routes.olt.dashboard,
+        name: 'Phone Numbers',
+        href: routes.phoneNumbers,
+        icon: <PiDeviceMobileDuotone />,
       },
       {
-        name: 'Speed Profiles',
-        href: routes.speedProfiles,
-      },
-      {
-        name: 'Zones',
-        href: routes.zones,
-      },
-      {
-        name: 'ODbs',
-        href: routes.odbs,
-      },
-      {
-        name: 'ONU Types',
-        href: routes.onuTypes,
+        name: 'Templates',
+        href: routes.templates,
+        icon: <PiEnvelopeDuotone />,
       },
     ],
   },
   {
-    name: 'Users',
-    href: routes.users,
-    icon: <PiUserDuotone />,
+    name: 'Management',
+    href: '#',
+    icon: <PiUserGearDuotone />,
+    dropdownItems: [
+      {
+        name: 'Users',
+        href: routes.users,
+        icon: <PiUserDuotone />,
+      },
+      {
+        name: 'Roles',
+        href: routes.roles,
+        icon: <PiShieldCheckDuotone />,
+      },
+      {
+        name: 'Permissions',
+        href: routes.permissions,
+        icon: <PiLockKeyDuotone />,
+      },
+    ],
   },
 ];

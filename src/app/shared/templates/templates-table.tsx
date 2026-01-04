@@ -8,11 +8,14 @@ import { createTemplatesColumns } from './columns';
 import { Flex, Title, Loader } from 'rizzui';
 import { useModal } from '@/app/shared/modal-views/use-modal';
 import CreateEditTemplate from '@/app/shared/templates/create-edit-template';
+import TemplatesFilters from '@/app/shared/templates/templates-filters';
 import { templatesApi } from '@/lib/api-client';
 import toast from 'react-hot-toast';
 
 export default function TemplatesTable() {
   const [templateData, setTemplateData] = useState<Template[]>([]);
+  const [filteredData, setFilteredData] = useState<Template[]>([]);
+  const [phoneNumbers, setPhoneNumbers] = useState<{ value: string; label: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [totalRecords, setTotalRecords] = useState(0);
@@ -35,21 +38,44 @@ export default function TemplatesTable() {
 
         if (Array.isArray(templateData)) {
           setTemplateData(templateData);
+          setFilteredData(templateData);
           setTotalRecords(templateData.length);
+
+          // Extract unique phone numbers for filter
+          const uniquePhoneNumbers = Array.from(
+            new Set(
+              templateData.map((t: any) => ({
+                value: t.phoneNumberId,
+                label: t.phoneNumberName || t.displayPhoneNumber || t.phoneNumberId,
+              }))
+            )
+          ).reduce((acc: any[], curr) => {
+            if (!acc.find((item) => item.value === curr.value)) {
+              acc.push(curr);
+            }
+            return acc;
+          }, []);
+          setPhoneNumbers(uniquePhoneNumbers);
         } else {
           setTemplateData([]);
+          setFilteredData([]);
           setTotalRecords(0);
+          setPhoneNumbers([]);
         }
       } else {
         toast.error('Failed to load templates');
         setTemplateData([]);
+        setFilteredData([]);
         setTotalRecords(0);
+        setPhoneNumbers([]);
       }
     } catch (error: any) {
       console.error('Error fetching templates:', error);
       toast.error('Failed to load templates from backend');
       setTemplateData([]);
+      setFilteredData([]);
       setTotalRecords(0);
+      setPhoneNumbers([]);
     } finally {
       setLoading(false);
       setIsRefreshing(false);
@@ -90,18 +116,43 @@ const handleDeleteTemplate = async (id: string, phoneNumberId: string, templateN
   }
 };
 
+  const handleFilter = (filters: {
+    category: string;
+    status: string;
+    phoneNumberId: string;
+  }) => {
+    let filtered = [...templateData];
+
+    if (filters.category) {
+      filtered = filtered.filter((t: any) => t.category === filters.category);
+    }
+
+    if (filters.status) {
+      filtered = filtered.filter((t: any) => t.status === filters.status);
+    }
+
+    if (filters.phoneNumberId) {
+      filtered = filtered.filter((t: any) => t.phoneNumberId === filters.phoneNumberId);
+    }
+
+    setFilteredData(filtered);
+    setTotalRecords(filtered.length);
+  };
+
 return (
-  <div ref= { tableContainerRef } >
-  <TemplatesTableContent
-        data={ templateData }
-loading = { loading }
-isRefreshing = { isRefreshing }
-onRefresh = {() => fetchTemplateData(false)}
-totalRecords = { totalRecords }
-onEditTemplate = { handleEditTemplate }
-onDeleteTemplate = { handleDeleteTemplate }
-onCreateTemplate = { handleCreateTemplate }
-  />
+  <div ref={tableContainerRef}>
+    <TemplatesTableContent
+      data={filteredData}
+      loading={loading}
+      isRefreshing={isRefreshing}
+      onRefresh={() => fetchTemplateData(false)}
+      totalRecords={totalRecords}
+      onEditTemplate={handleEditTemplate}
+      onDeleteTemplate={handleDeleteTemplate}
+      onCreateTemplate={handleCreateTemplate}
+      phoneNumbers={phoneNumbers}
+      onFilter={handleFilter}
+    />
   </div>
   );
 }
@@ -115,6 +166,8 @@ function TemplatesTableContent({
   onEditTemplate,
   onDeleteTemplate,
   onCreateTemplate,
+  phoneNumbers,
+  onFilter,
 }: {
   data: any[];
   loading: boolean;
@@ -124,6 +177,8 @@ function TemplatesTableContent({
   onEditTemplate: (template: Template) => void;
   onDeleteTemplate: (id: string, phoneNumberId: string, templateName: string) => void;
   onCreateTemplate: () => void;
+  phoneNumbers: { value: string; label: string }[];
+  onFilter: (filters: { category: string; status: string; phoneNumberId: string }) => void;
 }) {
   const { table, setData } = useTanStackTable<Template>({
     tableData: data,
@@ -133,6 +188,11 @@ function TemplatesTableContent({
     }),
     options: {
       enableColumnResizing: false,
+      initialState: {
+        pagination: {
+          pageSize: 9999, // Show all items
+        },
+      },
     },
   });
 
@@ -150,15 +210,17 @@ function TemplatesTableContent({
 
   return (
     <>
-    <Flex
-        direction= "col"
-  justify = "between"
-  className = "mb-4 gap-3 xs:flex-row xs:items-center"
-    >
-    <Title as="h3" className = "text-base font-semibold sm:text-lg" >
-      Message Templates({ totalRecords } total)
+      <TemplatesFilters phoneNumbers={phoneNumbers} onFilter={onFilter} />
+      
+      <Flex
+        direction="col"
+        justify="between"
+        className="mb-4 gap-3 xs:flex-row xs:items-center"
+      >
+        <Title as="h3" className="text-base font-semibold sm:text-lg">
+          Message Templates ({totalRecords} total)
         </Title>
-        </Flex>
+      </Flex>
 
         < div className = "relative overflow-hidden" >
           <div

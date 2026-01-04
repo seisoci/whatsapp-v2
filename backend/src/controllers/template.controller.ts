@@ -66,9 +66,11 @@ export class TemplateController {
               console.error(`Failed to get phone info for ${phone.phoneNumberId}`);
             }
 
+            // Fetch templates with high limit to get all templates
             const result = await WhatsAppService.getMessageTemplates(
               phone.wabaId,
-              phone.accessToken
+              phone.accessToken,
+              { limit: 1000 } // Set high limit to fetch all templates
             );
 
             // Add phone number info to each template

@@ -22,67 +22,62 @@ export type LithiumMenuItem = {
 };
 
 export const lithiumMenuItems: LithiumMenuItem = {
-  unconfigured: {
-    name: 'Unconfigured',
+  dashboard: {
+    name: 'Dashboard',
     type: 'link',
     dropdownItems: [
       {
-        name: 'Unconfigured ONUs',
-        href: routes.unconfigured,
-        icon: 'FilesIcon',
+        name: 'Dashboard',
+        href: '/',
+        icon: 'HomeIcon',
       },
     ],
   },
-  configured: {
-    name: 'Configured',
+  chat: {
+    name: 'Chat',
     type: 'link',
     dropdownItems: [
       {
-        name: 'Configured ONUs',
-        href: routes.configured.onus,
-        icon: 'FilesIcon',
+        name: 'Chat',
+        href: '#',
+        icon: 'ChatIcon',
       },
     ],
   },
-  settings: {
-    name: 'Settings',
+  whatsapp: {
+    name: 'WhatsApp',
     type: 'link',
     dropdownItems: [
       {
-        name: 'OLT',
-        href: routes.olt.dashboard,
-        icon: 'OltIcon',
+        name: 'Phone Numbers',
+        href: routes.phoneNumbers,
+        icon: 'PhoneIcon',
       },
       {
-        name: 'Speed Profiles',
-        href: routes.speedProfiles,
-        icon: 'SpeedIcon',
-      },
-      {
-        name: 'Zones',
-        href: routes.zones,
-        icon: 'UserSettingsIcon',
-      },
-      {
-        name: 'ODbs',
-        href: routes.odbs,
-        icon: 'UserSettingsIcon',
-      },
-      {
-        name: 'ONU Types',
-        href: routes.onuTypes,
-        icon: 'OntIcon',
+        name: 'Templates',
+        href: routes.templates,
+        icon: 'EnvelopeIcon',
       },
     ],
   },
-  users: {
-    name: 'Users',
+  management: {
+    name: 'Management',
     type: 'link',
     dropdownItems: [
       {
         name: 'Users',
         href: routes.users,
-        icon: 'FilesIcon',
+        icon: 'UserIcon',
+      },
+      {
+        name: 'Roles',
+        href: routes.roles,
+        icon: 'ShieldIcon',
+      },
+      {
+        name: 'Permissions',
+        href: routes.permissions,
+        icon: 'LockIcon',
       },
     ],
   },
