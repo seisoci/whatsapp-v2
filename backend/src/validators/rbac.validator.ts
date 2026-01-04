@@ -200,7 +200,7 @@ export type CheckPermissionsInput = z.infer<typeof checkPermissionsSchema>;
 export const createCrudPermissionsSchema = z.object({
   title: z.string().min(2, 'Title must be at least 2 characters'),
   slug: z.string().optional(), // Will be auto-generated from title if not provided
-  pathUrl: z.string().optional(), // Will be auto-generated from slug if not provided
+  pathUrl: z.string().optional().default(''), // Optional - can be empty if menu has no URL
   icon: z.string().optional(),
   resource: z
     .string()

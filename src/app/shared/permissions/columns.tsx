@@ -53,7 +53,7 @@ export const createPermissionsColumns = ({
         { row.original.menu?.pathUrl || '-' }
         </Text>
         </div>
-    ),
+      ),
   }),
 columnHelper.accessor('permissions', {
   id: 'actions',
@@ -68,9 +68,9 @@ columnHelper.accessor('permissions', {
         { getActionFromSlug(permission.slug)
     }
     </Badge>
-        ))}
+      ))}
 </div>
-    ),
+  ),
   }),
 columnHelper.accessor('createdAt', {
   id: 'createdAt',
@@ -89,7 +89,7 @@ columnHelper.accessor('createdAt', {
         : '-'
     }
     </Text>
-    ),
+  ),
   }),
 columnHelper.display({
   id: 'tableActions',
@@ -99,19 +99,19 @@ columnHelper.display({
     <div className= "flex items-center justify-center gap-2" >
     <Tooltip size="sm" content = "Edit Menu" placement="top" color="invert" >
     <ActionIcon
-            size="sm"
-            variant = "outline"
-            aria- label="Edit Menu"
-            onClick = {() => onEditPermission({ menuManagerId: row.original.menuManagerId, menu: row.original.menu })}
-          >
+          size="sm"
+          variant = "outline"
+          aria- label="Edit Menu"
+          onClick = {() => onEditPermission({ menuManagerId: row.original.menuManagerId, menu: row.original.menu })}
+        >
   <PencilIcon className="h-4 w-4" />
   </ActionIcon>
   </Tooltip>
 < DeletePopover
-          title = "Delete Menu & Permissions"
-          description = "Are you sure you want to delete this menu and all its permissions?"
-          onDelete = {() => onDeletePermission(row.original.menuManagerId)}
-        />
+        title = "Delete Menu & Permissions"
+        description = "Are you sure you want to delete this menu and all its permissions?"
+        onDelete = {() => onDeletePermission(row.original.menuManagerId)}
+      />
   </div>
 ),
   enableSorting: false,

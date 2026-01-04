@@ -145,8 +145,8 @@ export class PermissionController {
         // Auto-generate slug from title if not provided
         const slug = validated.slug || validated.title.toLowerCase().replace(/\s+/g, '-');
 
-        // Auto-generate pathUrl from slug if not provided
-        const pathUrl = validated.pathUrl || `/${slug}`;
+        // Handle pathUrl: if undefined, auto-generate from slug. If empty string, keep it empty
+        const pathUrl = validated.pathUrl !== undefined ? validated.pathUrl : `/${slug}`;
 
         // Create MenuManager first
         const menuManager = menuRepo.create({
@@ -323,8 +323,8 @@ export class PermissionController {
       // Update menu manager
       menuManager.title = body.title;
       menuManager.slug = body.slug;
-      menuManager.pathUrl = body.pathUrl;
-      menuManager.icon = body.icon || '';
+      menuManager.pathUrl = body.pathUrl !== undefined ? body.pathUrl : menuManager.pathUrl;
+      menuManager.icon = body.icon !== undefined ? body.icon : menuManager.icon;
 
       await menuRepo.save(menuManager);
 
