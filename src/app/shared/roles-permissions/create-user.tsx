@@ -10,13 +10,19 @@ import { usersApi, rolesApi } from '@/lib/api-client';
 import toast from 'react-hot-toast';
 import { z } from 'zod';
 
-const createUserSchema = z.object({
-  username: z.string().min(3, 'Username must be at least 3 characters'),
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
-  roleId: z.string().min(1, 'Role is required'),
-  isActive: z.string().optional(),
-});
+const createUserSchema = z
+  .object({
+    username: z.string().min(3, 'Username must be at least 3 characters'),
+    email: z.string().email('Invalid email address'),
+    password: z.string().min(8, 'Password must be at least 8 characters'),
+    confirmPassword: z.string().min(8, 'Password confirmation must be at least 8 characters'),
+    roleId: z.string().min(1, 'Role is required'),
+    isActive: z.string().optional(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ['confirmPassword'],
+  });
 
 type CreateUserInput = z.infer<typeof createUserSchema>;
 
@@ -118,10 +124,18 @@ export default function CreateUser({ onSuccess }: { onSuccess?: () => void }) {
 
             <Password
               label="Password"
-              placeholder="Enter password"
+              placeholder="Enter password (min. 8 characters)"
               className="col-span-full"
               {...register('password')}
               error={errors.password?.message}
+            />
+
+            <Password
+              label="Confirm Password"
+              placeholder="Re-enter password"
+              className="col-span-full"
+              {...register('confirmPassword')}
+              error={errors.confirmPassword?.message}
             />
 
             <Controller
@@ -157,6 +171,7 @@ export default function CreateUser({ onSuccess }: { onSuccess?: () => void }) {
                   onChange={onChange}
                   name={name}
                   label="Status"
+                  className="col-span-full"
                   error={errors?.isActive?.message}
                   getOptionValue={(option) => option.value}
                   displayValue={(selected: string) =>

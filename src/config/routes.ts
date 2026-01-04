@@ -109,6 +109,8 @@ export const routes = {
   rolesPermissions: "/roles-permissions",
   roles: "/roles",
   permissions: "/permissions",
+  phoneNumbers: "/phone-numbers",
+  templates: "/templates",
   users: "/users",
   invoice: {
     home: "/invoice",

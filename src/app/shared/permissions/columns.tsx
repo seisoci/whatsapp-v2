@@ -101,7 +101,7 @@ columnHelper.display({
     <ActionIcon
           size="sm"
           variant = "outline"
-          aria- label="Edit Menu"
+          aria-label="Edit Menu"
           onClick = {() => onEditPermission({ menuManagerId: row.original.menuManagerId, menu: row.original.menu })}
         >
   <PencilIcon className="h-4 w-4" />

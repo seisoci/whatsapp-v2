@@ -10,6 +10,7 @@ import { PiMagnifyingGlassBold } from 'react-icons/pi';
 import { Flex, Input, Title, Loader, Select, Button } from 'rizzui';
 import { useModal } from '@/app/shared/modal-views/use-modal';
 import EditUser from '@/app/shared/roles-permissions/edit-user';
+import ResetPasswordModal from './reset-password-modal';
 import { usersApi } from '@/lib/api-client';
 import toast from 'react-hot-toast';
 
@@ -170,6 +171,13 @@ export default function UsersTable() {
     });
   };
 
+  const handleResetPassword = (user: User) => {
+    openModal({
+      view: <ResetPasswordModal user={user} onSuccess={() => fetchUserData(pagination.pageIndex + 1, pagination.pageSize, searchQuery, false)} />,
+      customSize: 500,
+    });
+  };
+
   const handleDeleteUser = async (id: string) => {
     try {
       const response = await usersApi.delete(id);
@@ -201,6 +209,7 @@ export default function UsersTable() {
         onSearchChange={setSearchQuery}
         onResetFilters={handleResetFilters}
         onEditUser={handleEditUser}
+        onResetPassword={handleResetPassword}
         onDeleteUser={handleDeleteUser}
       />
     </div>
@@ -221,6 +230,7 @@ function UsersTableContent({
   onSearchChange,
   onResetFilters,
   onEditUser,
+  onResetPassword,
   onDeleteUser,
 }: {
   data: any[];
@@ -236,11 +246,12 @@ function UsersTableContent({
   onSearchChange: (value: string) => void;
   onResetFilters: () => void;
   onEditUser: (user: any) => void;
+  onResetPassword: (user: any) => void;
   onDeleteUser: (id: string) => void;
 }) {
   const { table, setData } = useTanStackTable<User>({
     tableData: data,
-    columnConfig: createUsersColumns({ onEditUser, onDeleteUser }),
+    columnConfig: createUsersColumns({ onEditUser, onResetPassword, onDeleteUser }),
     options: {
       pageCount: Math.ceil(totalRecords / pagination.pageSize),
       state: {

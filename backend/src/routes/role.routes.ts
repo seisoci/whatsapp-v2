@@ -24,6 +24,7 @@ roleRouter.delete('/:id', RoleController.destroy);
 
 // Assign permissions to role (permission check in controller)
 roleRouter.post('/:id/permissions', RoleController.assignPermissions);
+roleRouter.put('/:id/permissions', RoleController.assignPermissions); // RESTful alias
 
 // Assign menus to role (permission check in controller)
 roleRouter.post('/:id/menus', RoleController.assignMenus);

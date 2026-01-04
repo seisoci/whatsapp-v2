@@ -68,20 +68,45 @@ export class PermissionController {
         .take(validated.limit)
         .getMany();
 
+      // Define CRUD action order
+      const actionOrder = ['index', 'store', 'show', 'update', 'destroy'];
+
+      // Helper function to get action from slug
+      const getActionFromSlug = (slug: string) => {
+        const parts = slug.split('-');
+        return parts[parts.length - 1];
+      };
+
       // Transform data to match frontend expectations
-      const transformedData = menus.map((menu) => ({
-        id: menu.id,
-        menuManagerId: menu.id,
-        menu: {
+      const transformedData = menus.map((menu) => {
+        // Sort permissions by CRUD order
+        const sortedPermissions = (menu.permissions || []).sort((a, b) => {
+          const actionA = getActionFromSlug(a.slug);
+          const actionB = getActionFromSlug(b.slug);
+          const indexA = actionOrder.indexOf(actionA);
+          const indexB = actionOrder.indexOf(actionB);
+
+          // If action not found in order, put it at the end
+          if (indexA === -1) return 1;
+          if (indexB === -1) return -1;
+
+          return indexA - indexB;
+        });
+
+        return {
           id: menu.id,
-          title: menu.title,
-          slug: menu.slug,
-          pathUrl: menu.pathUrl,
-          icon: menu.icon,
-        },
-        permissions: menu.permissions || [],
-        createdAt: menu.createdAt,
-      }));
+          menuManagerId: menu.id,
+          menu: {
+            id: menu.id,
+            title: menu.title,
+            slug: menu.slug,
+            pathUrl: menu.pathUrl,
+            icon: menu.icon,
+          },
+          permissions: sortedPermissions,
+          createdAt: menu.createdAt,
+        };
+      });
 
       return c.json({
         success: true,

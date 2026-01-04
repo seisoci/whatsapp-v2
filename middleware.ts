@@ -13,19 +13,49 @@ const publicRoutes = [
   '/favicon.ico',
 ];
 
-// Routes that require authentication
-const protectedRoutes = [
-  '/',
-  '/chat',
-  '/users',
-  '/roles',
-  '/permissions',
-  '/role-access',
-  '/profile',
-  '/settings',
-];
 
-export function middleware(request: NextRequest) {
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+const API_PREFIX = process.env.NEXT_PUBLIC_API_PREFIX || '/api/v1';
+
+interface RefreshTokenResponse {
+  success: boolean;
+  data?: {
+    accessToken: string;
+  };
+  message?: string;
+}
+
+/**
+ * Try to refresh the access token using refresh token
+ */
+async function refreshAccessToken(refreshToken: string): Promise<string | null> {
+  try {
+    const response = await fetch(`${API_URL}${API_PREFIX}/auth/refresh-token`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ refreshToken }),
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const data = await response.json() as RefreshTokenResponse;
+
+    if (data.success && data.data?.accessToken) {
+      return data.data.accessToken;
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Token refresh failed in middleware:', error);
+    return null;
+  }
+}
+
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Check if route is public
@@ -33,19 +63,45 @@ export function middleware(request: NextRequest) {
     pathname.startsWith(route)
   );
 
-  // Get access token from cookie or check localStorage (will be checked on client-side)
-  const accessToken = request.cookies.get('accessToken')?.value;
-
-  // If trying to access protected route without token
-  if (!isPublicRoute && !accessToken) {
-    const signInUrl = new URL('/sign-in', request.url);
-    signInUrl.searchParams.set('from', pathname);
-    return NextResponse.redirect(signInUrl);
+  // Skip middleware for public routes (except sign-in check)
+  if (isPublicRoute && !pathname.startsWith('/sign-in')) {
+    return NextResponse.next();
   }
+
+  // Get tokens from cookies
+  const accessToken = request.cookies.get('accessToken')?.value;
+  const refreshToken = request.cookies.get('refreshToken')?.value;
 
   // If trying to access sign-in page while authenticated
   if (pathname.startsWith('/sign-in') && accessToken) {
     return NextResponse.redirect(new URL('/', request.url));
+  }
+
+  // If accessing protected route
+  if (!isPublicRoute) {
+    // If no access token but has refresh token, try to refresh
+    if (!accessToken && refreshToken) {
+      const newAccessToken = await refreshAccessToken(refreshToken);
+
+      if (newAccessToken) {
+        // Create response and set new access token cookie
+        const response = NextResponse.next();
+        response.cookies.set('accessToken', newAccessToken, {
+          path: '/',
+          maxAge: 15 * 60, // 15 minutes
+          httpOnly: false, // Allow JavaScript access for API calls
+          sameSite: 'lax',
+        });
+        return response;
+      }
+    }
+
+    // If no valid tokens at all, redirect to sign-in
+    if (!accessToken && !refreshToken) {
+      const signInUrl = new URL('/sign-in', request.url);
+      signInUrl.searchParams.set('from', pathname);
+      return NextResponse.redirect(signInUrl);
+    }
   }
 
   return NextResponse.next();

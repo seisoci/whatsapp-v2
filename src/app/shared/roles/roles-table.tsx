@@ -12,6 +12,7 @@ import { useModal } from '@/app/shared/modal-views/use-modal';
 import CreateEditRole from '@/app/shared/roles/create-edit-role';
 import { rolesApi } from '@/lib/api-client';
 import toast from 'react-hot-toast';
+import { useRouter } from 'next/navigation';
 
 export default function RolesTable() {
   const [roleData, setRoleData] = useState<Role[]>([]);
@@ -27,6 +28,7 @@ export default function RolesTable() {
 
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const { openModal } = useModal();
+  const router = useRouter();
 
   const fetchRoleData = async (page?: number, perPage?: number, search?: string, isInitialLoad = false) => {
     try {
@@ -140,6 +142,10 @@ const handleDeleteRole = async (id: string) => {
   }
 };
 
+const handleAssignPermissions = (roleId: string) => {
+  router.push(`/roles/${roleId}/permissions`);
+};
+
 return (
   <div ref= { tableContainerRef } >
   <RolesTableContent
@@ -157,6 +163,7 @@ onSearchChange = { setSearchQuery }
 onResetFilters = { handleResetFilters }
 onEditRole = { handleEditRole }
 onDeleteRole = { handleDeleteRole }
+onAssignPermissions = { handleAssignPermissions }
   />
   </div>
   );
@@ -177,6 +184,7 @@ function RolesTableContent({
   onResetFilters,
   onEditRole,
   onDeleteRole,
+  onAssignPermissions,
 }: {
   data: any[];
   loading: boolean;
@@ -192,10 +200,11 @@ function RolesTableContent({
   onResetFilters: () => void;
   onEditRole: (role: any) => void;
   onDeleteRole: (id: string) => void;
+  onAssignPermissions: (id: string) => void;
 }) {
   const { table, setData } = useTanStackTable<Role>({
     tableData: data,
-    columnConfig: createRolesColumns({ onEditRole, onDeleteRole }),
+    columnConfig: createRolesColumns({ onEditRole, onDeleteRole, onAssignPermissions }),
     options: {
       pageCount: Math.ceil(totalRecords / pagination.pageSize),
       state: {

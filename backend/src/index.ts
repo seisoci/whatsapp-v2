@@ -10,6 +10,8 @@ import uploadRouter from './routes/upload.routes';
 import roleRouter from './routes/role.routes';
 import permissionRouter from './routes/permission.routes';
 import userRouter from './routes/user.routes';
+import phoneNumberRouter from './routes/phoneNumber.routes';
+import templateRouter from './routes/template.routes';
 import {
   securityHeaders,
   corsMiddleware,
@@ -43,6 +45,8 @@ app.route(`${env.API_PREFIX}/upload`, uploadRouter);
 app.route(`${env.API_PREFIX}/roles`, roleRouter);
 app.route(`${env.API_PREFIX}/permissions`, permissionRouter);
 app.route(`${env.API_PREFIX}/users`, userRouter);
+app.route(`${env.API_PREFIX}/phone-numbers`, phoneNumberRouter);
+app.route(`${env.API_PREFIX}/templates`, templateRouter);
 
 // 404 handler
 app.notFound((c) => {
@@ -105,6 +109,7 @@ const startServer = async () => {
     console.log(`  - User Management: ${env.API_PREFIX}/users`);
     console.log(`  - Role Management: ${env.API_PREFIX}/roles`);
     console.log(`  - Permission Management: ${env.API_PREFIX}/permissions`);
+    console.log(`  - Phone Numbers (WhatsApp): ${env.API_PREFIX}/phone-numbers`);
     console.log(`  - Redis: ${process.env.REDIS_HOST}:${process.env.REDIS_PORT}`);
     console.log(`  - MinIO: ${process.env.MINIO_ENDPOINT}:${process.env.MINIO_PORT}`);
   } catch (error) {

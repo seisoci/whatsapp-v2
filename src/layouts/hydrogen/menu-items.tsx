@@ -7,6 +7,8 @@ import {
   PiCheckCircleDuotone,
   PiShieldCheckDuotone,
   PiLockKeyDuotone,
+  PiDeviceMobileDuotone,
+  PiEnvelopeDuotone,
 } from 'react-icons/pi';
 
 export const menuItems = [

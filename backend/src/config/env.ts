@@ -22,11 +22,20 @@ const envSchema = z.object({
   BCRYPT_ROUNDS: z.string().default('12'),
   MAX_LOGIN_ATTEMPTS: z.string().default('5'),
   LOCK_TIME: z.string().default('15'),
+
+  // Rate Limiting - Global
   RATE_LIMIT_WINDOW: z.string().default('15'),
   RATE_LIMIT_MAX: z.string().default('100'),
 
+  // Rate Limiting - Auth Endpoints (login/register)
+  AUTH_RATE_LIMIT_WINDOW: z.string().default('15'),
+  AUTH_RATE_LIMIT_MAX: z.string().default('20'),
+
   // CORS
   CORS_ORIGIN: z.string().default('http://localhost:3000'),
+
+  // WhatsApp Cloud API
+  WHATSAPP_API_VERSION: z.string().default('v21.0'),
 });
 
 export const validateEnv = () => {

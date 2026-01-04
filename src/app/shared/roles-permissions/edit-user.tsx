@@ -163,6 +163,7 @@ export default function EditUser({ user, onSuccess }: EditUserProps) {
                   onChange={onChange}
                   name={name}
                   label="Status"
+                  className="col-span-full"
                   error={errors?.isActive?.message}
                   getOptionValue={(option) => option.value}
                   displayValue={(selected: string) =>

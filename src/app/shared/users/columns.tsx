@@ -4,6 +4,7 @@ import { createColumnHelper } from '@tanstack/react-table';
 import { User } from '@/data/users-data';
 import { Badge, Text, ActionIcon, Tooltip, Avatar } from 'rizzui';
 import PencilIcon from '@core/components/icons/pencil';
+import { PiLockKeyOpenDuotone } from 'react-icons/pi';
 import DeletePopover from '@/components/delete-popover';
 
 const columnHelper = createColumnHelper<User>();
@@ -11,9 +12,11 @@ const columnHelper = createColumnHelper<User>();
 export const createUsersColumns = ({
   onEditUser,
   onDeleteUser,
+  onResetPassword,
 }: {
   onEditUser: (user: any) => void;
   onDeleteUser: (id: string) => void;
+  onResetPassword: (user: any) => void;
 }) => [
   columnHelper.accessor('name', {
     id: 'name',
@@ -61,16 +64,11 @@ export const createUsersColumns = ({
   }),
   columnHelper.display({
     id: 'actions',
-    size: 100,
+    size: 140,
     header: () => <div className="text-center">Actions</div>,
     cell: ({ row }) => (
       <div className="flex items-center justify-center gap-2">
-        <Tooltip
-          size="sm"
-          content="Edit User"
-          placement="top"
-          color="invert"
-        >
+        <Tooltip size="sm" content="Edit User" placement="top" color="invert">
           <ActionIcon
             size="sm"
             variant="outline"
@@ -78,6 +76,16 @@ export const createUsersColumns = ({
             onClick={() => onEditUser(row.original)}
           >
             <PencilIcon className="h-4 w-4" />
+          </ActionIcon>
+        </Tooltip>
+        <Tooltip size="sm" content="Reset Password" placement="top" color="invert">
+          <ActionIcon
+            size="sm"
+            variant="outline"
+            aria-label="Reset Password"
+            onClick={() => onResetPassword(row.original)}
+          >
+            <PiLockKeyOpenDuotone className="h-4 w-4" />
           </ActionIcon>
         </Tooltip>
         <DeletePopover

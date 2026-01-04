@@ -26,9 +26,9 @@ export const setTokens = (accessToken: string, refreshToken: string) => {
     localStorage.setItem('accessToken', accessToken);
     localStorage.setItem('refreshToken', refreshToken);
 
-    // Also set cookies for middleware authentication
-    document.cookie = `accessToken=${accessToken}; path=/; max-age=${15 * 60}`; // 15 minutes
-    document.cookie = `refreshToken=${refreshToken}; path=/; max-age=${7 * 24 * 60 * 60}`; // 7 days
+    // Also set cookies for middleware authentication with SameSite
+    document.cookie = `accessToken=${accessToken}; path=/; max-age=${15 * 60}; SameSite=Lax`; // 15 minutes
+    document.cookie = `refreshToken=${refreshToken}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`; // 7 days
   }
 };
 
@@ -121,7 +121,8 @@ async function refreshAccessToken(): Promise<string | null> {
         // Update only accessToken, keep existing refreshToken
         if (typeof window !== 'undefined') {
           localStorage.setItem('accessToken', accessToken);
-          document.cookie = `accessToken=${accessToken}; path=/; max-age=${15 * 60}`;
+          // Update cookie with SameSite attribute for better compatibility
+          document.cookie = `accessToken=${accessToken}; path=/; max-age=${15 * 60}; SameSite=Lax`;
         }
         return accessToken;
       }
@@ -276,6 +277,9 @@ export const usersApi = {
   update: (id: string, data: any) => apiClient.put<ApiResponse>(`/users/${id}`, data),
 
   delete: (id: string) => apiClient.delete<ApiResponse>(`/users/${id}`),
+
+  resetPassword: (id: string, newPassword: string) =>
+    apiClient.post<ApiResponse>(`/users/${id}/reset-password`, { newPassword }),
 };
 
 // Roles API endpoints
@@ -290,8 +294,8 @@ export const rolesApi = {
 
   delete: (id: string) => apiClient.delete<ApiResponse>(`/roles/${id}`),
 
-  assignPermissions: (id: string, permissionIds: string[]) =>
-    apiClient.post<ApiResponse>(`/roles/${id}/permissions`, { permissionIds }),
+  assignPermissions: (id: string, data: { permissionIds: string[] }) =>
+    apiClient.put<ApiResponse>(`/roles/${id}/permissions`, data),
 
   assignMenus: (id: string, menuIds: string[]) =>
     apiClient.post<ApiResponse>(`/roles/${id}/menus`, { menuIds }),
@@ -330,6 +334,83 @@ export const uploadApi = {
     formData.append('file', file);
     return apiClient.post<ApiResponse>('/upload/avatar', formData);
   },
+};
+
+// Phone Numbers API endpoints (WhatsApp)
+export const phoneNumbersApi = {
+  getAll: (params?: any) => apiClient.get<ApiResponse>('/phone-numbers', { params }),
+
+  getById: (id: string) => apiClient.get<ApiResponse>(`/phone-numbers/${id}`),
+
+  create: (data: {
+    phoneNumberId: string;
+    accessToken: string;
+    wabaId: string;
+    description?: string;
+  }) => apiClient.post<ApiResponse>('/phone-numbers', data),
+
+  update: (id: string, data: any) =>
+    apiClient.put<ApiResponse>(`/phone-numbers/${id}`, data),
+
+  delete: (id: string) => apiClient.delete<ApiResponse>(`/phone-numbers/${id}`),
+
+  sync: (id: string) => apiClient.post<ApiResponse>(`/phone-numbers/${id}/sync`, {}),
+
+  testConnection: (id: string) =>
+    apiClient.post<ApiResponse>(`/phone-numbers/${id}/test-connection`, {}),
+
+  // Verification endpoints
+  requestVerificationCode: (id: string, data: { codeMethod?: 'SMS' | 'VOICE'; language?: string }) =>
+    apiClient.post<ApiResponse>(`/phone-numbers/${id}/request-verification-code`, data),
+
+  verifyCode: (id: string, data: { code: string }) =>
+    apiClient.post<ApiResponse>(`/phone-numbers/${id}/verify-code`, data),
+
+  setTwoStepVerification: (id: string, data: { pin: string }) =>
+    apiClient.post<ApiResponse>(`/phone-numbers/${id}/set-two-step-verification`, data),
+
+  getDisplayNameStatus: (id: string) =>
+    apiClient.get<ApiResponse>(`/phone-numbers/${id}/display-name-status`),
+
+  updateBusinessProfile: (id: string, data: {
+    about?: string;
+    address?: string;
+    description?: string;
+    email?: string;
+    vertical?: string;
+    websites?: string[];
+  }) =>
+    apiClient.put<ApiResponse>(`/phone-numbers/${id}/business-profile`, data),
+
+  uploadProfilePicture: (id: string, file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return apiClient.post<ApiResponse>(`/phone-numbers/${id}/profile-picture`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  },
+
+  deleteProfilePicture: (id: string) =>
+    apiClient.delete<ApiResponse>(`/phone-numbers/${id}/profile-picture`),
+};
+
+// Templates API endpoints (WhatsApp Message Templates)
+export const templatesApi = {
+  getAll: (params?: any) => apiClient.get<ApiResponse>('/templates', { params }),
+
+  getById: (id: string, phoneNumberId: string) =>
+    apiClient.get<ApiResponse>(`/templates/${id}`, { params: { phoneNumberId } }),
+
+  create: (data: any) => apiClient.post<ApiResponse>('/templates', data),
+
+  update: (id: string, data: any) => apiClient.put<ApiResponse>(`/templates/${id}`, data),
+
+  delete: (id: string, phoneNumberId: string, templateName: string) =>
+    apiClient.delete<ApiResponse>(`/templates/${id}`, {
+      params: { phoneNumberId, templateName },
+    }),
 };
 
 export default apiClient;

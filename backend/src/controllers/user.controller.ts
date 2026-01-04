@@ -14,6 +14,7 @@ export class UserController {
     store: 'user-store',
     update: 'user-update',
     destroy: 'user-destroy',
+    resetPassword: 'user-update',
   };
 
   /**
@@ -318,6 +319,74 @@ export class UserController {
       );
     } catch (error: any) {
       console.error('Delete user error:', error);
+      return c.json(
+        {
+          success: false,
+          message: 'Terjadi kesalahan pada server.',
+        },
+        500
+      );
+    }
+  }
+
+  /**
+   * Reset user password
+   */
+  static async resetPassword(c: Context) {
+    try {
+      const { id } = c.req.param();
+      const body = await c.req.json();
+
+      if (!body.newPassword) {
+        return c.json(
+          {
+            success: false,
+            message: 'Password baru harus disediakan.',
+          },
+          400
+        );
+      }
+
+      if (body.newPassword.length < 8) {
+        return c.json(
+          {
+            success: false,
+            message: 'Password harus minimal 8 karakter.',
+          },
+          400
+        );
+      }
+
+      const userRepository = AppDataSource.getRepository(User);
+      const user = await userRepository.findOne({ where: { id } });
+
+      if (!user) {
+        return c.json(
+          {
+            success: false,
+            message: 'User tidak ditemukan.',
+          },
+          404
+        );
+      }
+
+      // Update password (akan di-hash otomatis oleh User entity @BeforeInsert/@BeforeUpdate)
+      user.password = body.newPassword;
+
+      // Reset login attempts jika ada
+      user.resetLoginAttempts();
+
+      await userRepository.save(user);
+
+      return c.json(
+        {
+          success: true,
+          message: 'Password berhasil direset.',
+        },
+        200
+      );
+    } catch (error: any) {
+      console.error('Reset password error:', error);
       return c.json(
         {
           success: false,
