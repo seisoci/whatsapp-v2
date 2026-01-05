@@ -120,8 +120,19 @@ export default function ChatPage() {
   // Load contacts when phone number selected
   useEffect(() => {
     if (selectedPhoneNumberId) {
+      console.log('[WS] Subscribing to phone number:', selectedPhoneNumberId);
       loadContacts();
-      chatWebSocket.subscribe(selectedPhoneNumberId);
+
+      // Wait for WebSocket to be connected before subscribing
+      const subscribeWhenReady = () => {
+        if (chatWebSocket.isConnected()) {
+          chatWebSocket.subscribe(selectedPhoneNumberId);
+        } else {
+          console.log('[WS] Not connected yet, waiting...');
+          setTimeout(subscribeWhenReady, 500);
+        }
+      };
+      subscribeWhenReady();
     }
   }, [selectedPhoneNumberId]);
 
@@ -134,21 +145,45 @@ export default function ChatPage() {
 
   // WebSocket event listeners
   useEffect(() => {
+    const handleConnectionSuccess = (event: any) => {
+      console.log('[WS] ✅ Connection established:', event);
+    };
+
+    const handleSubscribeSuccess = (event: any) => {
+      console.log('[WS] ✅ Subscribed to room:', event.data.phoneNumberId);
+    };
+
     const handleNewMessage = (event: any) => {
+      console.log('[WS] Received message:new event:', event);
+      console.log('[WS] Current state:', {
+        eventPhoneNumberId: event.phoneNumberId,
+        selectedPhoneNumberId,
+        eventContactId: event.data.contactId,
+        selectedContactId: selectedContact?.id,
+      });
+
       if (event.phoneNumberId === selectedPhoneNumberId) {
         // Reload contacts to update last message
+        console.log('[WS] Reloading contacts...');
         loadContacts();
-        
+
         // If this contact's conversation is open, add message
         if (event.data.contactId === selectedContact?.id) {
+          console.log('[WS] Adding message to current conversation:', event.data.message);
           setMessages(prev => [...prev, event.data.message]);
           scrollToBottom();
+        } else {
+          console.log('[WS] Message for different contact, not adding to current view');
         }
+      } else {
+        console.log('[WS] Message for different phone number, ignoring');
       }
     };
 
     const handleStatusUpdate = (event: any) => {
+      console.log('[WS] Received message:status event:', event);
       if (event.phoneNumberId === selectedPhoneNumberId && event.data.contactId === selectedContact?.id) {
+        console.log('[WS] Updating message status:', event.data);
         setMessages(prev =>
           prev.map(msg =>
             msg.id === event.data.messageId
@@ -159,10 +194,14 @@ export default function ChatPage() {
       }
     };
 
+    chatWebSocket.on('connection:success', handleConnectionSuccess);
+    chatWebSocket.on('subscribe:success', handleSubscribeSuccess);
     chatWebSocket.on('message:new', handleNewMessage);
     chatWebSocket.on('message:status', handleStatusUpdate);
 
     return () => {
+      chatWebSocket.off('connection:success', handleConnectionSuccess);
+      chatWebSocket.off('subscribe:success', handleSubscribeSuccess);
       chatWebSocket.off('message:new', handleNewMessage);
       chatWebSocket.off('message:status', handleStatusUpdate);
     };

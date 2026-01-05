@@ -11,7 +11,7 @@ import { verify } from 'jsonwebtoken';
 import { env } from '../config/env';
 
 interface WebSocketClient {
-  ws: ServerWebSocket<{ userId: string; rooms: Set<string> }>;
+  ws: ServerWebSocket<{ userId: string; rooms: Set<string>; clientId: string }>;
   userId: string;
   rooms: Set<string>; // phoneNumberIds user is subscribed to
 }
@@ -28,7 +28,7 @@ export class ChatWebSocketManager {
   /**
    * Handle new WebSocket connection
    */
-  handleConnection(ws: ServerWebSocket<{ userId: string; rooms: Set<string> }>, request: Request): void {
+  handleConnection(ws: ServerWebSocket<any>, request: Request): void {
     const url = new URL(request.url);
     const token = url.searchParams.get('token');
 
@@ -46,6 +46,7 @@ export class ChatWebSocketManager {
       ws.data = {
         userId: decoded.userId,
         rooms: new Set(),
+        clientId,
       };
 
       this.clients.set(clientId, {
@@ -62,19 +63,32 @@ export class ChatWebSocketManager {
         data: { userId: decoded.userId },
       }));
 
-      // Handle incoming messages
-      ws.addEventListener('message', (event) => {
-        this.handleMessage(clientId, event.data);
-      });
-
-      // Handle close
-      ws.addEventListener('close', () => {
-        this.handleDisconnect(clientId);
-      });
+      // Note: Event listeners are handled by Bun's WebSocket handler in index.ts
+      // calling onMessage and onClose methods below
 
     } catch (error: any) {
       console.error('❌ WebSocket auth failed:', error.message);
       ws.close(4002, 'Invalid token');
+    }
+  }
+
+  /**
+   * Handle incoming message from Bun handler
+   */
+  onMessage(ws: ServerWebSocket<any>, message: string | Buffer): void {
+    const clientId = ws.data?.clientId;
+    if (clientId) {
+      this.handleMessage(clientId, message);
+    }
+  }
+
+  /**
+   * Handle close event from Bun handler
+   */
+  onClose(ws: ServerWebSocket<any>): void {
+    const clientId = ws.data?.clientId;
+    if (clientId) {
+      this.handleDisconnect(clientId);
     }
   }
 

@@ -14,6 +14,8 @@ import phoneNumberRouter from './routes/phoneNumber.routes';
 import templateRouter from './routes/template.routes';
 import webhookRouter from './routes/webhook.routes';
 import chatRouter from './routes/chat.routes';
+import { handleWebSocketUpgrade } from './routes/websocket.routes';
+import { chatWebSocketManager } from './services/chat-websocket.service';
 import {
   securityHeaders,
   corsMiddleware,
@@ -40,6 +42,9 @@ app.get('/health', (c) => {
     timestamp: new Date().toISOString(),
   });
 });
+
+// WebSocket route
+app.get('/ws/chat', handleWebSocketUpgrade);
 
 // API routes
 app.route(`${env.API_PREFIX}/auth`, authRouter);
@@ -100,23 +105,47 @@ const startServer = async () => {
     // Start server with WebSocket support
     const port = parseInt(env.PORT);
 
-    Bun.serve({
-      fetch: app.fetch,
+    const server = Bun.serve({
+      fetch(req, server) {
+        // Store server reference in request for upgrade
+        const url = new URL(req.url);
+
+        // Handle WebSocket upgrade for /ws/chat
+        if (url.pathname === '/ws/chat' && req.headers.get('upgrade') === 'websocket') {
+          const upgraded = server.upgrade(req, {
+            data: { request: req },
+          });
+
+          if (upgraded) {
+            return undefined; // Connection upgraded
+          }
+
+          return new Response('WebSocket upgrade failed', { status: 500 });
+        }
+
+        // Regular HTTP requests go to Hono
+        return app.fetch(req, { server });
+      },
       port,
       websocket: {
         message: (ws, message) => {
-          // Handled by ChatWebSocketManager
+          // Delegate to ChatWebSocketManager
+          chatWebSocketManager.onMessage(ws, message);
         },
         open: (ws) => {
-          // Handled by ChatWebSocketManager
+          // Delegate to ChatWebSocketManager with the stored request
+          const request = ws.data?.request || new Request(`ws://localhost:${port}/ws/chat`);
+          chatWebSocketManager.handleConnection(ws, request);
         },
-        close: (ws) => {
-          // Handled by ChatWebSocketManager
+        close: (ws, code, reason) => {
+          // Close event is handled by listeners in ChatWebSocketManager
+          chatWebSocketManager.onClose(ws);
         },
       },
     });
 
     console.log(`🚀 Server is running on http://localhost:${port}`);
+    console.log(`🔌 WebSocket endpoint: ws://localhost:${port}/ws/chat`);
     console.log(`📝 API Documentation: http://localhost:${port}${env.API_PREFIX}`);
     console.log(`🌍 Environment: ${env.NODE_ENV}`);
     console.log('\nAvailable Services:');
@@ -126,6 +155,7 @@ const startServer = async () => {
     console.log(`  - Role Management: ${env.API_PREFIX}/roles`);
     console.log(`  - Permission Management: ${env.API_PREFIX}/permissions`);
     console.log(`  - Phone Numbers (WhatsApp): ${env.API_PREFIX}/phone-numbers`);
+    console.log(`  - Chat WebSocket: ws://localhost:${port}/ws/chat`);
     console.log(`  - Redis: ${process.env.REDIS_HOST}:${process.env.REDIS_PORT}`);
     console.log(`  - MinIO: ${process.env.MINIO_ENDPOINT}:${process.env.MINIO_PORT}`);
   } catch (error) {

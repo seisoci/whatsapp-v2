@@ -4,22 +4,28 @@
  */
 
 import { Context } from 'hono';
-import { chatWebSocketManager } from '../services/chat-websocket.service';
 
 export async function handleWebSocketUpgrade(c: Context) {
   // Get upgrade header
   const upgrade = c.req.header('upgrade');
-  
+
   if (upgrade !== 'websocket') {
     return c.json({ error: 'Expected WebSocket upgrade' }, 400);
   }
 
-  // Upgrade connection
-  const success = c.env?.server?.upgrade(c.req.raw);
+  // For Bun, we need to upgrade the connection
+  // The actual WebSocket handler will be called in Bun.serve config
+  const server = (c as any).env?.server || Bun;
+
+  const success = server.upgrade(c.req.raw, {
+    data: {
+      request: c.req.raw,
+    },
+  });
 
   if (!success) {
     return c.json({ error: 'WebSocket upgrade failed' }, 500);
   }
 
-  return undefined; // Connection will be handled by WebSocket manager
+  return undefined; // Connection upgraded successfully
 }

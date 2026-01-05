@@ -306,6 +306,7 @@ export class WhatsAppWebhookService {
     }
 
     // 📢 WEBSOCKET: Broadcast new message to all clients subscribed to this phone number
+    console.log(`[WS] Broadcasting message:new for contact ${contact.id} to room ${internalPhoneNumberId}`);
     chatWebSocketManager.broadcast(internalPhoneNumberId, {
       type: 'message:new',
       data: {
@@ -317,8 +318,9 @@ export class WhatsAppWebhookService {
           textBody: message.textBody,
           mediaUrl: message.mediaUrl,
           mediaCaption: message.mediaCaption,
+          mediaFilename: message.mediaFilename,
           direction: message.direction,
-          timestamp: message.timestamp,
+          timestamp: message.timestamp.toISOString(), // Convert to ISO string
           status: message.status,
         },
       },
