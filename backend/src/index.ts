@@ -12,6 +12,7 @@ import permissionRouter from './routes/permission.routes';
 import userRouter from './routes/user.routes';
 import phoneNumberRouter from './routes/phoneNumber.routes';
 import templateRouter from './routes/template.routes';
+import webhookRouter from './routes/webhook.routes';
 import {
   securityHeaders,
   corsMiddleware,
@@ -47,6 +48,8 @@ app.route(`${env.API_PREFIX}/permissions`, permissionRouter);
 app.route(`${env.API_PREFIX}/users`, userRouter);
 app.route(`${env.API_PREFIX}/phone-numbers`, phoneNumberRouter);
 app.route(`${env.API_PREFIX}/templates`, templateRouter);
+app.route(`${env.API_PREFIX}/webhooks`, webhookRouter);
+
 
 // 404 handler
 app.notFound((c) => {
