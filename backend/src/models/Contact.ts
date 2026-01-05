@@ -8,25 +8,37 @@ import {
   JoinColumn,
   Generated,
   Index,
+  Unique,
 } from 'typeorm';
 import { PhoneNumber } from './PhoneNumber';
 
 /**
  * Contact Model
  * Represents WhatsApp contacts/customers with 24-hour session window tracking
+ * Each contact is unique per WhatsApp Business Number (composite key: waId + phoneNumberId)
  */
 @Entity('contacts')
+@Unique(['waId', 'phoneNumberId']) // Composite unique constraint
 export class Contact {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
   // WhatsApp Identifiers
-  @Column({ name: 'wa_id', unique: true, length: 20 })
+  @Column({ name: 'wa_id', length: 20 })
   @Index()
   waId: string; // WhatsApp ID (phone number without +)
 
   @Column({ name: 'phone_number', length: 20 })
   phoneNumber: string; // Full phone number with country code
+
+  // Link to WhatsApp Business Number
+  @Column({ name: 'phone_number_id', type: 'uuid' })
+  @Index()
+  phoneNumberId: string;
+
+  @ManyToOne(() => PhoneNumber, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'phone_number_id' })
+  phoneNumber_: PhoneNumber;
 
   // Contact Profile Information
   @Column({ name: 'profile_name', type: 'varchar', length: 255, nullable: true })
@@ -34,14 +46,6 @@ export class Contact {
 
   @Column({ name: 'business_name', type: 'varchar', length: 255, nullable: true })
   businessName: string | null; // For business contacts
-
-  // Relationship with phone numbers (internal WA number)
-  @Column({ name: 'phone_number_id', type: 'uuid', nullable: true })
-  phoneNumberId: string | null;
-
-  @ManyToOne(() => PhoneNumber, { nullable: true, onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'phone_number_id' })
-  phoneNumber_: PhoneNumber | null;
 
   // Contact Status
   @Column({ name: 'is_business_account', default: false })
@@ -66,26 +70,25 @@ export class Contact {
   @Index()
   sessionExpiresAt: Date | null; // Timestamp when 24-hour window expires
 
-  // Computed columns for session tracking
-  @Column({
-    name: 'is_session_active',
-    type: 'boolean',
-    generatedType: 'STORED',
-    asExpression: 'session_expires_at IS NOT NULL AND session_expires_at > NOW()',
-    insert: false,
-    update: false,
-  })
-  isSessionActive: boolean;
+  /**
+   * Computed property: Check if session is currently active
+   * Computed at runtime instead of database generated column
+   */
+  get isSessionActive(): boolean {
+    if (!this.sessionExpiresAt) return false;
+    return this.sessionExpiresAt > new Date();
+  }
 
-  @Column({
-    name: 'session_remaining_seconds',
-    type: 'integer',
-    generatedType: 'STORED',
-    asExpression: `CASE WHEN session_expires_at > NOW() THEN EXTRACT(EPOCH FROM (session_expires_at - NOW()))::INTEGER ELSE 0 END`,
-    insert: false,
-    update: false,
-  })
-  sessionRemainingSeconds: number;
+  /**
+   * Computed property: Get remaining seconds in session
+   * Computed at runtime instead of database generated column
+   */
+  get sessionRemainingSeconds(): number {
+    if (!this.sessionExpiresAt) return 0;
+    const now = new Date();
+    if (this.sessionExpiresAt <= now) return 0;
+    return Math.floor((this.sessionExpiresAt.getTime() - now.getTime()) / 1000);
+  }
 
   // Additional Fields
   @Column({ type: 'jsonb', default: '[]' })

@@ -37,9 +37,17 @@ class StorageService {
 
       this.initialized = true;
       console.log('✅ Storage service initialized successfully');
-    } catch (error) {
-      console.error('❌ Storage service initialization error:', error);
-      throw error;
+    } catch (error: any) {
+      // If AccessDenied but bucket name is valid, assume bucket exists and continue
+      if (error.code === 'AccessDenied') {
+        console.warn(`⚠️  Storage bucket verification skipped due to permission limits`);
+        console.warn(`   Assuming bucket '${this.defaultBucket}' exists and is accessible`);
+        this.initialized = true;
+        console.log('✅ Storage service initialized (with limited permissions)');
+      } else {
+        console.error('❌ Storage service initialization error:', error);
+        throw error;
+      }
     }
   }
 

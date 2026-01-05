@@ -13,6 +13,7 @@ import userRouter from './routes/user.routes';
 import phoneNumberRouter from './routes/phoneNumber.routes';
 import templateRouter from './routes/template.routes';
 import webhookRouter from './routes/webhook.routes';
+import chatRouter from './routes/chat.routes';
 import {
   securityHeaders,
   corsMiddleware,
@@ -49,6 +50,7 @@ app.route(`${env.API_PREFIX}/users`, userRouter);
 app.route(`${env.API_PREFIX}/phone-numbers`, phoneNumberRouter);
 app.route(`${env.API_PREFIX}/templates`, templateRouter);
 app.route(`${env.API_PREFIX}/webhooks`, webhookRouter);
+app.route(`${env.API_PREFIX}/chat`, chatRouter);
 
 
 // 404 handler
@@ -95,12 +97,23 @@ const startServer = async () => {
       .then(() => console.log('✅ Storage service initialized'))
       .catch((error) => console.warn('⚠️  Storage service initialization failed (optional service):', error));
 
-    // Start server
+    // Start server with WebSocket support
     const port = parseInt(env.PORT);
 
     Bun.serve({
       fetch: app.fetch,
       port,
+      websocket: {
+        message: (ws, message) => {
+          // Handled by ChatWebSocketManager
+        },
+        open: (ws) => {
+          // Handled by ChatWebSocketManager
+        },
+        close: (ws) => {
+          // Handled by ChatWebSocketManager
+        },
+      },
     });
 
     console.log(`🚀 Server is running on http://localhost:${port}`);

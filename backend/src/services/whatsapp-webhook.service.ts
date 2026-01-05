@@ -11,6 +11,7 @@ import { MessageStatusUpdate } from '../models/MessageStatusUpdate';
 import { PhoneNumber } from '../models/PhoneNumber';
 import { WhatsAppMessagingService } from './whatsapp-messaging.service';
 import { WhatsAppMediaService } from './whatsapp-media.service';
+import { chatWebSocketManager } from './chat-websocket.service';
 
 interface WhatsAppWebhookPayload {
   object: string;
@@ -75,7 +76,8 @@ export class WhatsAppWebhookService {
             // Process messages
             if (value.messages) {
               for (const message of value.messages) {
-                await this.processIncomingMessage(message, value.metadata, webhookLog.id);
+            // Pass contacts array to get profile info (optional)
+                await this.processIncomingMessage(message, value.metadata, value.contacts || [], webhookLog.id);
               }
             }
 
@@ -89,21 +91,23 @@ export class WhatsAppWebhookService {
         }
       }
 
-      // Mark as success
-      webhookLog.processingStatus = 'success';
-      webhookLog.processedAt = new Date();
-      webhookLog.processingDurationMs = Date.now() - startTime;
-      await webhookLogRepo.save(webhookLog);
+      // Mark as success (use update to avoid overwriting fields set in processIncomingMessage/processStatusUpdate)
+      await webhookLogRepo.update(webhookLog.id, {
+        processingStatus: 'success',
+        processedAt: new Date(),
+        processingDurationMs: Date.now() - startTime,
+      });
 
     } catch (error: any) {
-      // Mark as failed
-      webhookLog.processingStatus = 'failed';
-      webhookLog.processedAt = new Date();
-      webhookLog.processingDurationMs = Date.now() - startTime;
-      webhookLog.errorMessage = error.message;
-      webhookLog.errorStack = error.stack;
-      await webhookLogRepo.save(webhookLog);
-      
+      // Mark as failed (use update to avoid overwriting fields set in processIncomingMessage/processStatusUpdate)
+      await webhookLogRepo.update(webhookLog.id, {
+        processingStatus: 'failed',
+        processedAt: new Date(),
+        processingDurationMs: Date.now() - startTime,
+        errorMessage: error.message,
+        errorStack: error.stack,
+      });
+
       throw error;
     }
   }
@@ -114,22 +118,57 @@ export class WhatsAppWebhookService {
   private static async processIncomingMessage(
     messageData: any,
     metadata: any,
+    contacts: any[], // WhatsApp sends contacts array with profile info
     webhookLogId: string
   ): Promise<void> {
     const contactRepo = AppDataSource.getRepository(Contact);
     const messageRepo = AppDataSource.getRepository(Message);
     const webhookLogRepo = AppDataSource.getRepository(WebhookLog);
+    const phoneNumberRepo = AppDataSource.getRepository(PhoneNumber);
+
+    // Get WhatsApp phone_number_id from metadata
+    const whatsappPhoneNumberId = metadata.phone_number_id;
+    
+    // Lookup our PhoneNumber entity by WhatsApp's phone_number_id
+    const phoneNumber = await phoneNumberRepo.findOne({
+      where: { phoneNumberId: whatsappPhoneNumberId }
+    });
+
+    if (!phoneNumber) {
+      console.warn(`Phone number not found for WhatsApp ID: ${whatsappPhoneNumberId}`);
+      throw new Error(`Phone number ${whatsappPhoneNumberId} not registered in system`);
+    }
+
+    // Use our internal UUID
+    const internalPhoneNumberId = phoneNumber.id;
+
+    // Extract contact info from contacts array (not from messageData.profile)
+    const waId = messageData.from;
+    const contactInfo = contacts?.find((c: any) => c.wa_id === waId);
+    const profileName = contactInfo?.profile?.name || null;
 
     // Get or create contact
-    let contact = await contactRepo.findOne({ where: { waId: messageData.from } });
+    let contact = await contactRepo.findOne({ 
+      where: { 
+        waId: waId, 
+        phoneNumberId: internalPhoneNumberId 
+      } 
+    });
     
     if (!contact) {
       contact = contactRepo.create({
-        waId: messageData.from,
+        waId: waId,
         phoneNumber: messageData.from,
-        profileName: messageData.from, // Will be updated if we get profile info
+        phoneNumberId: internalPhoneNumberId,
+        profileName: profileName || messageData.from,
       });
       await contactRepo.save(contact);
+    } else {
+      // Update profile name if we have new info
+      if (profileName && contact.profileName !== profileName) {
+        contact.profileName = profileName;
+        await contactRepo.save(contact);
+      }
     }
 
     // Update session tracking (customer sent message)
@@ -139,12 +178,12 @@ export class WhatsAppWebhookService {
     // Store message
     const message = messageRepo.create({
       wamid: messageData.id,
-      phoneNumberId: metadata.phone_number_id,
+      phoneNumberId: internalPhoneNumberId,
       contactId: contact.id,
       direction: 'incoming',
       messageType: messageData.type,
       fromNumber: messageData.from,
-      toNumber: metadata.phone_number_id,
+      toNumber: metadata.display_phone_number,
       timestamp: messageTimestamp,
       rawPayload: messageData,
     });
@@ -233,25 +272,91 @@ export class WhatsAppWebhookService {
 
     await messageRepo.save(message);
 
-    // Update webhook log with message reference
-    await webhookLogRepo.update(webhookLogId, {
+    // Update webhook log with message reference (use save instead of update for reliability)
+    console.log('[DEBUG] Final webhook log update:', {
+      webhookLogId,
+      phoneNumberId: internalPhoneNumberId,
       messageId: message.id,
       contactId: contact.id,
       wamid: message.wamid,
       waId: contact.waId,
+    });
+
+    // Load the webhook log entity and update it properly
+    const webhookLog = await webhookLogRepo.findOne({ where: { id: webhookLogId } });
+    if (webhookLog) {
+      webhookLog.phoneNumberId = internalPhoneNumberId;
+      webhookLog.messageId = message.id;
+      webhookLog.contactId = contact.id;
+      webhookLog.wamid = message.wamid;
+      webhookLog.waId = contact.waId;
+
+      await webhookLogRepo.save(webhookLog);
+
+      console.log('[DEBUG] Webhook log saved successfully:', {
+        id: webhookLog.id,
+        phoneNumberId: webhookLog.phoneNumberId,
+        messageId: webhookLog.messageId,
+        contactId: webhookLog.contactId,
+        wamid: webhookLog.wamid,
+        waId: webhookLog.waId,
+      });
+    } else {
+      console.error('[ERROR] Webhook log not found for update:', webhookLogId);
+    }
+
+    // 📢 WEBSOCKET: Broadcast new message to all clients subscribed to this phone number
+    chatWebSocketManager.broadcast(internalPhoneNumberId, {
+      type: 'message:new',
+      data: {
+        contactId: contact.id,
+        message: {
+          id: message.id,
+          wamid: message.wamid,
+          messageType: message.messageType,
+          textBody: message.textBody,
+          mediaUrl: message.mediaUrl,
+          mediaCaption: message.mediaCaption,
+          direction: message.direction,
+          timestamp: message.timestamp,
+          status: message.status,
+        },
+      },
     });
   }
 
   /**
    * Process status update
    */
-  private static async processStatusUpdate(statusData: any, webhookLogId: string): Promise<void> {
+  private static async processStatusUpdate(
+    statusData: any,
+    webhookLogId: string
+  ): Promise<void> {
     const messageRepo = AppDataSource.getRepository(Message);
     const statusUpdateRepo = AppDataSource.getRepository(MessageStatusUpdate);
     const webhookLogRepo = AppDataSource.getRepository(WebhookLog);
+    const phoneNumberRepo = AppDataSource.getRepository(PhoneNumber);
 
-    // Find message by wamid
-    const message = await messageRepo.findOne({ where: { wamid: statusData.id } });
+    // Get WhatsApp phone_number_id from metadata (if available in status)
+    // Status updates don't always have metadata, so we'll need to lookup from message
+    const whatsappPhoneNumberId = statusData.metadata?.phone_number_id;
+    
+    let internalPhoneNumberId: string | undefined;
+    
+    if (whatsappPhoneNumberId) {
+      const phoneNumber = await phoneNumberRepo.findOne({
+        where: { phoneNumberId: whatsappPhoneNumberId }
+      });
+      
+      if (phoneNumber) {
+        internalPhoneNumberId = phoneNumber.id;
+      }
+    }
+
+    // Find the message by WAMID
+    const message = await messageRepo.findOne({
+      where: { wamid: statusData.id },
+    });
     
     if (!message) {
       console.warn(`Message not found for status update: ${statusData.id}`);
@@ -281,13 +386,49 @@ export class WhatsAppWebhookService {
 
     await statusUpdateRepo.save(statusUpdate);
 
-    // Update webhook log
-    await webhookLogRepo.update(webhookLogId, {
-      messageId: message.id,
-      wamid: statusData.id,
-      statusEventType: statusData.status,
-      statusTimestamp,
-    });
+    console.log(`Status updated for message ${message.wamid}: ${statusData.status}`);
+
+    // Update webhook log with status information (use save instead of update for reliability)
+    const webhookLog = await webhookLogRepo.findOne({ where: { id: webhookLogId } });
+    if (webhookLog) {
+      webhookLog.phoneNumberId = internalPhoneNumberId || message.phoneNumberId;
+      webhookLog.messageId = message.id;
+      webhookLog.contactId = message.contactId;
+      webhookLog.wamid = statusData.id;
+      webhookLog.statusEventType = statusData.status;
+      webhookLog.statusTimestamp = statusTimestamp;
+
+      await webhookLogRepo.save(webhookLog);
+
+      console.log('[DEBUG] Webhook log updated for status:', {
+        id: webhookLog.id,
+        messageId: webhookLog.messageId,
+        contactId: webhookLog.contactId,
+        wamid: webhookLog.wamid,
+        statusEventType: webhookLog.statusEventType,
+        statusTimestamp: webhookLog.statusTimestamp,
+      });
+    }
+
+    // 📢 WEBSOCKET: Broadcast status change to all clients subscribed to this phone number
+    // To get phoneNumberId, we need to load the contact relation or fetch it.
+    // Assuming message.contact is loaded or can be loaded.
+    // For now, we'll fetch the contact if not already loaded.
+    const contactRepo = AppDataSource.getRepository(Contact);
+    const contact = await contactRepo.findOne({ where: { id: message.contactId } });
+
+    if (contact?.phoneNumberId) {
+      chatWebSocketManager.broadcast(contact.phoneNumberId, {
+        type: 'message:status',
+        data: {
+          contactId: message.contactId,
+          messageId: message.id,
+          wamid: message.wamid,
+          status: statusData.status,
+          timestamp: statusData.timestamp ? new Date(parseInt(statusData.timestamp) * 1000) : new Date(),
+        },
+      });
+    }
   }
 
   /**

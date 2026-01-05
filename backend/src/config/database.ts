@@ -5,6 +5,10 @@ import { Role } from '../models/Role';
 import { Permission } from '../models/Permission';
 import { MenuManager } from '../models/MenuManager';
 import { PhoneNumber } from '../models/PhoneNumber';
+import { Contact } from '../models/Contact';
+import { Message } from '../models/Message';
+import { MessageStatusUpdate } from '../models/MessageStatusUpdate';
+import { WebhookLog } from '../models/WebhookLog';
 
 export const AppDataSource = new DataSource({
   type: 'postgres',
@@ -15,7 +19,7 @@ export const AppDataSource = new DataSource({
   database: process.env.DB_DATABASE || 'auth_db',
   synchronize: false, // Disable auto-sync, use migrations instead
   logging: process.env.NODE_ENV === 'development',
-  entities: [User, RefreshToken, Role, Permission, MenuManager, PhoneNumber],
+  entities: [User, RefreshToken, Role, Permission, MenuManager, PhoneNumber, Contact, Message, MessageStatusUpdate, WebhookLog],
   migrations: [__dirname + '/../migrations/**/*.ts'],
   migrationsRun: false, // Run migrations manually in index.ts
   subscribers: [],

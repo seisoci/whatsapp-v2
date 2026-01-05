@@ -14,7 +14,6 @@ import {
   lithiumMenuItems,
 } from '@/layouts/lithium/lithium-menu-items';
 import { usePathname } from 'next/navigation';
-import { LithiumMenuIconType, lithiumMenuIcons } from './lithium-menu-icons';
 import { useActivePathname } from './use-pathname-active';
 import { useDirection } from '@core/hooks/use-direction';
 import { NavMenuDirection } from '../nav-menu/nav-menu-types';
@@ -121,7 +120,7 @@ export const EnhancedMenu = forwardRef(
       >
         <div className="col-span-3 flex w-[200px] flex-col gap-2 pe-0">
           {items.map((item, index) => {
-            const Icon = lithiumMenuIcons?.[item.icon as LithiumMenuIconType];
+            const Icon = item.icon;
             return (
               <button
                 role="div"
@@ -184,7 +183,7 @@ export function LinkMenu({
   return (
     <ul className={cn('w-full', className, 'bg-gray-0 dark:bg-gray-100')}>
       {items.map((item, index) => {
-        const Icon = lithiumMenuIcons?.[item.icon as LithiumMenuIconType];
+        const Icon = item.icon;
         const isActive = item.href === pathname;
         return (
           <li

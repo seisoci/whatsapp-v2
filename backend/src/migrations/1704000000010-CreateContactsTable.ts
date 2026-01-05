@@ -74,18 +74,6 @@ export class CreateContactsTable1704000000010 implements MigrationInterface {
             isNullable: true,
           },
           {
-            name: 'is_session_active',
-            type: 'boolean',
-            generatedType: 'STORED',
-            asExpression: 'session_expires_at IS NOT NULL AND session_expires_at > NOW()',
-          },
-          {
-            name: 'session_remaining_seconds',
-            type: 'integer',
-            generatedType: 'STORED',
-            asExpression: `CASE WHEN session_expires_at > NOW() THEN EXTRACT(EPOCH FROM (session_expires_at - NOW()))::INTEGER ELSE 0 END`,
-          },
-          {
             name: 'tags',
             type: 'jsonb',
             default: "'[]'",
@@ -114,6 +102,11 @@ export class CreateContactsTable1704000000010 implements MigrationInterface {
       }),
       true
     );
+
+    // Note: Session tracking (is_session_active, session_remaining_seconds) 
+    // will be computed in application layer instead of database generated columns
+    // because PostgreSQL generated columns require IMMUTABLE expressions,
+    // but NOW() is VOLATILE (non-deterministic)
 
     // Create indexes
     await queryRunner.createIndex(
