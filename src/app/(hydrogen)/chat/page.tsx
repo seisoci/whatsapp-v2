@@ -38,6 +38,9 @@ import {
   PiPause,
   PiArrowsOut,
   PiHeadset,
+  PiPaperclipHorizontal,
+  PiMicrophone,
+  PiVideoCamera,
 } from 'react-icons/pi';
 import React, { useState, useRef, useEffect } from 'react';
 import Lightbox from "yet-another-react-lightbox";
@@ -45,6 +48,7 @@ import "yet-another-react-lightbox/styles.css";
 import Video from "yet-another-react-lightbox/plugins/video";
 import Zoom from "yet-another-react-lightbox/plugins/zoom";
 import { getChatContacts, getChatMessages, sendChatMessage, markConversationAsRead, type Contact, type Message } from '@/lib/api/chat';
+import { uploadApi } from '@/lib/api-client';
 import { chatWebSocket } from '@/lib/websocket/chat-websocket';
 import { getAllPhoneNumbers } from '@/lib/api/phone-numbers';
 import { formatDistanceToNow, format, differenceInCalendarDays } from 'date-fns';
@@ -104,10 +108,24 @@ export default function ChatPage() {
   const debouncedSearchQuery = useDebounce(searchQuery, 500);
   const [contactPage, setContactPage] = useState(1);
   const [hasMoreContacts, setHasMoreContacts] = useState(true);
+  
+  // Attachment state
+  const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
+  const [pendingAttachment, setPendingAttachment] = useState<{
+    file: File;
+    preview?: string;
+    type: 'image' | 'video' | 'document' | 'audio';
+  } | null>(null);
+  const [uploadingAttachment, setUploadingAttachment] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
 
   // Refs
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
+  const audioInputRef = useRef<HTMLInputElement>(null);
+  const documentInputRef = useRef<HTMLInputElement>(null);
+  const attachmentMenuRef = useRef<HTMLDivElement>(null);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
   const quickReplyRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -497,26 +515,36 @@ export default function ChatPage() {
   };
 
   const handleSendMessage = async () => {
-    if (!messageInput.trim() || !selectedContact || sending) return;
+    // Allow sending if there's text OR an attachment
+    if ((!messageInput.trim() && !pendingAttachment) || !selectedContact || sending) return;
 
+    const hasAttachment = !!pendingAttachment;
+    const messageText = messageInput.trim();
+    
+    // Determine message type
+    const messageType = hasAttachment ? pendingAttachment.type : 'text';
+    
     const optimisticMessage = {
       id: `temp-${Date.now()}`, // Temporary ID
       wamid: null,
       contactId: selectedContact.id,
-      messageType: 'text',
-      textBody: messageInput.trim(),
-      mediaUrl: null,
-      mediaCaption: null,
-      mediaFilename: null,
-      mediaMimeType: null,
+      messageType: messageType,
+      textBody: hasAttachment ? (messageText || null) : messageText, // Caption for media or text body
+      mediaUrl: pendingAttachment?.preview || null,
+      mediaCaption: hasAttachment ? messageText : null,
+      mediaFilename: pendingAttachment?.file?.name || null,
+      mediaMimeType: pendingAttachment?.file?.type || null,
       direction: 'outgoing' as const,
       timestamp: new Date().toISOString(),
       status: 'pending',
       readAt: null,
     };
 
-    const messageToSend = messageInput.trim();
+    const messageToSend = messageText;
+    const attachmentToSend = pendingAttachment;
+    
     setMessageInput(''); // Clear input immediately
+    setPendingAttachment(null); // Clear attachment
     setMessages(prev => [...prev, optimisticMessage]); // Add to UI optimistically
     
     // Update contact list order: Move active contact to top and update last message
@@ -524,13 +552,17 @@ export default function ChatPage() {
       const contactIndex = prev.findIndex(c => c.id === selectedContact.id);
       if (contactIndex === -1) return prev;
       
+      const lastMessageText = hasAttachment 
+        ? (messageToSend ? `📎 ${messageToSend}` : `📎 ${attachmentToSend?.type}`)
+        : messageToSend;
+      
       const updatedContact = { 
         ...prev[contactIndex], 
         lastMessage: {
           ...prev[contactIndex].lastMessage,
-          textBody: messageToSend,
+          textBody: lastMessageText,
           timestamp: optimisticMessage.timestamp,
-          status: 'pending' // show pending status in list too if needed
+          status: 'pending'
         }
       };
       
@@ -545,21 +577,66 @@ export default function ChatPage() {
     }
 
     setSending(true);
+    setUploadingAttachment(hasAttachment);
+    
     try {
-      const result = await sendChatMessage({
-        contactId: selectedContact.id,
-        phoneNumberId: selectedPhoneNumberId,
-        type: 'text',
-        text: {
-          body: messageToSend,
-        },
-      });
+      let mediaUrl: string | null = null;
+      let mediaFilename: string | null = null;
 
-      // Update optimistic message with real data (keep temp ID until it's replaced by DB data)
+      // Step 1: Upload attachment if present
+      if (attachmentToSend) {
+        setUploadingAttachment(true);
+        try {
+          const uploadResult = await uploadApi.uploadFile(attachmentToSend.file);
+          if (!uploadResult.success || !uploadResult.data) {
+            throw new Error('Upload failed');
+          }
+          mediaUrl = uploadResult.data.fileUrl || uploadResult.data.url;
+          mediaFilename = uploadResult.data.fileName || attachmentToSend.file.name;
+        } finally {
+          setUploadingAttachment(false);
+        }
+      }
+
+      // Step 2: Send message via chat API
+      let sendPayload: any;
+      
+      if (hasAttachment && attachmentToSend) {
+        // Send media message - payload must match backend sendMessageSchema
+        sendPayload = {
+          contactId: selectedContact.id,
+          phoneNumberId: selectedPhoneNumberId,
+          type: attachmentToSend.type,
+          media: {
+            mediaUrl: mediaUrl,
+            caption: messageToSend || undefined,
+            filename: attachmentToSend.type === 'document' ? mediaFilename : undefined,
+          },
+        };
+      } else {
+        // Send text message
+        sendPayload = {
+          contactId: selectedContact.id,
+          phoneNumberId: selectedPhoneNumberId,
+          type: 'text',
+          text: {
+            body: messageToSend,
+          },
+        };
+      }
+
+      const result = await sendChatMessage(sendPayload);
+
+      // Update optimistic message with real data
       setMessages(prev => 
         prev.map(msg => 
           msg.id === optimisticMessage.id 
-            ? { ...msg, wamid: result.data?.messages?.[0]?.id || null, status: 'sent' }
+            ? { 
+                ...msg, 
+                wamid: result.data?.messages?.[0]?.id || null, 
+                status: 'sent',
+                mediaUrl: mediaUrl || msg.mediaUrl 
+              }
             : msg
         )
       );
@@ -577,9 +654,10 @@ export default function ChatPage() {
         )
       );
       
-      alert(error.response?.data?.message || 'Failed to send message');
+      alert(error.response?.data?.message || error.message || 'Failed to send message');
     } finally {
       setSending(false);
+      setUploadingAttachment(false);
     }
   };
 
@@ -632,16 +710,130 @@ export default function ChatPage() {
       if (quickReplyRef.current && !quickReplyRef.current.contains(event.target as Node)) {
         setShowQuickReplies(false);
       }
+      if (attachmentMenuRef.current && !attachmentMenuRef.current.contains(event.target as Node)) {
+        setShowAttachmentMenu(false);
+      }
     };
 
-    if (showEmojiPicker || showQuickReplies) {
+    if (showEmojiPicker || showQuickReplies || showAttachmentMenu) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showEmojiPicker, showQuickReplies]);
+  }, [showEmojiPicker, showQuickReplies, showAttachmentMenu]);
+
+  // Handle file selection for attachments
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'video' | 'document' | 'audio') => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Create preview for images
+    let preview: string | undefined;
+    if (type === 'image' && file.type.startsWith('image/')) {
+      preview = URL.createObjectURL(file);
+    }
+
+    setPendingAttachment({ file, preview, type });
+    setShowAttachmentMenu(false);
+    
+    // Clear input value to allow re-selecting same file
+    e.target.value = '';
+  };
+
+  // Handle paste event for images
+  const handlePaste = (e: React.ClipboardEvent) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+
+    for (const item of items) {
+      if (item.type.startsWith('image/')) {
+        e.preventDefault();
+        const file = item.getAsFile();
+        if (file) {
+          const preview = URL.createObjectURL(file);
+          setPendingAttachment({ file, preview, type: 'image' });
+        }
+        break;
+      }
+    }
+  };
+
+  // Cancel pending attachment
+  const cancelAttachment = () => {
+    if (pendingAttachment?.preview) {
+      URL.revokeObjectURL(pendingAttachment.preview);
+    }
+    setPendingAttachment(null);
+  };
+
+  // Drag and drop handlers
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (selectedContact && !sending) {
+      setIsDragging(true);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Only set dragging to false if we're leaving the drop zone entirely
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX;
+    const y = e.clientY;
+    if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+      setIsDragging(false);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    if (!selectedContact || sending) return;
+
+    const files = e.dataTransfer?.files;
+    if (!files || files.length === 0) return;
+
+    const file = files[0]; // Only handle first file
+    const mimeType = file.type;
+
+    // Determine file type
+    let type: 'image' | 'video' | 'document' | 'audio';
+    if (mimeType.startsWith('image/')) {
+      type = 'image';
+    } else if (mimeType.startsWith('video/')) {
+      type = 'video';
+    } else if (mimeType.startsWith('audio/')) {
+      type = 'audio';
+    } else {
+      type = 'document';
+    }
+
+    // Create preview for images
+    let preview: string | undefined;
+    if (type === 'image') {
+      preview = URL.createObjectURL(file);
+    }
+
+    setPendingAttachment({ file, preview, type });
+  };
+
+  // Toggle attachment menu
+  const toggleAttachmentMenu = () => {
+    setShowAttachmentMenu(!showAttachmentMenu);
+    setShowEmojiPicker(false);
+    setShowQuickReplies(false);
+  };
 
   // ESC key handler to exit chat room (like WhatsApp)
   useEffect(() => {
@@ -888,7 +1080,23 @@ export default function ChatPage() {
             }`}
           >
             {selectedContact ? (
-              <div className="flex h-full w-full flex-col">
+              <div 
+                className="flex h-full w-full flex-col relative"
+                onDragEnter={handleDragEnter}
+                onDragLeave={handleDragLeave}
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
+              >
+                {/* Drop Zone Overlay */}
+                {isDragging && (
+                  <div className="absolute inset-0 z-50 flex items-center justify-center bg-primary/20 backdrop-blur-sm border-4 border-dashed border-primary rounded-lg">
+                    <div className="text-center">
+                      <PiPaperclipHorizontal className="h-16 w-16 mx-auto text-primary mb-2" />
+                      <p className="text-lg font-semibold text-primary">Drop file here</p>
+                      <p className="text-sm text-gray-600">Image, Video, Audio, or Document</p>
+                    </div>
+                  </div>
+                )}
                 {/* Chat Header */}
                 <div className="flex items-center justify-between border-b border-gray-200 p-4 flex-shrink-0 bg-white">
                   <div className="flex items-center gap-3">
@@ -985,12 +1193,35 @@ export default function ChatPage() {
                                       href={msg.mediaUrl}
                                       target="_blank"
                                       rel="noopener noreferrer"
-                                      className="text-blue-600 hover:underline mb-1 block"
+                                      className={`flex items-center gap-3 p-3 rounded-lg mb-2 transition-colors ${
+                                        isOwn 
+                                          ? 'bg-blue-400/30 hover:bg-blue-400/40' 
+                                          : 'bg-gray-200/80 hover:bg-gray-300/80'
+                                      }`}
                                     >
-                                      📄 {msg.mediaFilename || 'Document'}
+                                      <div className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center ${
+                                        isOwn ? 'bg-blue-300/50' : 'bg-gray-300'
+                                      }`}>
+                                        <PiFileText className="w-5 h-5 text-gray-700" />
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                        <p className={`text-sm font-medium truncate ${
+                                          isOwn ? 'text-white' : 'text-gray-800'
+                                        }`}>
+                                          {msg.mediaFilename || 'Document'}
+                                        </p>
+                                        <p className={`text-xs ${isOwn ? 'text-blue-100' : 'text-gray-500'}`}>
+                                          PDF • Tap to open
+                                        </p>
+                                      </div>
+                                      <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
+                                        isOwn ? 'bg-blue-300/50' : 'bg-gray-300'
+                                      }`}>
+                                        <PiDownload className="w-4 h-4 text-gray-700" />
+                                      </div>
                                     </a>
                                   )}
-                                  {msg.mediaCaption && <p className="text-sm mb-1 whitespace-pre-wrap">{msg.mediaCaption}</p>}
+                                  {(msg.mediaCaption || msg.textBody) && <p className="text-sm mb-1 whitespace-pre-wrap">{msg.mediaCaption || msg.textBody}</p>}
                                   
                                   {/* Timestamp & Status for Media */}
                                   <div className="flex justify-end items-center gap-1 mt-1">
@@ -1030,12 +1261,111 @@ export default function ChatPage() {
                     </div>
                   )}
 
+                  {/* Attachment Preview */}
+                  {pendingAttachment && (
+                    <div className="mb-3 p-3 bg-gray-50 border border-gray-200 rounded-lg flex items-center gap-3">
+                      {pendingAttachment.preview ? (
+                        <img 
+                          src={pendingAttachment.preview} 
+                          alt="Preview" 
+                          className="w-16 h-16 object-cover rounded"
+                        />
+                      ) : (
+                        <div className="w-16 h-16 bg-gray-200 rounded flex items-center justify-center">
+                          {pendingAttachment.type === 'video' && <PiVideoCamera className="h-6 w-6 text-gray-500" />}
+                          {pendingAttachment.type === 'audio' && <PiMicrophone className="h-6 w-6 text-gray-500" />}
+                          {pendingAttachment.type === 'document' && <PiFileText className="h-6 w-6 text-gray-500" />}
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{pendingAttachment.file.name}</p>
+                        <p className="text-xs text-gray-500">
+                          {(pendingAttachment.file.size / 1024).toFixed(1)} KB
+                        </p>
+                      </div>
+                      <ActionIcon variant="text" onClick={cancelAttachment}>
+                        <PiX className="h-5 w-5" />
+                      </ActionIcon>
+                    </div>
+                  )}
+
+                  {/* Hidden file inputs */}
+                  <input
+                    ref={imageInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => handleFileSelect(e, 'image')}
+                  />
+                  <input
+                    ref={videoInputRef}
+                    type="file"
+                    accept="video/*"
+                    className="hidden"
+                    onChange={(e) => handleFileSelect(e, 'video')}
+                  />
+                  <input
+                    ref={audioInputRef}
+                    type="file"
+                    accept="audio/*"
+                    className="hidden"
+                    onChange={(e) => handleFileSelect(e, 'audio')}
+                  />
+                  <input
+                    ref={documentInputRef}
+                    type="file"
+                    accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"
+                    className="hidden"
+                    onChange={(e) => handleFileSelect(e, 'document')}
+                  />
+
                   <div className="flex items-end gap-2">
+                    {/* Attachment Button */}
+                    <div className="relative" ref={attachmentMenuRef}>
+                      <ActionIcon
+                        variant="text"
+                        onClick={toggleAttachmentMenu}
+                        disabled={!selectedContact.isSessionActive}
+                      >
+                        <PiPaperclipHorizontal className="h-6 w-6" />
+                      </ActionIcon>
+                      
+                      {showAttachmentMenu && (
+                        <div className="absolute bottom-full left-0 mb-2 w-40 bg-white border border-gray-200 rounded-lg shadow-lg py-1">
+                          <button
+                            onClick={() => imageInputRef.current?.click()}
+                            className="w-full px-4 py-2 text-sm text-left hover:bg-gray-100 flex items-center gap-2"
+                          >
+                            <PiImage className="h-4 w-4" /> Photo
+                          </button>
+                          <button
+                            onClick={() => videoInputRef.current?.click()}
+                            className="w-full px-4 py-2 text-sm text-left hover:bg-gray-100 flex items-center gap-2"
+                          >
+                            <PiVideoCamera className="h-4 w-4" /> Video
+                          </button>
+                          <button
+                            onClick={() => documentInputRef.current?.click()}
+                            className="w-full px-4 py-2 text-sm text-left hover:bg-gray-100 flex items-center gap-2"
+                          >
+                            <PiFileText className="h-4 w-4" /> Document
+                          </button>
+                          <button
+                            onClick={() => audioInputRef.current?.click()}
+                            className="w-full px-4 py-2 text-sm text-left hover:bg-gray-100 flex items-center gap-2"
+                          >
+                            <PiMicrophone className="h-4 w-4" /> Audio
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
                     <div className="flex-1 relative">
                       <Textarea
                         ref={textareaRef}
                         value={messageInput}
                         onChange={(e) => setMessageInput(e.target.value)}
+                        onPaste={handlePaste}
                         placeholder={selectedContact.isSessionActive ? "Type a message..." : "Session expired"}
                         disabled={sending || !selectedContact.isSessionActive}
                         className="w-full resize-none"
@@ -1077,7 +1407,7 @@ export default function ChatPage() {
                     {/* Send Button */}
                     <Button
                       onClick={handleSendMessage}
-                      disabled={!messageInput.trim() || sending || !selectedContact.isSessionActive}
+                      disabled={(!messageInput.trim() && !pendingAttachment) || sending || !selectedContact.isSessionActive}
                       size="sm"
                     >
                       {sending ? 'Sending...' : <PiPaperPlaneTilt className="h-5 w-5" />}

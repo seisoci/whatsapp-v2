@@ -170,9 +170,10 @@ async function apiRequest<T = any>(
   // Get access token
   const token = getAccessToken();
 
-  // Set headers
+  // Set headers - don't set Content-Type for FormData (browser will set multipart/form-data automatically)
+  const isFormData = fetchConfig.body instanceof FormData;
   const headers: HeadersInit = {
-    'Content-Type': 'application/json',
+    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     ...fetchConfig.headers,
   };
 

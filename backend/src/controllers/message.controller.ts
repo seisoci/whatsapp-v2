@@ -164,6 +164,7 @@ export class MessageController {
 
           result = await WhatsAppMessagingService.sendMediaMessage({
             phoneNumberId: phoneNumber.phoneNumberId,
+            internalPhoneNumberId: phoneNumber.id,
             accessToken: phoneNumber.accessToken,
             to: contact.waId,
             mediaType: type,

@@ -212,6 +212,7 @@ export class WhatsAppMessagingService {
    */
   static async sendMediaMessage(params: {
     phoneNumberId: string;
+    internalPhoneNumberId?: string;  // Internal UUID for database
     accessToken: string;
     to: string;
     mediaType: 'image' | 'video' | 'document' | 'audio';
@@ -263,7 +264,32 @@ export class WhatsAppMessagingService {
       throw new Error(error.error?.message || 'Failed to send media message');
     }
 
-    return await response.json();
+    const result: any = await response.json();
+
+    // Store message in database (don't fail send if this fails)
+    if (params.contactId) {
+      try {
+        await this.storeOutgoingMessage({
+          contactId: params.contactId,
+          phoneNumberId: params.internalPhoneNumberId || params.phoneNumberId,
+          wamid: result?.messages?.[0]?.id || null,
+          toNumber: params.to,
+          fromNumber: params.to,
+          messageType: params.mediaType,
+          textBody: params.caption,
+          mediaUrl: params.mediaUrl,
+          mediaId: params.mediaId,
+          mediaFilename: params.filename,
+          status: 'sent',
+        });
+        console.log('✅ Outgoing media message saved to database');
+      } catch (dbError: any) {
+        console.error('❌ Failed to store outgoing media message:', dbError.message);
+        console.error('Full error:', dbError);
+      }
+    }
+
+    return result;
   }
 
   /**
@@ -280,6 +306,9 @@ export class WhatsAppMessagingService {
     templateName?: string;
     templateLanguage?: string;
     templateComponents?: any;
+    mediaUrl?: string;
+    mediaId?: string;
+    mediaFilename?: string;
     status: string;
   }): Promise<Message> {
     const messageRepo = AppDataSource.getRepository(Message);
@@ -299,6 +328,9 @@ export class WhatsAppMessagingService {
       templateName: params.templateName,
       templateLanguage: params.templateLanguage,
       templateComponents: params.templateComponents,
+      mediaUrl: params.mediaUrl,
+      mediaId: params.mediaId,
+      mediaFilename: params.mediaFilename,
       timestamp: new Date(),
       sentAt: new Date(),
     });
@@ -320,9 +352,6 @@ export class WhatsAppMessagingService {
        console.error(`Failed to update contact lastMessageAt:`, error);
     }
 
-    return savedMessage;
-
-    return await messageRepo.save(message);
   }
 
   /**

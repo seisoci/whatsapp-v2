@@ -37,6 +37,14 @@ export const sanitizeInput = (input: any): any => {
  */
 export const sanitizeMiddleware = async (c: Context, next: Next) => {
   if (c.req.method === 'POST' || c.req.method === 'PUT' || c.req.method === 'PATCH') {
+    // Skip JSON parsing for multipart/form-data (file uploads)
+    const contentType = c.req.header('content-type') || '';
+    if (contentType.includes('multipart/form-data')) {
+      // Don't consume the body for file uploads - let uploadController handle it
+      await next();
+      return;
+    }
+
     try {
       const body = await c.req.json();
       const sanitized = sanitizeInput(body);

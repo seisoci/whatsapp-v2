@@ -39,15 +39,33 @@ export class UploadController {
         );
       }
 
-      // Validate file type
+      // Validate file type - WhatsApp Cloud API supported types
       const allowedTypes = [
+        // Images (5MB limit)
         'image/jpeg',
         'image/png',
         'image/gif',
         'image/webp',
+        // Documents (100MB limit)
         'application/pdf',
-        'application/msword',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/msword', // .doc
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+        'application/vnd.ms-excel', // .xls
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+        'application/vnd.ms-powerpoint', // .ppt
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation', // .pptx
+        'text/plain', // .txt
+        // Videos (16MB limit)
+        'video/mp4',
+        'video/3gpp',
+        // Audio (16MB limit)
+        'audio/aac',
+        'audio/mp4',
+        'audio/mpeg', // .mp3
+        'audio/amr',
+        'audio/ogg',
+        'audio/wav',
+        'audio/webm',
       ];
 
       if (!allowedTypes.includes(file.type)) {
@@ -61,13 +79,39 @@ export class UploadController {
         );
       }
 
-      // Validate file size (max 10MB)
-      const maxSize = 10 * 1024 * 1024; // 10MB
+      // Validate file size based on media type
+      // WhatsApp limits: Images=5MB, Audio/Video=16MB, Documents=100MB
+      const isDocument = [
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'application/vnd.ms-powerpoint',
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+        'text/plain',
+      ].includes(file.type);
+      
+      const isVideo = file.type.startsWith('video/');
+      const isAudio = file.type.startsWith('audio/');
+      const isImage = file.type.startsWith('image/');
+      
+      let maxSize: number;
+      if (isDocument) {
+        maxSize = 100 * 1024 * 1024; // 100MB for documents
+      } else if (isVideo || isAudio) {
+        maxSize = 16 * 1024 * 1024; // 16MB for video/audio
+      } else if (isImage) {
+        maxSize = 5 * 1024 * 1024; // 5MB for images
+      } else {
+        maxSize = 10 * 1024 * 1024; // 10MB default
+      }
+      
       if (file.size > maxSize) {
         return c.json(
           {
             success: false,
-            message: `Ukuran file terlalu besar. Maksimal ${maxSize / 1024 / 1024}MB`,
+            message: `Ukuran file terlalu besar. Maksimal ${maxSize / 1024 / 1024}MB untuk tipe file ini`,
           },
           400
         );
