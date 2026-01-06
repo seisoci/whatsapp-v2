@@ -14,6 +14,7 @@ import phoneNumberRouter from './routes/phoneNumber.routes';
 import templateRouter from './routes/template.routes';
 import webhookRouter from './routes/webhook.routes';
 import chatRouter from './routes/chat.routes';
+import dashboardRouter from './routes/dashboard.routes';
 import { handleWebSocketUpgrade } from './routes/websocket.routes';
 import { chatWebSocketManager } from './services/chat-websocket.service';
 import {
@@ -55,6 +56,7 @@ app.route(`${env.API_PREFIX}/phone-numbers`, phoneNumberRouter);
 app.route(`${env.API_PREFIX}/templates`, templateRouter);
 app.route(`${env.API_PREFIX}/webhooks`, webhookRouter);
 app.route(`${env.API_PREFIX}/chat`, chatRouter);
+app.route(`${env.API_PREFIX}/dashboard`, dashboardRouter);
 
 
 // 404 handler

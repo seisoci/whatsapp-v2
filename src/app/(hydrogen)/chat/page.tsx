@@ -47,7 +47,7 @@ import Zoom from "yet-another-react-lightbox/plugins/zoom";
 import { getChatContacts, getChatMessages, sendChatMessage, markConversationAsRead, type Contact, type Message } from '@/lib/api/chat';
 import { chatWebSocket } from '@/lib/websocket/chat-websocket';
 import { getAllPhoneNumbers } from '@/lib/api/phone-numbers';
-import { formatDistanceToNow, format } from 'date-fns';
+import { formatDistanceToNow, format, differenceInCalendarDays } from 'date-fns';
 import { useDebounce } from '@/hooks/use-debounce';
 
 const defaultEmojis = [
@@ -848,7 +848,19 @@ export default function ChatPage() {
                       <div className="flex flex-col items-end gap-1">
                         {contact.lastMessage && (
                           <span className="text-[10px] text-gray-500">
-                            {formatDistanceToNow(new Date(contact.lastMessage.timestamp), { addSuffix: true })}
+                            {(() => {
+                              const date = new Date(contact.lastMessage.timestamp);
+                              const now = new Date();
+                              const diff = differenceInCalendarDays(now, date);
+                              
+                              if (diff >= 1) {
+                                return format(date, 'dd/MM/yyyy');
+                              }
+                              
+                              return formatDistanceToNow(date, { addSuffix: true })
+                                .replace('about ', '')
+                                .replace('less than a minute ago', 'just now');
+                            })()}
                           </span>
                         )}
                         {contact.unreadCount > 0 && (
