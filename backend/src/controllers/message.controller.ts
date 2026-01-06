@@ -9,6 +9,7 @@ import { Message } from '../models/Message';
 import { Contact } from '../models/Contact';
 import { PhoneNumber } from '../models/PhoneNumber';
 import { WhatsAppMessagingService } from '../services/whatsapp-messaging.service';
+import { chatWebSocketManager } from '../services/chat-websocket.service';
 import { getMessagesSchema, sendMessageSchema } from '../validators/chat.validator';
 
 export class MessageController {
@@ -190,6 +191,33 @@ export class MessageController {
             success: false,
             message: 'Unsupported message type',
           }, 400);
+      }
+
+      // 📢 WEBSOCKET: Broadcast outgoing message to all clients subscribed to this phone number
+      if (result.savedMessage) {
+        const savedMessage = result.savedMessage;
+        console.log(`[WS] Broadcasting outgoing message for contact ${contact.id} to room ${phoneNumber.id}`);
+        
+        chatWebSocketManager.broadcast(phoneNumber.id, {
+          type: 'message:new',
+          data: {
+            contactId: contact.id,
+            message: {
+              id: savedMessage.id,
+              wamid: savedMessage.wamid,
+              messageType: savedMessage.messageType,
+              textBody: savedMessage.textBody,
+              mediaUrl: savedMessage.mediaUrl,
+              mediaCaption: savedMessage.mediaCaption,
+              mediaFilename: savedMessage.mediaFilename,
+              direction: savedMessage.direction,
+              timestamp: savedMessage.timestamp instanceof Date ? savedMessage.timestamp.toISOString() : savedMessage.timestamp,
+              status: savedMessage.status,
+              userId: savedMessage.userId,
+              user: savedMessage.user,
+            },
+          },
+        });
       }
 
       return c.json({

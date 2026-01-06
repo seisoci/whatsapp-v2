@@ -259,7 +259,38 @@ export default function ChatPage() {
         // If this contact's conversation is open, add message
         if (event.data.contactId === selectedContact?.id) {
           console.log('[WS] Adding message to current conversation:', formattedMessage);
-          setMessages(prev => [...prev, formattedMessage]);
+          
+          setMessages(prev => {
+            // Check if message already exists (by ID or WAMID)
+            const exists = prev.some(m => 
+              m.id === formattedMessage.id || 
+              (m.wamid && formattedMessage.wamid && m.wamid === formattedMessage.wamid)
+            );
+
+            if (exists) {
+              console.log('[WS] Message already exists, skipping add:', formattedMessage.id);
+              return prev;
+            }
+
+            // Check for potential optimistic duplicate (same text, outgoing, recent)
+            // This prevents race condition where optimistic message hasn't been updated with real ID yet
+            // but WebSocket event arrives with real ID.
+            if (formattedMessage.direction === 'outgoing') {
+               const potentialDuplicate = prev.find(m => 
+                 m.id.startsWith('temp-') && 
+                 m.direction === 'outgoing' &&
+                 m.textBody === formattedMessage.textBody &&
+                 Math.abs(new Date(m.timestamp).getTime() - new Date(formattedMessage.timestamp).getTime()) < 10000 // 10s window
+               );
+
+               if (potentialDuplicate) {
+                 console.log('[WS] Found optimistic match, updating it instead of adding new:', potentialDuplicate.id);
+                 return prev.map(m => m.id === potentialDuplicate.id ? formattedMessage : m);
+               }
+            }
+
+            return [...prev, formattedMessage];
+          });
           scrollToBottom();
           
           // If we are viewing this contact, mark as read immediately in UI (backend should handle actual read receipts)
