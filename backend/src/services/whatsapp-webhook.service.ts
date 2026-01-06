@@ -142,6 +142,12 @@ export class WhatsAppWebhookService {
     // Use our internal UUID
     const internalPhoneNumberId = phoneNumber.id;
 
+    // Filter out unsupported message types
+    if (messageData.type === 'unsupported') {
+      console.warn('[WS] Received unsupported message type, skipping processing:', messageData);
+      return;
+    }
+
     // Extract contact info from contacts array (not from messageData.profile)
     const waId = messageData.from;
     const contactInfo = contacts?.find((c: any) => c.wa_id === waId);
