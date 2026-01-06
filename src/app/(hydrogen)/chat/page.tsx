@@ -701,13 +701,41 @@ export default function ChatPage() {
                               {msg.mediaUrl ? (
                                 <div>
                                   {msg.messageType === 'image' && (
-                                    <img src={msg.mediaUrl} alt="Image" className="max-w-sm rounded mb-2" />
+                                    <img 
+                                      src={msg.mediaUrl} 
+                                      alt="Image" 
+                                      className="max-w-sm rounded mb-2 cursor-pointer hover:opacity-90 transition-opacity" 
+                                      onClick={() => {
+                                        setLightboxSlides([{
+                                          src: msg.mediaUrl,
+                                          alt: 'Image',
+                                        }]);
+                                        setLightboxOpen(true);
+                                      }}
+                                    />
                                   )}
                                   {msg.messageType === 'sticker' && (
                                     <img src={msg.mediaUrl} alt="Sticker" className="max-w-[200px] mb-2" />
                                   )}
                                   {msg.messageType === 'video' && (
-                                    <video src={msg.mediaUrl} controls className="max-w-sm rounded mb-2" />
+                                    <video 
+                                      src={msg.mediaUrl} 
+                                      controls 
+                                      className="max-w-sm rounded mb-2 cursor-pointer"
+                                      onClick={(e) => {
+                                        // If clicking on video (not controls), open in lightbox
+                                        if (e.target === e.currentTarget) {
+                                          setLightboxSlides([{
+                                            type: 'video',
+                                            sources: [{
+                                              src: msg.mediaUrl,
+                                              type: 'video/mp4',
+                                            }],
+                                          }]);
+                                          setLightboxOpen(true);
+                                        }
+                                      }}
+                                    />
                                   )}
                                   {msg.messageType === 'audio' && (
                                     <audio src={msg.mediaUrl} controls className="mb-2" />
