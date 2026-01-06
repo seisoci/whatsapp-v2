@@ -43,6 +43,7 @@ export class MessageController {
       // Get messages with pagination (newest first)
       const messages = await messageRepo
         .createQueryBuilder('message')
+        .leftJoinAndSelect('message.user', 'user')
         .where('message.contact_id = :contactId', { contactId })
         .orderBy('message.timestamp', 'DESC')
         .skip(offset)
@@ -77,7 +78,7 @@ export class MessageController {
     try {
       const body = await c.req.json();
       const validation = sendMessageSchema.safeParse(body);
-      
+
       if (!validation.success) {
         return c.json({
           success: false,
@@ -87,6 +88,12 @@ export class MessageController {
       }
 
       const { contactId, phoneNumberId, type, text, template, media } = validation.data;
+
+      // Get authenticated user ID from context (set by auth middleware)
+      const user = c.get('user');
+      console.log('👤 User from context:', JSON.stringify(user, null, 2));
+      const userId = user?.userId;
+      console.log('📝 Extracted userId:', userId);
 
       // Get contact
       const contactRepo = AppDataSource.getRepository(Contact);
@@ -129,6 +136,7 @@ export class MessageController {
             to: contact.waId,
             text: text.body,
             contactId: contact.id,
+            userId: userId, // Add userId
           });
           break;
 
@@ -173,6 +181,7 @@ export class MessageController {
             caption: media.caption,
             filename: media.filename,
             contactId: contact.id,
+            userId: userId, // Add userId
           });
           break;
 
@@ -186,7 +195,10 @@ export class MessageController {
       return c.json({
         success: true,
         message: 'Message sent successfully',
-        data: result,
+        data: {
+          whatsapp: result,
+          message: result.savedMessage, // Include saved message with user info
+        },
       });
     } catch (error: any) {
       console.error('Error sending message:', error);

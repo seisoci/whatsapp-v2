@@ -85,12 +85,13 @@ export class WhatsAppMessagingService {
    */
   static async sendTextMessage(params: {
     phoneNumberId: string;  // WhatsApp numeric ID for API
-    internalPhoneNumberId?: string;  // Internal UUID for database  
+    internalPhoneNumberId?: string;  // Internal UUID for database
     accessToken: string;
     to: string;
     text: string;
     contactId?: string;
     preview_url?: boolean;
+    userId?: string;  // User who sent the message
   }): Promise<any> {
     // Validate session if contactId provided
     if (params.contactId) {
@@ -127,9 +128,10 @@ export class WhatsAppMessagingService {
     const result: any = await response.json();
 
     // Store message in database (don't fail send if this fails)
+    let savedMessage = null;
     if (params.contactId) {
       try {
-        await this.storeOutgoingMessage({
+        savedMessage = await this.storeOutgoingMessage({
           contactId: params.contactId,
           phoneNumberId: params.internalPhoneNumberId || params.phoneNumberId,
           wamid: result?.messages?.[0]?.id || null,
@@ -138,6 +140,7 @@ export class WhatsAppMessagingService {
           messageType: 'text',
           textBody: params.text,
           status: 'sent',
+          userId: params.userId,  // Add userId
         });
         console.log('✅ Outgoing message saved to database');
       } catch (dbError: any) {
@@ -146,7 +149,11 @@ export class WhatsAppMessagingService {
       }
     }
 
-    return result;
+    // Return both WhatsApp API response and saved message
+    return {
+      ...result,
+      savedMessage,
+    };
   }
 
   /**
@@ -221,6 +228,7 @@ export class WhatsAppMessagingService {
     caption?: string;
     filename?: string;
     contactId?: string;
+    userId?: string;  // User who sent the message
   }): Promise<any> {
     // Validate session if contactId provided
     if (params.contactId) {
@@ -267,9 +275,10 @@ export class WhatsAppMessagingService {
     const result: any = await response.json();
 
     // Store message in database (don't fail send if this fails)
+    let savedMessage = null;
     if (params.contactId) {
       try {
-        await this.storeOutgoingMessage({
+        savedMessage = await this.storeOutgoingMessage({
           contactId: params.contactId,
           phoneNumberId: params.internalPhoneNumberId || params.phoneNumberId,
           wamid: result?.messages?.[0]?.id || null,
@@ -281,6 +290,7 @@ export class WhatsAppMessagingService {
           mediaId: params.mediaId,
           mediaFilename: params.filename,
           status: 'sent',
+          userId: params.userId,  // Add userId
         });
         console.log('✅ Outgoing media message saved to database');
       } catch (dbError: any) {
@@ -289,7 +299,11 @@ export class WhatsAppMessagingService {
       }
     }
 
-    return result;
+    // Return both WhatsApp API response and saved message
+    return {
+      ...result,
+      savedMessage,
+    };
   }
 
   /**
@@ -310,15 +324,19 @@ export class WhatsAppMessagingService {
     mediaId?: string;
     mediaFilename?: string;
     status: string;
+    userId?: string;  // User who sent the message
   }): Promise<Message> {
     const messageRepo = AppDataSource.getRepository(Message);
     const contactRepo = AppDataSource.getRepository(Contact);
-    
+
+    console.log('💾 Storing message with userId:', params.userId);
+
     // Create and save message
     const message = messageRepo.create({
       wamid: params.wamid,
       contactId: params.contactId,
       phoneNumberId: params.phoneNumberId,
+      userId: params.userId,  // Add userId
       direction: 'outgoing',
       messageType: params.messageType as any,
       status: params.status as any,
@@ -342,7 +360,7 @@ export class WhatsAppMessagingService {
     try {
       await contactRepo.update(
         { id: params.contactId },
-        { 
+        {
           lastMessageAt: new Date(),
           updatedAt: new Date()
         }
@@ -352,6 +370,13 @@ export class WhatsAppMessagingService {
        console.error(`Failed to update contact lastMessageAt:`, error);
     }
 
+    // Reload message with user relation
+    const messageWithUser = await messageRepo.findOne({
+      where: { id: savedMessage.id },
+      relations: ['user'],
+    });
+
+    return messageWithUser || savedMessage;
   }
 
   /**

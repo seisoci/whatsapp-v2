@@ -10,6 +10,7 @@ import {
 } from 'typeorm';
 import { PhoneNumber } from './PhoneNumber';
 import { Contact } from './Contact';
+import { User } from './User';
 
 /**
  * Message Model
@@ -39,6 +40,14 @@ export class Message {
   @ManyToOne(() => Contact, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'contact_id' })
   contact: Contact;
+
+  // User who sent the message (for outgoing messages only)
+  @Column({ name: 'user_id', type: 'uuid', nullable: true })
+  userId: string | null;
+
+  @ManyToOne(() => User, { onDelete: 'SET NULL', eager: true })
+  @JoinColumn({ name: 'user_id' })
+  user: User | null;
 
   // Message Direction
   @Column({

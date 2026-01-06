@@ -192,31 +192,33 @@ export default function ChatPage() {
       if (event.phoneNumberId === selectedPhoneNumberId) {
         const rawMessage = event.data.message;
         
-        // Format message to match frontend state structure (for Chat Window)
+        // Format message to match Message interface from lib/api/chat.ts
         const formattedMessage = {
           id: rawMessage.id,
-          role: rawMessage.direction === 'outgoing' ? 'user' : 'assistant',
-          // Map to textBody and messageType as expected by the rendering loop
-          textBody: rawMessage.textBody || rawMessage.mediaCaption || (rawMessage.mediaUrl ? rawMessage.mediaUrl : ''),
-          status: rawMessage.status,
-          timestamp: rawMessage.timestamp,
+          wamid: rawMessage.wamid,
+          contactId: event.data.contactId,
           messageType: rawMessage.messageType,
-          mediaUrl: rawMessage.mediaUrl,
-          mediaType: rawMessage.mediaMimeType,
-          fileName: rawMessage.mediaFilename,
-          fileSize: rawMessage.mediaFileSize,
-          // Keep content/type as fallback if needed by other components, but main usage is messageType/textBody
-          content: rawMessage.textBody || rawMessage.mediaCaption || (rawMessage.mediaUrl ? rawMessage.mediaUrl : ''),
-          type: rawMessage.messageType,
-          direction: rawMessage.direction, // Add direction for isOwn check
+          textBody: rawMessage.textBody || null,
+          mediaUrl: rawMessage.mediaUrl || null,
+          mediaCaption: rawMessage.mediaCaption || null,
+          mediaFilename: rawMessage.mediaFilename || null,
+          mediaMimeType: rawMessage.mediaMimeType || null,
+          direction: rawMessage.direction,
+          timestamp: rawMessage.timestamp,
+          status: rawMessage.status,
+          readAt: rawMessage.readAt || null,
+          reactionEmoji: rawMessage.reactionEmoji || null,
+          reactionMessageId: rawMessage.reactionMessageId || null,
+          // User info (for outgoing messages)
+          userId: rawMessage.userId || null,
+          user: rawMessage.user || null,
         };
 
         // Update contact list locally without full reload
         setContacts(prevContacts => {
           const contactId = event.data.contactId;
-          
           const contactIndex = prevContacts.findIndex(c => c.id === contactId);
-          
+
           // If contact exists, update it and move to top
           if (contactIndex !== -1) {
             const updatedContact = {
@@ -225,8 +227,7 @@ export default function ChatPage() {
               lastMessage: {
                 id: rawMessage.id,
                 messageType: rawMessage.messageType,
-                // Content will now contain mediaUrl if caption is empty. Use it, or fallback to type.
-                textBody: formattedMessage.content || `[${rawMessage.messageType}]`,
+                textBody: rawMessage.textBody || rawMessage.mediaCaption || `[${rawMessage.messageType}]`,
                 mediaCaption: rawMessage.mediaCaption || null,
                 direction: rawMessage.direction,
                 timestamp: rawMessage.timestamp,
@@ -238,19 +239,22 @@ export default function ChatPage() {
                 ? (prevContacts[contactIndex].unreadCount || 0) + 1
                 : prevContacts[contactIndex].unreadCount
             };
-            
+
             // Remove from old position and add to top
             const newContacts = [...prevContacts];
             newContacts.splice(contactIndex, 1);
             return [updatedContact, ...newContacts];
-          } 
-          // If new contact (not in list), reload specific contact or full list
-          // For safety, reload all for now if we miss a contact
-          else {
-            loadContacts();
-            return prevContacts;
           }
+
+          // Contact not found - keep current state, will reload outside
+          return prevContacts;
         });
+
+        // If contact doesn't exist, reload all contacts (done outside setContacts to avoid conflicts)
+        if (!contacts.find(c => c.id === event.data.contactId)) {
+          console.log('[WS] New contact detected, reloading contact list');
+          loadContacts();
+        }
 
         // If this contact's conversation is open, add message
         if (event.data.contactId === selectedContact?.id) {
@@ -621,18 +625,28 @@ export default function ChatPage() {
 
       const result = await sendChatMessage(sendPayload);
 
-      // Update optimistic message with real data
-      setMessages(prev => 
-        prev.map(msg => 
-          msg.id === optimisticMessage.id 
-            ? { 
-                ...msg, 
-                wamid: result.data?.messages?.[0]?.id || null, 
-                status: 'sent',
-                mediaUrl: mediaUrl || msg.mediaUrl 
-              }
-            : msg
-        )
+      console.log('📨 Send message result:', result);
+      console.log('💾 Saved message from backend:', result.message);
+      console.log('👤 User info:', result.message?.user);
+
+      // Update optimistic message with real data from backend
+      // result is already unwrapped: { whatsapp: {...}, message: {...} }
+      setMessages(prev =>
+        prev.map(msg => {
+          if (msg.id === optimisticMessage.id) {
+            const updated = {
+              ...msg,
+              // Override with saved message from backend (includes user info)
+              ...(result.message || {}),
+              // Only override these if they're not in the backend response
+              ...(mediaUrl && !result.message?.mediaUrl ? { mediaUrl } : {}),
+            };
+            console.log('🔄 Updated message:', updated);
+            console.log('👤 Updated message user:', updated.user);
+            return updated;
+          }
+          return msg;
+        })
       );
 
       scrollToBottom();
@@ -1195,16 +1209,27 @@ export default function ChatPage() {
                       return (
                         <div
                           key={msg.id}
-                          className={`group flex items-start ${isOwn ? 'flex-row-reverse' : ''} animate-fade-in-up`}
+                          className={`group flex items-start gap-2 ${isOwn ? 'flex-row-reverse' : ''} animate-fade-in-up`}
                         >
-                          <div className={`max-w-md ${isOwn ? 'items-end' : 'items-start'}`}>
-
+                          <div className={`max-w-[65%] ${isOwn ? 'items-end' : 'items-start'} flex flex-col`}>
+                            {/* User name for outgoing messages */}
+                            {isOwn && msg.user && (
+                              <div className={`text-[11px] font-medium mb-1 px-3 ${
+                                isOwn
+                                  ? 'text-blue-600 dark:text-blue-400 text-right'
+                                  : 'text-gray-600 dark:text-gray-400 text-left'
+                              }`}>
+                                {msg.user.username}
+                              </div>
+                            )}
 
                             {/* Message Content */}
                             <div
-                              className={`rounded-lg px-4 py-2 ${
-                                isOwn ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-900'
-                              } relative`}
+                              className={`rounded-2xl px-4 py-2.5 ${
+                                isOwn
+                                  ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-md'
+                                  : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700 shadow-sm'
+                              } relative transition-all hover:shadow-lg`}
                             >
                               {msg.messageType === 'reaction' ? (
                                 // Reaction message - just show the emoji
@@ -1302,15 +1327,22 @@ export default function ChatPage() {
                                   </div>
                                 </div>
                               ) : (
-                                <div className="flex items-end gap-2 flex-wrap min-w-[80px]">
-                                  <p className="text-sm whitespace-pre-wrap">{msg.textBody}</p>
-                                  {/* Spacer to push time to right if needed, or just flow naturally */}
-                                  <div className="flex-1" /> 
-                                  <div className="flex items-center gap-1 select-none">
-                                    <span className={`text-[10px] ${isOwn ? 'text-blue-100' : 'text-gray-500'} leading-none`}>
+                                <div className="flex items-end gap-2 flex-wrap">
+                                  <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.textBody}</p>
+                                  <div className="flex-1 min-w-[60px]" />
+                                  <div className="flex items-center gap-1.5 select-none flex-shrink-0">
+                                    <span className={`text-[10px] font-medium leading-none ${
+                                      isOwn
+                                        ? 'text-white opacity-90'
+                                        : 'text-gray-500 dark:text-gray-400'
+                                    }`}>
                                       {format(new Date(msg.timestamp), 'HH:mm')}
                                     </span>
-                                    {isOwn && <span className="flex-shrink-0 leading-none">{getStatusIcon(msg.status)}</span>}
+                                    {isOwn && (
+                                      <span className="flex-shrink-0 leading-none opacity-90">
+                                        {getStatusIcon(msg.status)}
+                                      </span>
+                                    )}
                                   </div>
                                 </div>
                               )}

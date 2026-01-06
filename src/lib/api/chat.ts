@@ -49,6 +49,16 @@ export interface Message {
   readAt: string | null;
   reactionEmoji?: string | null;
   reactionMessageId?: string | null;
+  // User info (for outgoing messages)
+  userId?: string | null;
+  user?: {
+    id: string;
+    username: string;
+    email: string;
+    isActive: boolean;
+    emailVerified: boolean;
+    roleId: string;
+  } | null;
 }
 
 export interface SendMessageRequest {
