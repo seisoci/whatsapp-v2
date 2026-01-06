@@ -44,7 +44,7 @@ import Lightbox from "yet-another-react-lightbox";
 import "yet-another-react-lightbox/styles.css";
 import Video from "yet-another-react-lightbox/plugins/video";
 import Zoom from "yet-another-react-lightbox/plugins/zoom";
-import { getChatContacts, getChatMessages, sendChatMessage, type Contact, type Message } from '@/lib/api/chat';
+import { getChatContacts, getChatMessages, sendChatMessage, markConversationAsRead, type Contact, type Message } from '@/lib/api/chat';
 import { chatWebSocket } from '@/lib/websocket/chat-websocket';
 import { getAllPhoneNumbers } from '@/lib/api/phone-numbers';
 import { formatDistanceToNow } from 'date-fns';
@@ -155,28 +155,78 @@ export default function ChatPage() {
 
     const handleNewMessage = (event: any) => {
       console.log('[WS] Received message:new event:', event);
-      console.log('[WS] Current state:', {
-        eventPhoneNumberId: event.phoneNumberId,
-        selectedPhoneNumberId,
-        eventContactId: event.data.contactId,
-        selectedContactId: selectedContact?.id,
-      });
-
+      
       if (event.phoneNumberId === selectedPhoneNumberId) {
-        // Reload contacts to update last message
-        console.log('[WS] Reloading contacts...');
-        loadContacts();
+        const rawMessage = event.data.message;
+        
+        // Format message to match frontend state structure (for Chat Window)
+        const formattedMessage = {
+          id: rawMessage.id,
+          role: rawMessage.direction === 'outgoing' ? 'user' : 'assistant',
+          // Map to textBody and messageType as expected by the rendering loop
+          textBody: rawMessage.textBody || rawMessage.mediaCaption || (rawMessage.mediaUrl ? rawMessage.mediaUrl : ''),
+          status: rawMessage.status,
+          timestamp: rawMessage.timestamp,
+          messageType: rawMessage.messageType,
+          mediaUrl: rawMessage.mediaUrl,
+          mediaType: rawMessage.mediaMimeType,
+          fileName: rawMessage.mediaFilename,
+          fileSize: rawMessage.mediaFileSize,
+          // Keep content/type as fallback if needed by other components, but main usage is messageType/textBody
+          content: rawMessage.textBody || rawMessage.mediaCaption || (rawMessage.mediaUrl ? rawMessage.mediaUrl : ''),
+          type: rawMessage.messageType,
+          direction: rawMessage.direction, // Add direction for isOwn check
+        };
+
+        // Update contact list locally without full reload
+        setContacts(prevContacts => {
+          const contactId = event.data.contactId;
+          
+          const contactIndex = prevContacts.findIndex(c => c.id === contactId);
+          
+          // If contact exists, update it and move to top
+          if (contactIndex !== -1) {
+            const updatedContact = {
+              ...prevContacts[contactIndex],
+              // lastMessage must fully match the Contact interface from lib/api/chat.ts
+              lastMessage: {
+                id: rawMessage.id,
+                messageType: rawMessage.messageType,
+                // Content will now contain mediaUrl if caption is empty. Use it, or fallback to type.
+                textBody: formattedMessage.content || `[${rawMessage.messageType}]`,
+                mediaCaption: rawMessage.mediaCaption || null,
+                direction: rawMessage.direction,
+                timestamp: rawMessage.timestamp,
+                status: rawMessage.status || 'delivered',
+              },
+              lastMessageTimestamp: rawMessage.timestamp,
+              // Increment unread count if message is incoming and not currently selected
+              unreadCount: (rawMessage.direction === 'incoming' && selectedContact?.id !== contactId)
+                ? (prevContacts[contactIndex].unreadCount || 0) + 1
+                : prevContacts[contactIndex].unreadCount
+            };
+            
+            // Remove from old position and add to top
+            const newContacts = [...prevContacts];
+            newContacts.splice(contactIndex, 1);
+            return [updatedContact, ...newContacts];
+          } 
+          // If new contact (not in list), reload specific contact or full list
+          // For safety, reload all for now if we miss a contact
+          else {
+            loadContacts();
+            return prevContacts;
+          }
+        });
 
         // If this contact's conversation is open, add message
         if (event.data.contactId === selectedContact?.id) {
-          console.log('[WS] Adding message to current conversation:', event.data.message);
-          setMessages(prev => [...prev, event.data.message]);
+          console.log('[WS] Adding message to current conversation:', formattedMessage);
+          setMessages(prev => [...prev, formattedMessage]);
           scrollToBottom();
-        } else {
-          console.log('[WS] Message for different contact, not adding to current view');
+          
+          // If we are viewing this contact, mark as read immediately in UI (backend should handle actual read receipts)
         }
-      } else {
-        console.log('[WS] Message for different phone number, ignoring');
       }
     };
 
@@ -298,15 +348,32 @@ export default function ChatPage() {
     }
   };
 
-  const handleContactClick = (contact: Contact) => {
+  const handleContactClick = async (contact: Contact) => {
     setSelectedContact(contact);
     setShowChat(true);
+    
+    // Reset unread count for this contact (mark as read)
+    setContacts(prevContacts =>
+      prevContacts.map(c =>
+        c.id === contact.id ? { ...c, unreadCount: 0 } : c
+      )
+    );
+    
     // Load messages immediately with contact parameter to avoid race condition
     loadMessages(contact);
+    
+    // Mark conversation as read in backend (persist to database)
+    try {
+      await markConversationAsRead(contact.id);
+    } catch (error) {
+      console.error('Failed to mark conversation as read:', error);
+      // Don't show error to user - the UI already updated optimistically
+    }
   };
 
   const handleBackToList = () => {
     setShowChat(false);
+    setSelectedContact(null); // Clear selected contact for 'no conversation' state
   };
 
   const handleSendMessage = async () => {
@@ -393,6 +460,21 @@ export default function ChatPage() {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [showEmojiPicker, showQuickReplies]);
+
+  // ESC key handler to exit chat room (like WhatsApp)
+  useEffect(() => {
+    const handleEscKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && selectedContact) {
+        handleBackToList();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscKey);
+
+    return () => {
+      document.removeEventListener('keydown', handleEscKey);
+    };
+  }, [selectedContact]);
 
   const filteredContacts = contacts.filter((contact) => {
     if (chatFilter === 'unread') return contact.unreadCount > 0;
