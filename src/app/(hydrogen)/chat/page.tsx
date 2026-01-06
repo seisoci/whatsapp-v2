@@ -491,11 +491,11 @@ export default function ChatPage() {
 
   return (
     <>
-      <div className="@container">
-        <div className="grid grid-cols-12 gap-0 rounded-lg border border-gray-200 overflow-hidden" style={{ height: 'calc(100vh - 180px)' }}>
+      <div className="@container fixed inset-0 top-[60px]">
+        <div className="grid grid-cols-12 gap-0 h-full overflow-hidden bg-white dark:bg-gray-50">
           {/* Sidebar - Contact List */}
           <div
-            className={`col-span-12 border-r border-gray-200 @lg:col-span-4 @xl:col-span-3 h-full min-h-0 ${
+            className={`col-span-12 border-r border-gray-200 dark:border-gray-300 @lg:col-span-4 @xl:col-span-3 h-full min-h-0 ${
               showChat ? 'hidden @lg:block' : 'block'
             }`}
           >
