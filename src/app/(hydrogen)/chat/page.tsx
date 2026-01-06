@@ -673,6 +673,46 @@ export default function ChatPage() {
 
   return (
     <>
+      <style jsx>{`
+        @keyframes fadeInUp {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in-up {
+          animation: fadeInUp 0.3s ease-out forwards;
+        }
+        /* Custom Scrollbar Styles (Slim - Contact List) */
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 3px;
+          height: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background-color: rgb(var(--primary-default));
+          border-radius: 20px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background-color: rgb(var(--primary-dark));
+        }
+
+        /* Custom Scrollbar Styles (Wide - Message Thread) */
+        .custom-scrollbar-message::-webkit-scrollbar {
+          width: 7px;
+          height: 7px;
+        }
+        .custom-scrollbar-message::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-scrollbar-message::-webkit-scrollbar-thumb {
+          background-color: rgb(var(--primary-default));
+          border-radius: 20px;
+        }
+        .custom-scrollbar-message::-webkit-scrollbar-thumb:hover {
+          background-color: rgb(var(--primary-dark));
+        }
+      `}</style>
       <div className="@container fixed inset-0 top-[60px]">
         <div className="grid grid-cols-12 gap-0 h-full overflow-hidden bg-white dark:bg-gray-50">
           {/* Sidebar - Contact List */}
@@ -737,7 +777,7 @@ export default function ChatPage() {
 
               {/* Contact List */}
               <div 
-                className="flex-1 overflow-y-auto min-h-0"
+                className="flex-1 overflow-y-auto min-h-0 custom-scrollbar"
                 onScroll={(e) => {
                   const target = e.currentTarget;
                   // Trigger when within 10px of bottom
@@ -767,8 +807,17 @@ export default function ChatPage() {
                   </Button>
                 </div>
 
-                {loading ? (
-                  <div className="p-4 text-center text-gray-500">Loading...</div>
+                {(loading && contacts.length === 0) ? (
+                  // Initial Loading Skeletons
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <div key={i} className="flex items-center gap-3 p-4 border-b border-gray-100 animate-pulse">
+                      <div className="h-10 w-10 rounded-full bg-gray-200" />
+                      <div className="flex-1 space-y-2">
+                        <div className="h-4 w-3/4 bg-gray-200 rounded" />
+                        <div className="h-3 w-1/2 bg-gray-200 rounded" />
+                      </div>
+                    </div>
+                  ))
                 ) : filteredContacts.length === 0 ? (
                   <div className="p-4 text-center text-gray-500">No conversations</div>
                 ) : (
@@ -859,14 +908,14 @@ export default function ChatPage() {
                 </div>
 
                 {/* Messages */}
-                <div className="flex-1 overflow-y-auto p-4 min-h-0">
+                <div className="flex-1 overflow-y-auto p-4 min-h-0 custom-scrollbar-message">
                   <div className="space-y-4">
                     {messages.map((msg) => {
                       const isOwn = msg.direction === 'outgoing';
                       return (
                         <div
                           key={msg.id}
-                          className={`group flex items-start ${isOwn ? 'flex-row-reverse' : ''}`}
+                          className={`group flex items-start ${isOwn ? 'flex-row-reverse' : ''} animate-fade-in-up`}
                         >
                           <div className={`max-w-md ${isOwn ? 'items-end' : 'items-start'}`}>
                             <p className="mb-1 text-xs text-gray-500">
