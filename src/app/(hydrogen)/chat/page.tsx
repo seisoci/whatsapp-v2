@@ -47,7 +47,7 @@ import Zoom from "yet-another-react-lightbox/plugins/zoom";
 import { getChatContacts, getChatMessages, sendChatMessage, markConversationAsRead, type Contact, type Message } from '@/lib/api/chat';
 import { chatWebSocket } from '@/lib/websocket/chat-websocket';
 import { getAllPhoneNumbers } from '@/lib/api/phone-numbers';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, format } from 'date-fns';
 import { useDebounce } from '@/hooks/use-debounce';
 
 const defaultEmojis = [
@@ -601,9 +601,9 @@ export default function ChatPage() {
     setShowQuickReplies((prev) => !prev);
   };
 
-  const scrollToBottom = () => {
+  const scrollToBottom = (behavior: ScrollBehavior = 'auto') => {
     setTimeout(() => {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      messagesEndRef.current?.scrollIntoView({ behavior });
     }, 100);
   };
 
@@ -918,19 +918,16 @@ export default function ChatPage() {
                           className={`group flex items-start ${isOwn ? 'flex-row-reverse' : ''} animate-fade-in-up`}
                         >
                           <div className={`max-w-md ${isOwn ? 'items-end' : 'items-start'}`}>
-                            <p className="mb-1 text-xs text-gray-500">
-                              {isOwn ? 'You' : selectedContact.profileName || selectedContact.phoneNumber},{' '}
-                              {formatDistanceToNow(new Date(msg.timestamp), { addSuffix: true })}
-                            </p>
+
 
                             {/* Message Content */}
                             <div
                               className={`rounded-lg px-4 py-2 ${
                                 isOwn ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-900'
-                              }`}
+                              } relative`}
                             >
                               {msg.mediaUrl ? (
-                                <div>
+                                <div className="flex flex-col">
                                   {msg.messageType === 'image' && (
                                     <img 
                                       src={msg.mediaUrl} 
@@ -976,17 +973,32 @@ export default function ChatPage() {
                                       href={msg.mediaUrl}
                                       target="_blank"
                                       rel="noopener noreferrer"
-                                      className="text-blue-600 hover:underline"
+                                      className="text-blue-600 hover:underline mb-1 block"
                                     >
                                       📄 {msg.mediaFilename || 'Document'}
                                     </a>
                                   )}
-                                  {msg.mediaCaption && <p className="text-sm mt-2">{msg.mediaCaption}</p>}
+                                  {msg.mediaCaption && <p className="text-sm mb-1 whitespace-pre-wrap">{msg.mediaCaption}</p>}
+                                  
+                                  {/* Timestamp & Status for Media */}
+                                  <div className="flex justify-end items-center gap-1 mt-1">
+                                     <span className={`text-[10px] ${isOwn ? 'text-blue-100' : 'text-gray-500'}`}>
+                                      {format(new Date(msg.timestamp), 'HH:mm')}
+                                    </span>
+                                    {isOwn && <span className={isOwn ? 'text-white' : ''}>{getStatusIcon(msg.status)}</span>}
+                                  </div>
                                 </div>
                               ) : (
-                                <div className="flex items-end gap-2">
-                                  <p className="text-sm flex-1">{msg.textBody}</p>
-                                  {isOwn && <span className="flex-shrink-0">{getStatusIcon(msg.status)}</span>}
+                                <div className="flex items-end gap-2 flex-wrap min-w-[80px]">
+                                  <p className="text-sm whitespace-pre-wrap">{msg.textBody}</p>
+                                  {/* Spacer to push time to right if needed, or just flow naturally */}
+                                  <div className="flex-1" /> 
+                                  <div className="flex items-center gap-1 select-none">
+                                    <span className={`text-[10px] ${isOwn ? 'text-blue-100' : 'text-gray-500'} leading-none`}>
+                                      {format(new Date(msg.timestamp), 'HH:mm')}
+                                    </span>
+                                    {isOwn && <span className="flex-shrink-0 leading-none">{getStatusIcon(msg.status)}</span>}
+                                  </div>
                                 </div>
                               )}
                             </div>
