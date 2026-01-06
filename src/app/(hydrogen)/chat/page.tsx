@@ -571,6 +571,7 @@ export default function ChatPage() {
       case 'delivered':
         return <PiChecks className="h-4 w-4" />;
       case 'read':
+      case 'played': // Played is essentially read (blue ticks) for media
         return <PiChecks className="h-4 w-4 text-blue-500" />;
       case 'failed':
         return <PiXCircle className="h-4 w-4 text-red-500" />;

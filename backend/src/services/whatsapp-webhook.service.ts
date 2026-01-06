@@ -400,6 +400,24 @@ export class WhatsAppWebhookService {
 
     const statusTimestamp = new Date(parseInt(statusData.timestamp) * 1000);
 
+    // Status Hierarchy Logic: Prevent stale updates processing
+    // e.g. If message is already 'delivered', ignore 'sent' updates
+    const statusPriority: Record<string, number> = {
+      'pending': 0,
+      'sent': 1,
+      'delivered': 2,
+      'read': 3,
+      'failed': 4
+    };
+
+    const currentPriority = statusPriority[message.status as string] || 0;
+    const newPriority = statusPriority[statusData.status] || 0;
+
+    if (newPriority <= currentPriority && message.status !== 'failed') {
+      console.log(`🚫 [Webhook] Ignoring stale update ${statusData.status} for message ${message.wamid} (Current: ${message.status})`);
+      return;
+    }
+
     // Update message status
     await WhatsAppMessagingService.updateMessageStatus({
       wamid: statusData.id,

@@ -322,20 +322,45 @@ export class WhatsAppMessagingService {
       return;
     }
 
+    // Status Hierarchy Logic to prevent race conditions (e.g. 'delivered' arriving before 'sent')
+    const statusPriority: Record<string, number> = {
+      'pending': 0,
+      'sent': 1,
+      'delivered': 2,
+      'read': 3,
+      'failed': 4,
+      'played': 5 // Highest priority as per user request
+    };
+
+    const currentPriority = statusPriority[message.status as keyof typeof statusPriority] || 0;
+    const newPriority = statusPriority[params.status as keyof typeof statusPriority] || 0;
+
+    // Special case: Allow 'failed' to overwrite 'sent' or 'delivered' but not 'read' or 'played'
+    // General rule: Only update if new priority is higher
+    if (newPriority <= currentPriority && message.status !== 'failed') {
+      console.log(`[Status] Ignoring update ${params.status} for message ${message.wamid} (Current: ${message.status})`);
+      return;
+    }
+
     message.status = params.status;
     
     switch (params.status) {
       case 'sent':
-        message.sentAt = params.timestamp;
+        // Only update if sentAt is not already set (preserve original sent time)
+        if (!message.sentAt) message.sentAt = params.timestamp;
         break;
       case 'delivered':
-        message.deliveredAt = params.timestamp;
+        if (!message.deliveredAt) message.deliveredAt = params.timestamp;
         break;
       case 'read':
-        message.readAt = params.timestamp;
+        if (!message.readAt) message.readAt = params.timestamp;
+        break;
+      case 'played':
+        // Treated same as read, but specific for media
+        if (!message.readAt) message.readAt = params.timestamp;
         break;
       case 'failed':
-        message.failedAt = params.timestamp;
+        if (!message.failedAt) message.failedAt = params.timestamp;
         message.errorCode = params.errorCode || null;
         message.errorMessage = params.errorMessage || null;
         break;
