@@ -6,6 +6,7 @@
 import { Hono } from 'hono';
 import { ChatController } from '../controllers/chat.controller';
 import { MessageController } from '../controllers/message.controller';
+import { ContactTagController } from '../controllers/contact-tag.controller';
 import { authMiddleware } from '../middlewares';
 
 const chat = new Hono();
@@ -23,5 +24,9 @@ chat.delete('/contacts/:id', ChatController.deleteContact);
 chat.get('/messages', MessageController.getMessages);
 chat.post('/messages', MessageController.sendMessage);
 chat.put('/messages/:id/read', MessageController.markAsRead);
+
+// Contact Tag endpoints
+chat.post('/contacts/:contactId/tags', ContactTagController.addTag);
+chat.delete('/contacts/:contactId/tags/:tagId', ContactTagController.removeTag);
 
 export default chat;

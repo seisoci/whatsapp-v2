@@ -35,6 +35,7 @@ import { getAllPhoneNumbers } from '@/lib/api/phone-numbers';
 import { quickReplyApi, type QuickReply } from '@/lib/api/quick-replies';
 import { formatDistanceToNow, format, differenceInCalendarDays } from 'date-fns';
 import { useDebounce } from '@/hooks/use-debounce';
+import ContactTags from '@/app/shared/chat/contact-tags';
 
 const defaultEmojis = [
   '😀', '😃', '😄', '😁', '😆', '😅', '🤣', '😂',
@@ -1219,15 +1220,26 @@ export default function ChatPage() {
                     />
                     <div>
                       <h6 className="text-sm font-semibold">{selectedContact.profileName || selectedContact.phoneNumber}</h6>
-                      <p className="text-xs text-gray-500">
-                        {selectedContact.isSessionActive ? (
-                          <span className="text-green-600">
-                            Session: {Math.floor(selectedContact.sessionRemainingSeconds / 3600)}h left
-                          </span>
-                        ) : (
-                          <span className="text-red-600">Session expired</span>
-                        )}
-                      </p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-xs text-gray-500">
+                          {selectedContact.isSessionActive ? (
+                            <span className="text-green-600">
+                              Session: {Math.floor(selectedContact.sessionRemainingSeconds / 3600)}h left
+                            </span>
+                          ) : (
+                            <span className="text-red-600">Session expired</span>
+                          )}
+                        </p>
+                        <span className="text-gray-300">|</span>
+                        <ContactTags 
+                          contact={selectedContact} 
+                          onUpdate={(updatedContact) => {
+                            // Update local contact state and list
+                            setSelectedContact(updatedContact);
+                            setContacts(prev => prev.map(c => c.id === updatedContact.id ? updatedContact : c));
+                          }} 
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>

@@ -14,7 +14,7 @@ export interface Contact {
   profilePictureUrl: string | null;
   isBusinessAccount: boolean;
   isBlocked: boolean;
-  tags: string[];
+  tags: Tag[];
   notes: string | null;
   sessionExpiresAt: string | null;
   isSessionActive: boolean;
@@ -147,5 +147,43 @@ export async function sendChatMessage(data: SendMessageRequest) {
  */
 export async function markMessageAsRead(messageId: string) {
   const response = await apiClient.put(`/chat/messages/${messageId}/read`);
+  return response.data;
+}
+
+export interface Tag {
+  id: string;
+  name: string;
+  color: string;
+}
+
+/**
+ * Get all tags
+ */
+export async function getTags() {
+  const response = await apiClient.get('/tags');
+  return response.data;
+}
+
+/**
+ * Create a new tag
+ */
+export async function createTag(data: { name: string; color: string }) {
+  const response = await apiClient.post('/tags', data);
+  return response.data;
+}
+
+/**
+ * Add tag to contact
+ */
+export async function addTagToContact(contactId: string, tagId: string) {
+  const response = await apiClient.post(`/chat/contacts/${contactId}/tags`, { tagId });
+  return response.data;
+}
+
+/**
+ * Remove tag from contact
+ */
+export async function removeTagFromContact(contactId: string, tagId: string) {
+  const response = await apiClient.delete(`/chat/contacts/${contactId}/tags/${tagId}`);
   return response.data;
 }

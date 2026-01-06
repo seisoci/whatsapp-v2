@@ -16,6 +16,7 @@ import webhookRouter from './routes/webhook.routes';
 import chatRouter from './routes/chat.routes';
 import dashboardRouter from './routes/dashboard.routes';
 import quickReplyRouter from './routes/quick-reply.routes';
+import tagRouter from './routes/tag.routes';
 import { handleWebSocketUpgrade } from './routes/websocket.routes';
 import { chatWebSocketManager } from './services/chat-websocket.service';
 import {
@@ -59,6 +60,7 @@ app.route(`${env.API_PREFIX}/webhooks`, webhookRouter);
 app.route(`${env.API_PREFIX}/chat`, chatRouter);
 app.route(`${env.API_PREFIX}/dashboard`, dashboardRouter);
 app.route(`${env.API_PREFIX}/quick-replies`, quickReplyRouter);
+app.route(`${env.API_PREFIX}/tags`, tagRouter);
 
 
 // 404 handler

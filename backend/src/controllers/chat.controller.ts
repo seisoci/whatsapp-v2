@@ -36,13 +36,14 @@ export class ChatController {
       // Build query
       let queryBuilder = contactRepo
         .createQueryBuilder('contact')
-        .where('contact.phone_number_id = :phoneNumberId', { phoneNumberId })
-        .orderBy('contact.last_message_at', 'DESC', 'NULLS LAST');
+        .leftJoinAndSelect('contact.tags', 'tag')
+        .where('contact.phoneNumberId = :phoneNumberId', { phoneNumberId })
+        .orderBy('contact.lastMessageAt', 'DESC', 'NULLS LAST');
 
       // Search filter
       if (search) {
         queryBuilder = queryBuilder.andWhere(
-          '(contact.profile_name ILIKE :search OR contact.phone_number ILIKE :search)',
+          '(contact.profileName ILIKE :search OR contact.phoneNumber ILIKE :search)',
           { search: `%${search}%` }
         );
       }
@@ -62,7 +63,7 @@ export class ChatController {
           // Get last message
           const lastMessage = await messageRepo
             .createQueryBuilder('message')
-            .where('message.contact_id = :contactId', { contactId: contact.id })
+            .where('message.contactId = :contactId', { contactId: contact.id })
             .orderBy('message.timestamp', 'DESC')
             .limit(1)
             .getOne();
@@ -70,9 +71,9 @@ export class ChatController {
           // Get unread count
           const unreadCount = await messageRepo
             .createQueryBuilder('message')
-            .where('message.contact_id = :contactId', { contactId: contact.id })
+            .where('message.contactId = :contactId', { contactId: contact.id })
             .andWhere('message.direction = :direction', { direction: 'incoming' })
-            .andWhere('message.read_at IS NULL')
+            .andWhere('message.readAt IS NULL')
             .getCount();
 
           // Calculate session info
@@ -151,6 +152,7 @@ export class ChatController {
 
       const contact = await contactRepo.findOne({
         where: { id: contactId },
+        relations: ['tags'],
       });
 
       if (!contact) {

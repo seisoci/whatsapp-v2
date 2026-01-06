@@ -9,8 +9,11 @@ import {
   Generated,
   Index,
   Unique,
+  ManyToMany,
+  JoinTable,
 } from 'typeorm';
 import { PhoneNumber } from './PhoneNumber';
+import { Tag } from './Tag';
 
 /**
  * Contact Model
@@ -94,8 +97,13 @@ export class Contact {
   }
 
   // Additional Fields
-  @Column({ type: 'jsonb', default: '[]' })
-  tags: any[]; // For contact categorization
+  @ManyToMany(() => Tag, (tag) => tag.contacts, { cascade: true })
+  @JoinTable({
+    name: 'contact_tags',
+    joinColumn: { name: 'contact_id', referencedColumnName: 'id' },
+    inverseJoinColumn: { name: 'tag_id', referencedColumnName: 'id' },
+  })
+  tags: Tag[];
 
   @Column({ name: 'custom_fields', type: 'jsonb', default: '{}' })
   customFields: Record<string, any>; // Custom metadata
