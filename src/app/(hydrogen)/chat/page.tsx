@@ -5,39 +5,20 @@
  * Real-time chat interface with WhatsApp Business API integration
  */
 
-import { Avatar, Button, Input, ActionIcon, Drawer, Textarea, Popover, Select } from 'rizzui';
+import { Avatar, Button, Input, ActionIcon, Textarea, Select } from 'rizzui';
 import {
-  PiPaperclip,
-  PiPhone,
   PiSmiley,
-  PiVideo,
   PiArrowLeft,
   PiImage,
   PiPaperPlaneTilt,
   PiEnvelope,
-  PiMapPin,
-  PiCalendar,
-  PiUser,
   PiX,
-  PiShareNetwork,
-  PiTrash,
-  PiExport,
-  PiWarning,
-  PiFolder,
   PiFileText,
-  PiFilePdf,
-  PiStar,
-  PiGlobe,
   PiLightning,
   PiCheck,
   PiChecks,
   PiXCircle,
-  PiPlayCircle,
   PiDownload,
-  PiFileDoc,
-  PiPause,
-  PiArrowsOut,
-  PiHeadset,
   PiPaperclipHorizontal,
   PiMicrophone,
   PiVideoCamera,
@@ -84,24 +65,21 @@ export default function ChatPage() {
   const [showChat, setShowChat] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [quickReplies, setQuickReplies] = useState<QuickReply[]>([]);
-  const [quickRepliesLoading, setQuickRepliesLoading] = useState(true);
+  const [, setQuickRepliesLoading] = useState(true);
   const [showQuickReplies, setShowQuickReplies] = useState(false);
   const [filteredQuickReplies, setFilteredQuickReplies] = useState<QuickReply[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(0);
   const [chatFilter, setChatFilter] = useState<'all' | 'unread' | 'favorite'>('all');
-  const [showProfileDrawer, setShowProfileDrawer] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxSlides, setLightboxSlides] = useState<any[]>([]);
-  const [isPlayingAudio, setIsPlayingAudio] = useState<number | null>(null);
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearchQuery = useDebounce(searchQuery, 500);
   const [contactPage, setContactPage] = useState(1);
   const [hasMoreContacts, setHasMoreContacts] = useState(true);
-  
+
   // Attachment state
   const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
   const [pendingAttachment, setPendingAttachment] = useState<{
@@ -113,7 +91,6 @@ export default function ChatPage() {
   const [isDragging, setIsDragging] = useState(false);
 
   // Refs
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
@@ -141,7 +118,8 @@ export default function ChatPage() {
       // Note: loadContacts currently uses searchQuery state (closure), which matches debounced value at this point
       loadContacts(1, false);
     }
-  }, [debouncedSearchQuery]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearchQuery, selectedPhoneNumberId]);
 
   // Load contacts when phone number selected
   useEffect(() => {
@@ -161,6 +139,7 @@ export default function ChatPage() {
       };
       subscribeWhenReady();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPhoneNumberId]);
 
   // Load messages when contact selected
@@ -174,6 +153,7 @@ export default function ChatPage() {
         }
       }, 100);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedContact?.id]);
 
   // Load quick replies on mount
@@ -349,6 +329,7 @@ export default function ChatPage() {
       chatWebSocket.off('message:new', handleNewMessage);
       chatWebSocket.off('message:status', handleStatusUpdate);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPhoneNumberId, selectedContact?.id]);
 
   const connectWebSocket = async () => {
@@ -724,25 +705,36 @@ export default function ChatPage() {
 
   // Handle keyboard navigation for suggestions
   const handleInputKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Handle suggestions dropdown first
     if (showSuggestions && filteredQuickReplies.length > 0) {
       if (e.key === 'ArrowDown') {
         e.preventDefault();
-        setSelectedSuggestionIndex(prev => 
+        setSelectedSuggestionIndex(prev =>
           prev < filteredQuickReplies.length - 1 ? prev + 1 : prev
         );
+        return;
       } else if (e.key === 'ArrowUp') {
         e.preventDefault();
         setSelectedSuggestionIndex(prev => prev > 0 ? prev - 1 : 0);
+        return;
       } else if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
         const selected = filteredQuickReplies[selectedSuggestionIndex];
         if (selected) {
           handleQuickReply(selected);
         }
+        return;
       } else if (e.key === 'Escape') {
         e.preventDefault();
         setShowSuggestions(false);
+        return;
       }
+    }
+
+    // Handle Enter key to send message (when suggestions are not shown)
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
     }
   };
 
@@ -915,6 +907,7 @@ export default function ChatPage() {
     return () => {
       document.removeEventListener('keydown', handleEscKey);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedContact]);
 
   const filteredContacts = contacts.filter((contact) => {
@@ -1213,7 +1206,17 @@ export default function ChatPage() {
                                 isOwn ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-900'
                               } relative`}
                             >
-                              {msg.mediaUrl ? (
+                              {msg.messageType === 'reaction' ? (
+                                // Reaction message - just show the emoji
+                                <div className="flex items-center gap-2">
+                                  <span className="text-3xl">{msg.reactionEmoji || '👍'}</span>
+                                  <div className="flex items-center gap-1">
+                                    <span className={`text-[10px] ${isOwn ? 'text-blue-100' : 'text-gray-500'}`}>
+                                      {format(new Date(msg.timestamp), 'HH:mm')}
+                                    </span>
+                                  </div>
+                                </div>
+                              ) : msg.mediaUrl ? (
                                 <div className="flex flex-col">
                                   {msg.messageType === 'image' && (
                                     <img 

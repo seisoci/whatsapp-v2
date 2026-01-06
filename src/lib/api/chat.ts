@@ -47,6 +47,8 @@ export interface Message {
   timestamp: string;
   status: string;
   readAt: string | null;
+  reactionEmoji?: string | null;
+  reactionMessageId?: string | null;
 }
 
 export interface SendMessageRequest {
