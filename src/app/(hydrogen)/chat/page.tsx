@@ -496,6 +496,27 @@ export default function ChatPage() {
     const messageToSend = messageInput.trim();
     setMessageInput(''); // Clear input immediately
     setMessages(prev => [...prev, optimisticMessage]); // Add to UI optimistically
+    
+    // Update contact list order: Move active contact to top and update last message
+    setContacts(prev => {
+      const contactIndex = prev.findIndex(c => c.id === selectedContact.id);
+      if (contactIndex === -1) return prev;
+      
+      const updatedContact = { 
+        ...prev[contactIndex], 
+        lastMessage: {
+          ...prev[contactIndex].lastMessage,
+          textBody: messageToSend,
+          timestamp: optimisticMessage.timestamp,
+          status: 'pending' // show pending status in list too if needed
+        }
+      };
+      
+      const newContacts = [...prev];
+      newContacts.splice(contactIndex, 1);
+      newContacts.unshift(updatedContact);
+      return newContacts;
+    });
 
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';

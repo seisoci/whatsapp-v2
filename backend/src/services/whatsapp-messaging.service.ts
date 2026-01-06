@@ -283,7 +283,9 @@ export class WhatsAppMessagingService {
     status: string;
   }): Promise<Message> {
     const messageRepo = AppDataSource.getRepository(Message);
+    const contactRepo = AppDataSource.getRepository(Contact);
     
+    // Create and save message
     const message = messageRepo.create({
       wamid: params.wamid,
       contactId: params.contactId,
@@ -300,6 +302,25 @@ export class WhatsAppMessagingService {
       timestamp: new Date(),
       sentAt: new Date(),
     });
+
+    const savedMessage = await messageRepo.save(message);
+
+    // Update contact's lastMessageAt to ensure it moves to top
+    // Run this async to not block the response if needed, but here we wait for consistency
+    try {
+      await contactRepo.update(
+        { id: params.contactId },
+        { 
+          lastMessageAt: new Date(),
+          updatedAt: new Date()
+        }
+      );
+      console.log(`Updated lastMessageAt for contact ${params.contactId}`);
+    } catch (error) {
+       console.error(`Failed to update contact lastMessageAt:`, error);
+    }
+
+    return savedMessage;
 
     return await messageRepo.save(message);
   }
