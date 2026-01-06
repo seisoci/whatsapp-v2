@@ -13,9 +13,8 @@ const authRateLimiter = rateLimiter(
 );
 
 // Public routes
-authRouter.post('/register', authRateLimiter, AuthController.register);
 authRouter.post('/login', authRateLimiter, AuthController.login);
-authRouter.post('/refresh-token', rateLimiter(), AuthController.refreshToken);
+authRouter.post('/refresh-token', AuthController.refreshToken);
 authRouter.post('/logout', AuthController.logout);
 
 // Protected routes

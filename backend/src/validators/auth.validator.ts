@@ -6,14 +6,7 @@ import { emailSchema, passwordSchema, usernameSchema } from './common.validator'
  * Validation schemas untuk authentication endpoints
  */
 
-// Register validation
-export const registerSchema = z.object({
-  email: emailSchema,
-  username: usernameSchema,
-  password: passwordSchema,
-});
 
-export type RegisterInput = z.infer<typeof registerSchema>;
 
 // Login validation
 export const loginSchema = z.object({

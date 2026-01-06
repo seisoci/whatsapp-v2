@@ -32,7 +32,6 @@ app.use('*', securityHeaders);
 app.use('*', corsMiddleware);
 app.use('*', ipFilter);
 app.use('*', sanitizeMiddleware);
-app.use('*', rateLimiter(parseInt(env.RATE_LIMIT_WINDOW) * 60 * 1000, parseInt(env.RATE_LIMIT_MAX)));
 
 // Health check
 app.get('/health', (c) => {

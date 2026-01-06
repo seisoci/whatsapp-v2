@@ -3,126 +3,12 @@ import { AppDataSource } from '../config/database';
 import { User } from '../models/User';
 import { RefreshToken } from '../models/RefreshToken';
 import { JWTService } from '../utils/jwt';
-import { registerSchema, loginSchema, refreshTokenSchema } from '../validators';
+import { loginSchema, refreshTokenSchema } from '../validators';
 import { LoginResponse } from '../types';
 import { randomBytes } from 'crypto';
 
 export class AuthController {
-  static async register(c: Context) {
-    try {
-      const body = c.get('sanitizedBody') || (await c.req.json());
 
-      // Validasi input
-      const validatedData = registerSchema.parse(body);
-
-      const userRepository = AppDataSource.getRepository(User);
-
-      // Cek apakah email sudah terdaftar
-      const existingEmail = await userRepository.findOne({
-        where: { email: validatedData.email },
-      });
-
-      if (existingEmail) {
-        return c.json(
-          {
-            success: false,
-            message: 'Email sudah terdaftar.',
-          },
-          409
-        );
-      }
-
-      // Cek apakah username sudah terdaftar
-      const existingUsername = await userRepository.findOne({
-        where: { username: validatedData.username },
-      });
-
-      if (existingUsername) {
-        return c.json(
-          {
-            success: false,
-            message: 'Username sudah digunakan.',
-          },
-          409
-        );
-      }
-
-      // Buat user baru
-      const user = userRepository.create({
-        email: validatedData.email,
-        username: validatedData.username,
-        password: validatedData.password,
-      });
-
-      await userRepository.save(user);
-
-      // Generate tokens
-      const accessToken = JWTService.generateAccessToken({
-        userId: user.id,
-        email: user.email,
-      });
-
-      const tokenId = randomBytes(32).toString('hex');
-      const refreshTokenString = JWTService.generateRefreshToken({
-        userId: user.id,
-        tokenId,
-      });
-
-      // Simpan refresh token ke database
-      const refreshTokenRepository = AppDataSource.getRepository(RefreshToken);
-      const refreshToken = refreshTokenRepository.create({
-        userId: user.id,
-        token: refreshTokenString,
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 hari
-        ipAddress: c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || null,
-        userAgent: c.req.header('user-agent') || null,
-      });
-
-      await refreshTokenRepository.save(refreshToken);
-
-      const response: LoginResponse = {
-        user: {
-          id: user.id,
-          email: user.email,
-          username: user.username,
-          createdAt: user.createdAt,
-        },
-        tokens: {
-          accessToken,
-          refreshToken: refreshTokenString,
-        },
-      };
-
-      return c.json(
-        {
-          success: true,
-          message: 'Registrasi berhasil.',
-          data: response,
-        },
-        201
-      );
-    } catch (error: any) {
-      if (error.name === 'ZodError') {
-        return c.json(
-          {
-            success: false,
-            message: 'Validasi gagal.',
-            errors: error.errors,
-          },
-          400
-        );
-      }
-
-      console.error('Register error:', error);
-      return c.json(
-        {
-          success: false,
-          message: 'Terjadi kesalahan pada server.',
-        },
-        500
-      );
-    }
-  }
 
   static async login(c: Context) {
     try {
