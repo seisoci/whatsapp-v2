@@ -124,6 +124,7 @@ export class MessageController {
 
           result = await WhatsAppMessagingService.sendTextMessage({
             phoneNumberId: phoneNumber.phoneNumberId,
+            internalPhoneNumberId: phoneNumber.id,
             accessToken: phoneNumber.accessToken,
             to: contact.waId,
             text: text.body,

@@ -84,7 +84,8 @@ export class WhatsAppMessagingService {
    * Send text message
    */
   static async sendTextMessage(params: {
-    phoneNumberId: string;
+    phoneNumberId: string;  // WhatsApp numeric ID for API
+    internalPhoneNumberId?: string;  // Internal UUID for database  
     accessToken: string;
     to: string;
     text: string;
@@ -125,18 +126,24 @@ export class WhatsAppMessagingService {
 
     const result: any = await response.json();
 
-    // Store message in database
+    // Store message in database (don't fail send if this fails)
     if (params.contactId) {
-      await this.storeOutgoingMessage({
-        contactId: params.contactId,
-        phoneNumberId: params.phoneNumberId,
-        wamid: result.messages[0].id,
-        toNumber: params.to,
-        fromNumber: params.phoneNumberId,
-        messageType: 'text',
-        textBody: params.text,
-        status: 'sent',
-      });
+      try {
+        await this.storeOutgoingMessage({
+          contactId: params.contactId,
+          phoneNumberId: params.internalPhoneNumberId || params.phoneNumberId,
+          wamid: result?.messages?.[0]?.id || null,
+          toNumber: params.to,
+          fromNumber: params.to,
+          messageType: 'text',
+          textBody: params.text,
+          status: 'sent',
+        });
+        console.log('✅ Outgoing message saved to database');
+      } catch (dbError: any) {
+        console.error('❌ Failed to store outgoing message:', dbError.message);
+        console.error('Full error:', dbError);
+      }
     }
 
     return result;

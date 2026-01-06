@@ -11,6 +11,7 @@ export interface Contact {
   phoneNumber: string;
   profileName: string | null;
   businessName: string | null;
+  profilePictureUrl: string | null;
   isBusinessAccount: boolean;
   isBlocked: boolean;
   tags: string[];

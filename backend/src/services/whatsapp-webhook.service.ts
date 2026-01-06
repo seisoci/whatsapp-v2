@@ -146,6 +146,17 @@ export class WhatsAppWebhookService {
     const waId = messageData.from;
     const contactInfo = contacts?.find((c: any) => c.wa_id === waId);
     const profileName = contactInfo?.profile?.name || null;
+    const profilePictureUrl = contactInfo?.profile_picture_url || null;
+
+    // Download and store profile picture to S3 if available
+    let s3ProfilePictureUrl: string | null = null;
+    if (profilePictureUrl) {
+      s3ProfilePictureUrl = await WhatsAppMediaService.downloadAndStoreProfilePicture({
+        profilePictureUrl,
+        contactWaId: waId,
+        phoneNumberId: internalPhoneNumberId,
+      });
+    }
 
     // Get or create contact
     let contact = await contactRepo.findOne({ 
@@ -161,12 +172,25 @@ export class WhatsAppWebhookService {
         phoneNumber: messageData.from,
         phoneNumberId: internalPhoneNumberId,
         profileName: profileName || messageData.from,
+        profilePictureUrl: s3ProfilePictureUrl, // Use S3 URL, not temp WhatsApp URL
       });
       await contactRepo.save(contact);
     } else {
-      // Update profile name if we have new info
+      // Update profile name and picture if we have new info
+      let updated = false;
+      
       if (profileName && contact.profileName !== profileName) {
         contact.profileName = profileName;
+        updated = true;
+      }
+      
+      // Update profile picture if we successfully downloaded new one to S3
+      if (s3ProfilePictureUrl && contact.profilePictureUrl !== s3ProfilePictureUrl) {
+        contact.profilePictureUrl = s3ProfilePictureUrl;
+        updated = true;
+      }
+      
+      if (updated) {
         await contactRepo.save(contact);
       }
     }
@@ -356,14 +380,23 @@ export class WhatsAppWebhookService {
     }
 
     // Find the message by WAMID
+    console.log('[DEBUG] Looking for message with wamid:', statusData.id);
     const message = await messageRepo.findOne({
       where: { wamid: statusData.id },
     });
     
     if (!message) {
-      console.warn(`Message not found for status update: ${statusData.id}`);
+      console.error('❌ Message not found for status update:', statusData.id);
+      console.error('Status data:', JSON.stringify(statusData, null, 2));
       return;
     }
+    
+    console.log('✅ Found message:', {
+      id: message.id,
+      wamid: message.wamid,
+      currentStatus: message.status,
+      newStatus: statusData.status,
+    });
 
     const statusTimestamp = new Date(parseInt(statusData.timestamp) * 1000);
 
@@ -420,7 +453,7 @@ export class WhatsAppWebhookService {
     const contact = await contactRepo.findOne({ where: { id: message.contactId } });
 
     if (contact?.phoneNumberId) {
-      chatWebSocketManager.broadcast(contact.phoneNumberId, {
+      const wsPayload = {
         type: 'message:status',
         data: {
           contactId: message.contactId,
@@ -429,7 +462,12 @@ export class WhatsAppWebhookService {
           status: statusData.status,
           timestamp: statusData.timestamp ? new Date(parseInt(statusData.timestamp) * 1000) : new Date(),
         },
-      });
+      };
+      
+      console.log('📢 [WebSocket] Broadcasting status update:', JSON.stringify(wsPayload, null, 2));
+      chatWebSocketManager.broadcast(contact.phoneNumberId, wsPayload);
+    } else {
+      console.warn(`⚠️ Cannot broadcast status update - contact not found or missing phoneNumberId for contactId: ${message.contactId}`);
     }
   }
 

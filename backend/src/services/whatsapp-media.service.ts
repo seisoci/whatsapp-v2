@@ -246,5 +246,59 @@ export class WhatsAppMediaService {
     const mediaData = await this.getMediaUrl(mediaId, accessToken);
     return mediaData?.url || null;
   }
+  
+  /**
+   * Download and store contact profile picture to S3
+   * Returns S3 URL for permanent storage
+   */
+  static async downloadAndStoreProfilePicture(params: {
+    profilePictureUrl: string;
+    contactWaId: string;
+    phoneNumberId: string;
+  }): Promise<string | null> {
+    try {
+      // SECURITY: Validate URL is from WhatsApp domain
+      if (!this.validateMediaUrl(params.profilePictureUrl)) {
+        console.error('❌ SECURITY: Profile picture URL validation failed');
+        return null;
+      }
+
+      // Download profile picture from WhatsApp URL
+      const response = await fetch(params.profilePictureUrl);
+      if (!response.ok) {
+        console.error('Failed to download profile picture:', response.statusText);
+        return null;
+      }
+
+      const buffer = Buffer.from(await response.arrayBuffer());
+      
+      // Get content type
+      const contentType = response.headers.get('content-type') || 'image/jpeg';
+      const extension = contentType.split('/')[1] || 'jpg';
+      
+      // Generate S3 path: phone_number_id/profile/{wa_id}.{ext}
+      const timestamp = Date.now();
+      const filename = `${params.contactWaId}-${timestamp}.${extension}`;
+      const s3Path = `${params.phoneNumberId}/profile/${filename}`;
+
+      // Upload to S3/MinIO
+      const uploadResult = await storageService.uploadFile(
+        s3Path,
+        buffer,
+        contentType
+      );
+
+      if (!uploadResult || !uploadResult.url) {
+        console.error('Failed to upload profile picture to S3');
+        return null;
+      }
+
+      console.log(`✅ Profile picture stored: ${uploadResult.url}`);
+      return uploadResult.url;
+    } catch (error: any) {
+      console.error('Error downloading/storing profile picture:', error);
+      return null;
+    }
+  }
 }
 

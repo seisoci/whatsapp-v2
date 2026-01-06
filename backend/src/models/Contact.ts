@@ -47,6 +47,9 @@ export class Contact {
   @Column({ name: 'business_name', type: 'varchar', length: 255, nullable: true })
   businessName: string | null; // For business contacts
 
+  @Column({ name: 'profile_picture_url', type: 'text', nullable: true })
+  profilePictureUrl: string | null; // WhatsApp profile picture URL
+
   // Contact Status
   @Column({ name: 'is_business_account', default: false })
   isBusinessAccount: boolean;

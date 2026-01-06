@@ -231,16 +231,57 @@ export default function ChatPage() {
     };
 
     const handleStatusUpdate = (event: any) => {
-      console.log('[WS] Received message:status event:', event);
-      if (event.phoneNumberId === selectedPhoneNumberId && event.data.contactId === selectedContact?.id) {
-        console.log('[WS] Updating message status:', event.data);
+      console.log('[WS] Received message:status event:', JSON.stringify(event, null, 2));
+      
+      // Only check contactId - phoneNumberId is implicit in WebSocket subscription
+      if (event.data.contactId === selectedContact?.id) {
+        console.log('[WS] Contact match! Updating message status:', event.data.status);
+        console.log('[WS] Target WAMID:', event.data.wamid);
+        console.log('[WS] Target DB ID:', event.data.messageId);
+
         setMessages(prev =>
-          prev.map(msg =>
-            msg.id === event.data.messageId
-              ? { ...msg, status: event.data.status }
-              : msg
-          )
+          prev.map(msg => {
+            // Robust Matching Logic:
+            let isMatch = false;
+            
+            // 1. Match by WAMID (Best for optimistic messages that have been updated with WAMID)
+            if (msg.wamid && event.data.wamid && msg.wamid === event.data.wamid) {
+              isMatch = true;
+              console.log('✅ MATCH by WAMID:', msg.wamid);
+            }
+            // 2. Match by Database ID (Standard match)
+            else if (msg.id === event.data.messageId) {
+              isMatch = true;
+              console.log('✅ MATCH by DB ID:', msg.id);
+            }
+            // 3. Fallback: Fuzzy Match by Content + Destination (For optimistic messages if WAMID missing)
+            // Sometimes status update arrives before WAMID is set in UI state
+            else if (msg.direction === 'outgoing' && msg.id.startsWith('temp-') && !msg.wamid) {
+               // We don't have body content in event, but we can assume if it's the most recent outgoing message 
+               // and we just got a status update for this contact, it's likely this one.
+               // (Simplified logic: Update the most recent pending outgoing message)
+               const timeDiff = Math.abs(new Date(msg.timestamp).getTime() - new Date().getTime());
+               if (timeDiff < 60000) { // Created within last minute
+                 isMatch = true;
+                 console.log('⚠️ FUZZY MATCH by Recency (Optimistic):', msg.id);
+               }
+            }
+
+            if (isMatch) {
+               console.log(`[WS] Updating ${msg.id} status: ${msg.status} -> ${event.data.status}`);
+               return { 
+                 ...msg, 
+                 status: event.data.status,
+                 // Also ensure it has the correct real ID if available
+                 ...(event.data.messageId ? { id: event.data.messageId } : {}),
+                 ...(event.data.wamid ? { wamid: event.data.wamid } : {})
+               };
+            }
+            return msg;
+          })
         );
+      } else {
+        console.log('[WS] Ignoring status update for different contact:', event.data.contactId);
       }
     };
 
@@ -337,8 +378,65 @@ export default function ChatPage() {
       
       // API client already unwraps response.data
       const msgs = Array.isArray(response) ? response : (response.data || []);
-      setMessages(msgs);
-      console.log('[DEBUG] Loaded', msgs.length, 'messages');
+      
+      // DEBUG: Log all message statuses
+      console.log('[DEBUG] Loaded message statuses:', msgs.map(m => ({
+        id: m.id,
+        wamid: m.wamid,
+        direction: m.direction,
+        status: m.status,
+        textBody: m.textBody?.substring(0, 20),
+      })));
+      
+      // Preserve optimistic messages (messages with temp- IDs) when merging with API data
+      setMessages(prevMessages => {
+        const optimisticMessages = prevMessages.filter(msg => msg.id?.toString().startsWith('temp-'));
+        
+        // Deduplicate: Filter out optimistic messages that are already in the loaded messages (match by WAMID)
+        const loadedWamids = new Set(msgs.map(m => m.wamid).filter(Boolean));
+        
+        console.log('[DEBUG] Deduplication check:');
+        console.log('  - Loaded WAMIDs:', Array.from(loadedWamids));
+        console.log('  - Optimistic messages:', optimisticMessages.map(m => ({ id: m.id, wamid: m.wamid, status: m.status, text: m.textBody })));
+
+        const uniqueOptimisticMessages = optimisticMessages.filter(optMsg => {
+          // 1. Strict Deduplication by WAMID
+          if (optMsg.wamid && loadedWamids.has(optMsg.wamid)) {
+             return false; // Drop strict duplicate
+          }
+          
+          // 2. Fuzzy Deduplication: Match by content + direction + timestamp (within 60s window)
+          // This handles cases where optimistic message doesn't have WAMID yet but API returns the saved message.
+          const isFuzzyDuplicate = msgs.some(loadedMsg => {
+            if (loadedMsg.direction !== optMsg.direction) return false;
+            // Check body text (trimmed)
+            if (loadedMsg.textBody?.trim() !== optMsg.textBody?.trim()) return false;
+            
+            // Check timestamp proximity (if both exist)
+            if (loadedMsg.createdAt && optMsg.timestamp) {
+              const loadedTime = new Date(loadedMsg.createdAt).getTime();
+              const optTime = new Date(optMsg.timestamp).getTime();
+              const diff = Math.abs(loadedTime - optTime);
+              // 60 seconds tolerance
+              return diff < 60000;
+            }
+            return false;
+          });
+
+          if (isFuzzyDuplicate) {
+             console.log(`[Dedupe] Dropping fuzzy duplicate ${optMsg.id} ("${optMsg.textBody?.substring(0, 10)}...")`);
+             return false;
+          }
+
+          return true; // Keep if no duplicate found
+        });
+
+        console.log('[DEBUG] Preserving', uniqueOptimisticMessages.length, 'unique optimistic messages (deduplicated from', optimisticMessages.length, ')');
+        console.log('[DEBUG] Loaded', msgs.length, 'messages from API');
+        
+        // Merge: API messages + unique optimistic messages (in chronological order)
+        return [...msgs, ...uniqueOptimisticMessages];
+      });
       
       scrollToBottom();
     } catch (error) {
@@ -379,23 +477,63 @@ export default function ChatPage() {
   const handleSendMessage = async () => {
     if (!messageInput.trim() || !selectedContact || sending) return;
 
+    const optimisticMessage = {
+      id: `temp-${Date.now()}`, // Temporary ID
+      wamid: null,
+      contactId: selectedContact.id,
+      messageType: 'text',
+      textBody: messageInput.trim(),
+      mediaUrl: null,
+      mediaCaption: null,
+      mediaFilename: null,
+      mediaMimeType: null,
+      direction: 'outgoing' as const,
+      timestamp: new Date().toISOString(),
+      status: 'pending',
+      readAt: null,
+    };
+
+    const messageToSend = messageInput.trim();
+    setMessageInput(''); // Clear input immediately
+    setMessages(prev => [...prev, optimisticMessage]); // Add to UI optimistically
+
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+    }
+
     setSending(true);
     try {
-      await sendChatMessage({
+      const result = await sendChatMessage({
         contactId: selectedContact.id,
         phoneNumberId: selectedPhoneNumberId,
         type: 'text',
         text: {
-          body: messageInput.trim(),
+          body: messageToSend,
         },
       });
 
-      setMessageInput('');
-      if (textareaRef.current) {
-        textareaRef.current.style.height = 'auto';
-      }
+      // Update optimistic message with real data (keep temp ID until it's replaced by DB data)
+      setMessages(prev => 
+        prev.map(msg => 
+          msg.id === optimisticMessage.id 
+            ? { ...msg, wamid: result.data?.messages?.[0]?.id || null, status: 'sent' }
+            : msg
+        )
+      );
+
+      scrollToBottom();
     } catch (error: any) {
       console.error('Failed to send message:', error);
+      
+      // Mark optimistic message as failed
+      setMessages(prev => 
+        prev.map(msg => 
+          msg.id === optimisticMessage.id 
+            ? { ...msg, status: 'failed' }
+            : msg
+        )
+      );
+      
       alert(error.response?.data?.message || 'Failed to send message');
     } finally {
       setSending(false);
@@ -599,7 +737,7 @@ export default function ChatPage() {
                       }`}
                     >
                       <Avatar
-                        src={`https://ui-avatars.com/api/?name=${encodeURIComponent(contact.profileName || contact.phoneNumber)}`}
+                        src={contact.profilePictureUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(contact.profileName || contact.phoneNumber)}`}
                         name={contact.profileName || contact.phoneNumber}
                         className="h-10 w-10"
                       />
@@ -657,7 +795,7 @@ export default function ChatPage() {
                       <PiArrowLeft className="h-6 w-6" />
                     </Button>
                     <Avatar
-                      src={`https://ui-avatars.com/api/?name=${encodeURIComponent(selectedContact.profileName || selectedContact.phoneNumber)}`}
+                      src={selectedContact.profilePictureUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedContact.profileName || selectedContact.phoneNumber)}`}
                       name={selectedContact.profileName || selectedContact.phoneNumber}
                       className="h-10 w-10"
                     />
