@@ -62,7 +62,7 @@ export const lithiumMenuItems: LithiumMenuItem = {
     dropdownItems: [
       {
         name: 'Chat',
-        href: '#',
+        href: routes.chat,
         icon: PiChatsDuotone,
       },
     ],
@@ -73,7 +73,7 @@ export const lithiumMenuItems: LithiumMenuItem = {
     dropdownItems: [
       {
         name: 'Chat',
-        href: '#',
+        href: routes.chat,
         icon: PiChatsDuotone,
       },
     ],

@@ -244,6 +244,14 @@ export default function HeaderMenuLeft() {
           <NavMenu.Trigger className="flex items-center gap-1 duration-200">
             <MenuTriggerButton name="users" />
           </NavMenu.Trigger>
+          <NavMenu.Content>
+            <div className="w-[180px]">
+              <LinkMenu
+                className="flex flex-col p-3 dark:bg-gray-100"
+                items={lithiumMenuItems.users.dropdownItems ?? []}
+              />
+            </div>
+          </NavMenu.Content>
         </NavMenu.Item>
         {/* <NavMenu.Item>
           <NavMenu.Trigger className="flex items-center gap-1 duration-200">
@@ -334,7 +342,7 @@ function MenuTriggerButton({ name }: { name: LithiumMenuItemsKeys }) {
   const menuItem = lithiumMenuItems[name];
 
   // Check if this is a direct link (unconfigured/configured)
-  const isDirectLink = name === 'unconfigured' || name === 'configured' || name === 'users';
+  const isDirectLink = name === 'unconfigured' || name === 'configured';
   const directLinkHref = menuItem.dropdownItems?.[0]?.href;
   const isDirectLinkActive = pathname === directLinkHref;
 

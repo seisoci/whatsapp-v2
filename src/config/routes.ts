@@ -23,6 +23,7 @@ export const routes = {
     nft: "/search/nft",
     flight: "/search/flight",
   },
+  chat: "/chat",
   support: {
     dashboard: "/support",
     inbox: "/support/inbox",

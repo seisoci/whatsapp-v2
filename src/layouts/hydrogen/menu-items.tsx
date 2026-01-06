@@ -19,7 +19,7 @@ export const menuItems = [
   },
   {
     name: 'Chat',
-    href: '#',
+    href: routes.chat,
     icon: <PiChatsDuotone />,
   },
   {
