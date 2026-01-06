@@ -48,6 +48,7 @@ import { getChatContacts, getChatMessages, sendChatMessage, markConversationAsRe
 import { chatWebSocket } from '@/lib/websocket/chat-websocket';
 import { getAllPhoneNumbers } from '@/lib/api/phone-numbers';
 import { formatDistanceToNow } from 'date-fns';
+import { useDebounce } from '@/hooks/use-debounce';
 
 const defaultEmojis = [
   '😀', '😃', '😄', '😁', '😆', '😅', '🤣', '😂',
@@ -100,6 +101,7 @@ export default function ChatPage() {
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearchQuery = useDebounce(searchQuery, 500);
   const [contactPage, setContactPage] = useState(1);
   const [hasMoreContacts, setHasMoreContacts] = useState(true);
 
@@ -117,9 +119,23 @@ export default function ChatPage() {
     connectWebSocket();
   }, []);
 
+  // Trigger search when debounced query changes
+  useEffect(() => {
+    if (selectedPhoneNumberId) {
+      // Don't trigger on initial empty search if already handled by phone number selection
+      // But we generally want to reload when search changes.
+      // If search becomes empty, we reload all.
+      setContactPage(1);
+      // Pass the specific search query to ensure we use the debounced value
+      // Note: loadContacts currently uses searchQuery state (closure), which matches debounced value at this point
+      loadContacts(1, false);
+    }
+  }, [debouncedSearchQuery]);
+
   // Load contacts when phone number selected
   useEffect(() => {
     if (selectedPhoneNumberId) {
+      setSearchQuery(''); // Reset search when switching numbers (will trigger debounce effect with empty, reloading contacts)
       console.log('[WS] Subscribing to phone number:', selectedPhoneNumberId);
       loadContacts();
 
@@ -140,6 +156,12 @@ export default function ChatPage() {
   useEffect(() => {
     if (selectedContact) {
       loadMessages();
+      // Auto-focus textarea for immediate typing
+      setTimeout(() => {
+        if (textareaRef.current) {
+          textareaRef.current.focus();
+        }
+      }, 100);
     }
   }, [selectedContact?.id]);
 
