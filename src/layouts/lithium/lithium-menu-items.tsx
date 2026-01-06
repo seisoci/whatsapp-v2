@@ -92,6 +92,11 @@ export const lithiumMenuItems: LithiumMenuItem = {
         href: routes.templates,
         icon: PiEnvelopeDuotone,
       },
+      {
+        name: 'Quick Replies',
+        href: routes.quickReplies,
+        icon: PiEnvelopeDuotone,
+      },
     ],
   },
   whatsapp: {
@@ -106,6 +111,11 @@ export const lithiumMenuItems: LithiumMenuItem = {
       {
         name: 'Templates',
         href: routes.templates,
+        icon: PiEnvelopeDuotone,
+      },
+      {
+        name: 'Quick Replies',
+        href: routes.quickReplies,
         icon: PiEnvelopeDuotone,
       },
     ],

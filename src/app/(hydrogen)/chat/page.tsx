@@ -51,6 +51,7 @@ import { getChatContacts, getChatMessages, sendChatMessage, markConversationAsRe
 import { uploadApi } from '@/lib/api-client';
 import { chatWebSocket } from '@/lib/websocket/chat-websocket';
 import { getAllPhoneNumbers } from '@/lib/api/phone-numbers';
+import { quickReplyApi, type QuickReply } from '@/lib/api/quick-replies';
 import { formatDistanceToNow, format, differenceInCalendarDays } from 'date-fns';
 import { useDebounce } from '@/hooks/use-debounce';
 
@@ -70,20 +71,7 @@ const defaultEmojis = [
   '🔥', '⭐', '✨', '💫', '💥', '💯', '✅', '❌',
 ];
 
-const quickReplies = [
-  { id: 1, text: 'Saya berminat dengan potongan harga 10% yang ditawarkan', value: 'DISC10' },
-  { id: 2, text: 'Apakah bisa mendapatkan potongan harga 20% untuk pembelian ini?', value: 'DISC20' },
-  { id: 3, text: 'Saya tertarik dengan penawaran diskon 30%, mohon info lebih lanjut', value: 'DISC30' },
-  { id: 4, text: 'Bisakah memberikan potongan harga hingga 50% untuk transaksi ini?', value: 'DISC50' },
-  { id: 5, text: 'Saya akan melakukan pembayaran secara penuh sekarang', value: 'FULL' },
-  { id: 6, text: 'Apakah bisa melakukan pembayaran bertahap atau cicilan?', value: 'PARTIAL' },
-  { id: 7, text: 'Terima kasih banyak atas informasi dan bantuannya', value: 'Thanks' },
-  { id: 8, text: 'Iya benar, saya setuju dengan penawaran tersebut', value: 'Yes' },
-  { id: 9, text: 'Tidak, terima kasih. Saya pertimbangkan dulu', value: 'No' },
-  { id: 10, text: 'Mohon kirimkan informasi lengkap mengenai produk dan harga', value: 'MoreInfo' },
-  { id: 11, text: 'Tolong hubungi saya kembali nanti, saya sedang sibuk sekarang', value: 'CallLater' },
-  { id: 12, text: 'Boleh minta dikirimkan katalog produk lengkap beserta harganya?', value: 'SendCatalog' },
-];
+
 
 export default function ChatPage() {
   // State
@@ -95,7 +83,12 @@ export default function ChatPage() {
   const [messageInput, setMessageInput] = useState('');
   const [showChat, setShowChat] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [quickReplies, setQuickReplies] = useState<QuickReply[]>([]);
+  const [quickRepliesLoading, setQuickRepliesLoading] = useState(true);
   const [showQuickReplies, setShowQuickReplies] = useState(false);
+  const [filteredQuickReplies, setFilteredQuickReplies] = useState<QuickReply[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(0);
   const [chatFilter, setChatFilter] = useState<'all' | 'unread' | 'favorite'>('all');
   const [showProfileDrawer, setShowProfileDrawer] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -182,6 +175,26 @@ export default function ChatPage() {
       }, 100);
     }
   }, [selectedContact?.id]);
+
+  // Load quick replies on mount
+  useEffect(() => {
+    const fetchQuickReplies = async () => {
+      try {
+        setQuickRepliesLoading(true);
+        const response = await quickReplyApi.getAll();
+        // API client returns { data: QuickReply[] }
+        const replies: QuickReply[] = Array.isArray(response) ? response as QuickReply[] : ((response as any).data || []);
+        setQuickReplies(replies);
+        setFilteredQuickReplies(replies); // Initialize filtered list
+      } catch (error) {
+        console.error('Failed to load quick replies:', error);
+      } finally {
+        setQuickRepliesLoading(false);
+      }
+    };
+    
+    fetchQuickReplies();
+  }, []);
 
   // WebSocket event listeners
   useEffect(() => {
@@ -670,13 +683,67 @@ export default function ChatPage() {
     setShowEmojiPicker((prev) => !prev);
   };
 
-  const handleQuickReply = (text: string) => {
-    setMessageInput(text);
+  const handleQuickReply = (quickReply: QuickReply) => {
+    setMessageInput(quickReply.text);
     setShowQuickReplies(false);
+    setShowSuggestions(false);
+    // Focus textarea after selection
+    setTimeout(() => {
+      if (textareaRef.current) {
+        textareaRef.current.focus();
+      }
+    }, 0);
   };
 
   const toggleQuickReplies = () => {
     setShowQuickReplies((prev) => !prev);
+  };
+
+  // Handle input change and detect slash command for suggestions
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value;
+    setMessageInput(value);
+
+    // Check if user typed "/" to trigger suggestions
+    if (value.startsWith('/')) {
+      const searchTerm = value.slice(1).toLowerCase();
+      
+      // Filter quick replies based on shortcut or text
+      const filtered = quickReplies.filter(qr => 
+        qr.shortcut.toLowerCase().includes(searchTerm) ||
+        qr.text.toLowerCase().includes(searchTerm)
+      );
+      
+      setFilteredQuickReplies(filtered);
+      setShowSuggestions(filtered.length > 0);
+      setSelectedSuggestionIndex(0); // Reset selection
+    } else {
+      setShowSuggestions(false);
+    }
+  };
+
+  // Handle keyboard navigation for suggestions
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (showSuggestions && filteredQuickReplies.length > 0) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setSelectedSuggestionIndex(prev => 
+          prev < filteredQuickReplies.length - 1 ? prev + 1 : prev
+        );
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setSelectedSuggestionIndex(prev => prev > 0 ? prev - 1 : 0);
+      } else if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        const selected = filteredQuickReplies[selectedSuggestionIndex];
+        if (selected) {
+          handleQuickReply(selected);
+        }
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        setShowSuggestions(false);
+      }
+    }
   };
 
   const scrollToBottom = (behavior: ScrollBehavior = 'auto') => {
@@ -1361,21 +1428,34 @@ export default function ChatPage() {
                     </div>
 
                     <div className="flex-1 relative">
+                      {/* Suggestions Dropdown */}
+                      {showSuggestions && filteredQuickReplies.length > 0 && (
+                        <div className="absolute bottom-full left-0 right-0 mb-2 max-h-48 overflow-y-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50">
+                          {filteredQuickReplies.map((qr, index) => (
+                            <button
+                              key={qr.id}
+                              onClick={() => handleQuickReply(qr)}
+                              className={`w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 border-b border-gray-100 dark:border-gray-700 last:border-b-0 ${
+                                index === selectedSuggestionIndex ? 'bg-gray-100 dark:bg-gray-700' : ''
+                              }`}
+                            >
+                              <div className="font-medium text-sm">/{qr.shortcut}</div>
+                              <div className="text-xs text-gray-600 dark:text-gray-400 truncate">{qr.text}</div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      
                       <Textarea
                         ref={textareaRef}
                         value={messageInput}
-                        onChange={(e) => setMessageInput(e.target.value)}
+                        onChange={handleInputChange}
+                        onKeyDown={handleInputKeyDown}
                         onPaste={handlePaste}
                         placeholder={selectedContact.isSessionActive ? "Type a message..." : "Session expired"}
                         disabled={sending || !selectedContact.isSessionActive}
                         className="w-full resize-none"
                         rows={1}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' && !e.shiftKey) {
-                            e.preventDefault();
-                            handleSendMessage();
-                          }
-                        }}
                       />
                     </div>
 
@@ -1407,7 +1487,7 @@ export default function ChatPage() {
                     {/* Send Button */}
                     <Button
                       onClick={handleSendMessage}
-                      disabled={(!messageInput.trim() && !pendingAttachment) || sending || !selectedContact.isSessionActive}
+                      disabled={(!messageInput?.trim() && !pendingAttachment) || sending || !selectedContact.isSessionActive}
                       size="sm"
                     >
                       {sending ? 'Sending...' : <PiPaperPlaneTilt className="h-5 w-5" />}
@@ -1432,7 +1512,7 @@ export default function ChatPage() {
                         {quickReplies.map((reply) => (
                           <button
                             key={reply.id}
-                            onClick={() => handleQuickReply(reply.text)}
+                            onClick={() => handleQuickReply(reply)}
                             className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 rounded"
                           >
                             {reply.text}

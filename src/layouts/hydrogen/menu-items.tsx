@@ -35,6 +35,10 @@ export const menuItems = [
         name: 'Templates',
         href: routes.templates,
       },
+      {
+        name: 'Quick Replies',
+        href: routes.quickReplies,
+      },
     ],
   },
   {

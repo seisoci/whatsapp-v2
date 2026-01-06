@@ -37,6 +37,11 @@ export const menuItems = [
         href: routes.templates,
         icon: <PiEnvelopeDuotone />,
       },
+      {
+        name: 'Quick Replies',
+        href: routes.quickReplies,
+        icon: <PiEnvelopeDuotone />,
+      },
     ],
   },
   {

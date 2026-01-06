@@ -24,6 +24,7 @@ export const routes = {
     flight: "/search/flight",
   },
   chat: "/chat",
+  quickReplies: "/quick-replies",
   support: {
     dashboard: "/support",
     inbox: "/support/inbox",

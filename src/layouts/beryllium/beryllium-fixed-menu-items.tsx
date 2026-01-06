@@ -67,6 +67,10 @@ export const berylliumMenuItems: MenuItemsType[] = [
             name: 'Templates',
             href: routes.templates,
           },
+          {
+            name: 'Quick Replies',
+            href: routes.quickReplies,
+          },
         ],
       },
       {
