@@ -335,6 +335,11 @@ export class WhatsAppWebhookService {
       type: 'message:new',
       data: {
         contactId: contact.id,
+        contact: {
+             lastCustomerMessageAt: contact.lastCustomerMessageAt,
+             sessionExpiresAt: contact.sessionExpiresAt,
+             isSessionActive: contact.isSessionActive, // Using the getter on the entity
+        },
         message: {
           id: message.id,
           wamid: message.wamid,

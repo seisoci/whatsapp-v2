@@ -36,6 +36,7 @@ import { quickReplyApi, type QuickReply } from '@/lib/api/quick-replies';
 import { formatDistanceToNow, format, differenceInCalendarDays } from 'date-fns';
 import { useDebounce } from '@/hooks/use-debounce';
 import ContactTags from '@/app/shared/chat/contact-tags';
+import SessionTimer from './session-timer';
 
 const defaultEmojis = [
   '😀', '😃', '😄', '😁', '😆', '😅', '🤣', '😂',
@@ -235,11 +236,18 @@ export default function ChatPage() {
                 status: rawMessage.status || 'delivered',
               },
               lastMessageTimestamp: rawMessage.timestamp,
+              // Update session info if available in event
+              ...(event.data.contact || {}),
               // Increment unread count if message is incoming and not currently selected
               unreadCount: (rawMessage.direction === 'incoming' && selectedContact?.id !== contactId)
                 ? (prevContacts[contactIndex].unreadCount || 0) + 1
                 : prevContacts[contactIndex].unreadCount
             };
+
+            // Also update selectedContact if it matches
+            if (selectedContact?.id === contactId && event.data.contact) {
+                 setSelectedContact(prev => prev ? ({ ...prev, ...event.data.contact }) : null);
+            }
 
             // Remove from old position and add to top
             const newContacts = [...prevContacts];
@@ -1222,9 +1230,9 @@ export default function ChatPage() {
                       <h6 className="text-sm font-semibold">{selectedContact.profileName || selectedContact.phoneNumber}</h6>
                       <div className="flex items-center gap-2">
                         <p className="text-xs text-gray-500">
-                          {selectedContact.isSessionActive ? (
-                            <span className="text-green-600">
-                              Session: {Math.floor(selectedContact.sessionRemainingSeconds / 3600)}h left
+                          {selectedContact.isSessionActive && selectedContact.sessionExpiresAt ? (
+                            <span className="text-green-600 font-bold tabular-nums">
+                              Session: <SessionTimer expiresAt={selectedContact.sessionExpiresAt} />
                             </span>
                           ) : (
                             <span className="text-red-600">Session expired</span>
@@ -1530,7 +1538,7 @@ export default function ChatPage() {
                         onChange={handleInputChange}
                         onKeyDown={handleInputKeyDown}
                         onPaste={handlePaste}
-                        placeholder={selectedContact.isSessionActive ? "Type a message..." : "Session expired"}
+                        placeholder={selectedContact.isSessionActive ? "Type a message..." : "Session expired. User must reply to open 24h window."}
                         disabled={sending || !selectedContact.isSessionActive}
                         className="w-full resize-none"
                         rows={1}
