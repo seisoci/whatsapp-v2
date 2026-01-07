@@ -28,10 +28,10 @@ import Lightbox from "yet-another-react-lightbox";
 import "yet-another-react-lightbox/styles.css";
 import Video from "yet-another-react-lightbox/plugins/video";
 import Zoom from "yet-another-react-lightbox/plugins/zoom";
-import { getChatContacts, getChatMessages, sendChatMessage, markConversationAsRead, type Contact, type Message } from '@/lib/api/chat';
+import { chatApi, type Contact, type Message } from '@/lib/api/chat';
 import { uploadApi } from '@/lib/api-client';
 import { chatWebSocket } from '@/lib/websocket/chat-websocket';
-import { getAllPhoneNumbers } from '@/lib/api/phone-numbers';
+import { phoneNumbersApi } from '@/lib/api/phone-numbers';
 import { quickReplyApi, type QuickReply } from '@/lib/api/quick-replies';
 import { formatDistanceToNow, format, differenceInCalendarDays } from 'date-fns';
 import { useDebounce } from '@/hooks/use-debounce';
@@ -418,7 +418,7 @@ export default function ChatPage() {
 
   const loadPhoneNumbers = async () => {
     try {
-      const response = await getAllPhoneNumbers();
+      const response = await phoneNumbersApi.getAll();
       const numbers = Array.isArray(response) ? response : (response.data || []);
       setPhoneNumbers(numbers);
       
@@ -437,7 +437,7 @@ export default function ChatPage() {
     console.log('Loading contacts for phone number:', selectedPhoneNumberId, 'page:', page);
     if (!append) setLoading(true);
     try {
-      const response = await getChatContacts({
+      const response = await chatApi.getContacts({
         phoneNumberId: selectedPhoneNumberId,
         search: searchQuery || undefined,
         page,
@@ -477,7 +477,7 @@ export default function ChatPage() {
     console.log('[DEBUG] Loading messages for contact:', targetContact.id);
     setLoading(true);
     try {
-      const response = await getChatMessages({
+      const response = await chatApi.getMessages({
         contactId: targetContact.id,
         limit: 50,
       });
@@ -569,7 +569,7 @@ export default function ChatPage() {
     
     // Mark conversation as read in backend (persist to database)
     try {
-      await markConversationAsRead(contact.id);
+      await chatApi.markConversationAsRead(contact.id);
     } catch (error) {
       console.error('Failed to mark conversation as read:', error);
       // Don't show error to user - the UI already updated optimistically
@@ -692,7 +692,7 @@ export default function ChatPage() {
         };
       }
 
-      const result = await sendChatMessage(sendPayload);
+      const result = await chatApi.sendMessage(sendPayload);
 
       console.log('📨 Send message result:', result);
       console.log('💾 Saved message from backend:', result.message);

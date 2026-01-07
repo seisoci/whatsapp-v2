@@ -10,7 +10,7 @@ import { PiMagnifyingGlassBold } from 'react-icons/pi';
 import { Flex, Input, Title, Loader, Button } from 'rizzui';
 import { useModal } from '@/app/shared/modal-views/use-modal';
 import CreateEditPermission from '@/app/shared/permissions/create-edit-permission';
-import { permissionsApi } from '@/lib/api-client';
+import { permissionsApi } from '@/lib/api/permissions';
 import toast from 'react-hot-toast';
 
 export default function PermissionsTable() {

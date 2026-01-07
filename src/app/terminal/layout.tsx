@@ -1,6 +1,6 @@
 'use client';
 
-import { AuthProvider } from '@/lib/auth-context-new';
+import { AuthProvider } from '@/lib/auth-context';
 
 /**
  * Terminal layout - bypasses AuthGuard to prevent redirect loops

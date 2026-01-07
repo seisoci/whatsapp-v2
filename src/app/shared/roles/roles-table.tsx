@@ -10,7 +10,7 @@ import { PiMagnifyingGlassBold } from 'react-icons/pi';
 import { Flex, Input, Title, Loader, Button } from 'rizzui';
 import { useModal } from '@/app/shared/modal-views/use-modal';
 import CreateEditRole from '@/app/shared/roles/create-edit-role';
-import { rolesApi } from '@/lib/api-client';
+import { rolesApi } from '@/lib/api/roles';
 import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 

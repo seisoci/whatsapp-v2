@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Button, Title, Loader } from 'rizzui';
 import PageHeader from '@/app/shared/page-header';
-import { rolesApi, permissionsApi } from '@/lib/api-client';
+import { rolesApi } from '@/lib/api/roles';
+import { permissionsApi } from '@/lib/api/permissions';
 import toast from 'react-hot-toast';
 import AssignPermissionsForm from '@/app/shared/roles/assign-permissions-form';
 

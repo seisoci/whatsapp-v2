@@ -2,22 +2,35 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { login as apiLogin, logout as apiLogout, getAuthenticatedUser } from './sanctum-api';
+import { authApi, setTokens, clearTokens, getUser, setUser as saveUser, getAccessToken } from './api-client';
 import { routes } from '@/config/routes';
 
 interface User {
-  id: number;
-  name: string;
+  id: string;
   email: string;
-  [key: string]: any;
+  username: string;
+  isActive: boolean;
+  emailVerified: boolean;
+  role?: {
+    id: string;
+    name: string;
+    slug: string;
+    permissions: any[];
+    menus: any[];
+  };
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string, remember?: boolean, turnstileToken?: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   refetchUser: () => Promise<void>;
+  isAuthenticated: boolean;
+  hasPermission: (permission: string) => boolean;
+  hasRole: (role: string | string[]) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -33,39 +46,71 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const checkAuth = async () => {
     try {
-      const userData = await getAuthenticatedUser();
-      setUser(userData);
+      const token = getAccessToken();
+      if (!token) {
+        setUser(null);
+        setLoading(false);
+        return;
+      }
+
+      // Try to get user from localStorage first
+      const cachedUser = getUser();
+      if (cachedUser) {
+        setUser(cachedUser);
+      }
+
+      // Fetch fresh user data from API
+      const response = await authApi.me();
+      if (response.success && response.data) {
+        const userData = response.data;
+        setUser(userData);
+        saveUser(userData);
+      } else {
+        clearTokens();
+        setUser(null);
+      }
     } catch (error) {
+      console.error('Auth check error:', error);
+      clearTokens();
       setUser(null);
     } finally {
       setLoading(false);
     }
   };
 
-  const login = async (email: string, password: string, remember: boolean = false, turnstileToken?: string) => {
+  const login = async (email: string, password: string) => {
     try {
-      const response = await apiLogin({
-        email,
-        password,
-        remember,
-        turnstile_token: turnstileToken
-      });
+      const response = await authApi.login({ email, password });
 
-      if (response && response.data) {
-        setUser(response.data);
-        router.push('/');
+      // Response already contains { success, message, data }
+      if (response.success && response.data) {
+        const { user: userData, tokens } = response.data;
+
+        // Save tokens
+        setTokens(tokens.accessToken, tokens.refreshToken);
+
+        // Save user data
+        setUser(userData);
+        saveUser(userData);
+
+        // Force page reload to home after login
+        window.location.href = '/';
+      } else {
+        throw new Error(response.message || 'Login failed');
       }
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Login error:', error);
       throw error;
     }
   };
 
   const logout = async () => {
     try {
-      await apiLogout();
-      setUser(null);
-      router.push(routes.signIn);
+      await authApi.logout();
     } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      clearTokens();
       setUser(null);
       router.push(routes.signIn);
     }
@@ -73,15 +118,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refetchUser = async () => {
     try {
-      const userData = await getAuthenticatedUser();
-      setUser(userData);
+      const response = await authApi.me();
+      if (response.data.success && response.data.data) {
+        const userData = response.data.data;
+        setUser(userData);
+        saveUser(userData);
+      }
     } catch (error) {
+      console.error('Refetch user error:', error);
+      clearTokens();
       setUser(null);
     }
   };
 
+  const hasPermission = (permission: string): boolean => {
+    if (!user || !user.role) return false;
+    return user.role.permissions?.some((p: any) => p.slug === permission) || false;
+  };
+
+  const hasRole = (role: string | string[]): boolean => {
+    if (!user || !user.role) return false;
+    const roles = Array.isArray(role) ? role : [role];
+    return roles.includes(user.role.slug);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, refetchUser }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        login,
+        logout,
+        refetchUser,
+        isAuthenticated: !!user,
+        hasPermission,
+        hasRole,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

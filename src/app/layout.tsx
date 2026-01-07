@@ -1,5 +1,5 @@
 import { Toaster } from 'react-hot-toast';
-import { AuthProvider } from '@/lib/auth-context-new';
+import { AuthProvider } from '@/lib/auth-context';
 import AuthGuard from '@/components/auth-guard';
 import GlobalDrawer from '@/app/shared/drawer-views/container';
 import GlobalModal from '@/app/shared/modal-views/container';

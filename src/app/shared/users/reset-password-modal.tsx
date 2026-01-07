@@ -7,7 +7,7 @@ import { Form } from '@core/ui/form';
 import { Input, Button, ActionIcon, Title, Text } from 'rizzui';
 import { z } from 'zod';
 import { useModal } from '@/app/shared/modal-views/use-modal';
-import { usersApi } from '@/lib/api-client';
+import { usersApi } from '@/lib/api/users';
 import toast from 'react-hot-toast';
 
 const resetPasswordSchema = z

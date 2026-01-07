@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Button, Text, Loader, Badge } from 'rizzui';
-import { phoneNumbersApi } from '@/lib/api-client';
+import { phoneNumbersApi } from '@/lib/api/phone-numbers';
 import { PhoneNumber } from './index';
 import toast from 'react-hot-toast';
 

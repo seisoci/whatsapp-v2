@@ -21,7 +21,7 @@ import {
   ResponsiveContainer,
   Legend,
 } from 'recharts';
-import { getDashboardStats, DashboardStats } from '@/lib/api/dashboard';
+import { dashboardApi, type DashboardStats } from '@/lib/api/dashboard';
 import Link from 'next/link';
 import { format } from 'date-fns';
 
@@ -73,7 +73,7 @@ export default function DashboardPage() {
   useEffect(() => {
     async function fetchStats() {
       try {
-        const data = await getDashboardStats();
+        const data = await dashboardApi.getStats();
         setStats(data);
       } catch (err) {
         console.error(err);

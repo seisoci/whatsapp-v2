@@ -6,7 +6,8 @@ import { Controller, SubmitHandler } from 'react-hook-form';
 import { Form } from '@core/ui/form';
 import { Input, Button, ActionIcon, Title, Select, Password } from 'rizzui';
 import { useModal } from '@/app/shared/modal-views/use-modal';
-import { usersApi, rolesApi } from '@/lib/api-client';
+import { usersApi } from '@/lib/api/users';
+import { rolesApi } from '@/lib/api/roles';
 import toast from 'react-hot-toast';
 import { z } from 'zod';
 

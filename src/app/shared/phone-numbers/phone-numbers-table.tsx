@@ -13,7 +13,7 @@ import VerifyCodeModal from '@/app/shared/phone-numbers/verify-code-modal';
 import TwoStepVerificationModal from '@/app/shared/phone-numbers/two-step-verification-modal';
 import DisplayNameStatusModal from '@/app/shared/phone-numbers/display-name-status-modal';
 import EditBusinessProfileModal from '@/app/shared/phone-numbers/edit-business-profile-modal';
-import { phoneNumbersApi } from '@/lib/api-client';
+import { phoneNumbersApi } from '@/lib/api/phone-numbers';
 import toast from 'react-hot-toast';
 
 export default function PhoneNumbersTable() {

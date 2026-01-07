@@ -7,7 +7,7 @@ import { Form } from '@core/ui/form';
 import { Input, Button, ActionIcon, Title } from 'rizzui';
 import { CreateUserInput, UpdateUserInput, createUserSchema, updateUserSchema } from '@/validators/user.schema';
 import { useModal } from '@/app/shared/modal-views/use-modal';
-import { usersApi } from '@/lib/api-client';
+import { usersApi } from '@/lib/api/users';
 import toast from 'react-hot-toast';
 
 type CreateEditUserProps = {

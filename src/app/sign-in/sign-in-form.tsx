@@ -9,7 +9,7 @@ import { useMedia } from '@core/hooks/use-media';
 import { Form } from '@core/ui/form';
 import { routes } from '@/config/routes';
 import { loginSchema, LoginSchema } from '@/validators/login.schema';
-import { useAuth } from '@/lib/auth-context-new';
+import { useAuth } from '@/lib/auth-context';
 import toast from 'react-hot-toast';
 
 const initialValues = {

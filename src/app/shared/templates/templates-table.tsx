@@ -9,7 +9,7 @@ import { Flex, Title, Loader } from 'rizzui';
 import { useModal } from '@/app/shared/modal-views/use-modal';
 import CreateEditTemplate from '@/app/shared/templates/create-edit-template';
 import TemplatesFilters from '@/app/shared/templates/templates-filters';
-import { templatesApi } from '@/lib/api-client';
+import { templatesApi } from '@/lib/api/templates';
 import toast from 'react-hot-toast';
 
 export default function TemplatesTable() {

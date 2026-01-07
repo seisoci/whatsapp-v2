@@ -11,7 +11,7 @@ import { Flex, Input, Title, Loader, Select, Button } from 'rizzui';
 import { useModal } from '@/app/shared/modal-views/use-modal';
 import EditUser from '@/app/shared/roles-permissions/edit-user';
 import ResetPasswordModal from './reset-password-modal';
-import { usersApi } from '@/lib/api-client';
+import { usersApi } from '@/lib/api/users';
 import toast from 'react-hot-toast';
 
 export default function UsersTable() {

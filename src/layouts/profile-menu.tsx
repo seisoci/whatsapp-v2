@@ -3,7 +3,7 @@
 import { Title, Text, Avatar, Button, Popover } from 'rizzui';
 import cn from '@core/utils/class-names';
 import { routes } from '@/config/routes';
-import { useAuth } from '@/lib/auth-context-new';
+import { useAuth } from '@/lib/auth-context';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';

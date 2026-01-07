@@ -24,7 +24,7 @@ import UploadZone from '@core/ui/file-upload/upload-zone';
 import { useLayout } from '@/layouts/use-layout';
 import { useBerylliumSidebars } from '@/layouts/beryllium/beryllium-utils';
 import { LAYOUT_OPTIONS } from '@/config/enums';
-import { useAuth } from '@/lib/auth-context-new';
+import { useAuth } from '@/lib/auth-context';
 import ChangePasswordModal from './change-password-modal';
 const QuillEditor = dynamic(() => import('@core/ui/quill-editor'), {
   ssr: false,

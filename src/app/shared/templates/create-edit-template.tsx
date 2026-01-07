@@ -5,7 +5,8 @@ import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Button, Input, Select, Text, Textarea } from 'rizzui';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { templatesApi, phoneNumbersApi } from '@/lib/api-client';
+import { templatesApi } from '@/lib/api/templates';
+import { phoneNumbersApi } from '@/lib/api/phone-numbers';
 import { Template } from './index';
 import toast from 'react-hot-toast';
 

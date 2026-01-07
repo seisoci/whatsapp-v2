@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { PiPlus, PiX, PiTag } from 'react-icons/pi';
 import { Button, Input, ActionIcon, Popover, Badge, Text } from 'rizzui';
-import { Tag, getTags, createTag, addTagToContact, removeTagFromContact, Contact } from '@/lib/api/chat';
+import { chatApi, type Tag, type Contact } from '@/lib/api/chat';
 import DeletePopover from '@/components/delete-popover';
 
 const TAG_COLORS = [
@@ -93,7 +93,7 @@ export default function ContactTags({ contact, onUpdate }: ContactTagsProps) {
 
   const handleAddTag = async (tagId: string) => {
     try {
-      const updatedContact = await addTagToContact(contact.id, tagId);
+      const updatedContact = await chatApi.addTagToContact(contact.id, tagId);
       if (updatedContact) {
         onUpdate(updatedContact); // Update contact in parent
       }
@@ -107,7 +107,7 @@ export default function ContactTags({ contact, onUpdate }: ContactTagsProps) {
     
     try {
       setIsCreating(true);
-      const response = await createTag({
+      const response = await chatApi.createTag({
         name: newTagName.trim(),
         color: selectedColor,
       });
@@ -151,7 +151,7 @@ export default function ContactTags({ contact, onUpdate }: ContactTagsProps) {
       e.stopPropagation();
     }
     try {
-      const updatedContact = await removeTagFromContact(contact.id, tagId);
+      const updatedContact = await chatApi.removeTagFromContact(contact.id, tagId);
       if (updatedContact) {
         onUpdate(updatedContact);
       }

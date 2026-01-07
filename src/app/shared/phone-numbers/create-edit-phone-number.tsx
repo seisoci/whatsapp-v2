@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Title, Text, Input, Button, Textarea, Switch } from 'rizzui';
 import { useModal } from '@/app/shared/modal-views/use-modal';
-import { phoneNumbersApi } from '@/lib/api-client';
+import { phoneNumbersApi } from '@/lib/api/phone-numbers';
 import toast from 'react-hot-toast';
 
 const createPhoneNumberSchema = z.object({
