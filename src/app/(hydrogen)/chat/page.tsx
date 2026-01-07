@@ -1439,7 +1439,7 @@ export default function ChatPage() {
                 <div className="border-t border-gray-200 p-4 bg-white flex-shrink-0">
                   {!selectedContact.isSessionActive && (
                     <div className="mb-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800">
-                      ⚠️ Session expired. You can only send template messages.
+                      ⚠️ Sesi berakhir. Anda hanya dapat mengirim pesan template.
                     </div>
                   )}
 
