@@ -37,6 +37,9 @@ import { formatDistanceToNow, format, differenceInCalendarDays } from 'date-fns'
 import { useDebounce } from '@/hooks/use-debounce';
 import ContactTags from '@/app/shared/chat/contact-tags';
 import SessionTimer from './session-timer';
+import { useLayout } from '@/layouts/use-layout';
+import { LAYOUT_OPTIONS } from '@/config/enums';
+import { useBerylliumSidebars } from '@/layouts/beryllium/beryllium-utils';
 
 const defaultEmojis = [
   '😀', '😃', '😄', '😁', '😆', '😅', '🤣', '😂',
@@ -57,6 +60,32 @@ const defaultEmojis = [
 
 
 export default function ChatPage() {
+  const { layout } = useLayout();
+  const { expandedLeft } = useBerylliumSidebars();
+  
+  // Calculate sidebar offset based on layout
+  const getSidebarOffset = () => {
+    if (layout === LAYOUT_OPTIONS.BERYLLIUM) {
+      // Beryllium: 88px fixed + (414px expanded OR 110px collapsed)
+      return expandedLeft 
+        ? 'xl:left-[502px]'  // 88 + 414
+        : 'xl:left-[198px]'; // 88 + 110
+    }
+    
+    // Hydrogen, Helium, Carbon, Boron: 270px/288px
+    if ([
+      LAYOUT_OPTIONS.HYDROGEN,
+      LAYOUT_OPTIONS.HELIUM,
+      LAYOUT_OPTIONS.CARBON,
+      LAYOUT_OPTIONS.BORON,
+    ].includes(layout)) {
+      return 'xl:left-[270px] 2xl:left-72';
+    }
+    
+    // Lithium: no sidebar
+    return '';
+  };
+
   // State
   const [phoneNumbers, setPhoneNumbers] = useState<any[]>([]);
   const [selectedPhoneNumberId, setSelectedPhoneNumberId] = useState('');
@@ -1019,7 +1048,7 @@ export default function ChatPage() {
           background-color: rgb(var(--primary-dark));
         }
       `}</style>
-      <div className="@container fixed inset-0 top-[60px]">
+      <div className={`@container fixed inset-0 top-[60px] ${getSidebarOffset()}`}>
         <div className="grid grid-cols-12 gap-0 h-full overflow-hidden bg-white dark:bg-gray-50">
           {/* Sidebar - Contact List */}
           <div
