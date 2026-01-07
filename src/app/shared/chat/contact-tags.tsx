@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { PiPlus, PiX, PiTag } from 'react-icons/pi';
 import { Button, Input, ActionIcon, Popover, Badge, Text } from 'rizzui';
 import { Tag, getTags, createTag, addTagToContact, removeTagFromContact, Contact } from '@/lib/api/chat';
+import DeletePopover from '@/components/delete-popover';
 
 const TAG_COLORS = [
   { name: 'Blue', value: 'blue', class: 'bg-blue-100 text-blue-700' },
@@ -20,7 +21,6 @@ interface TagItemProps {
 }
 
 function TagItem({ tag, onRemove }: TagItemProps) {
-  const [isOpen, setIsOpen] = useState(false);
   const colorClass = TAG_COLORS.find(c => c.value === tag.color)?.class || 'bg-blue-100 text-blue-700';
 
   return (
@@ -29,47 +29,50 @@ function TagItem({ tag, onRemove }: TagItemProps) {
       className={`${colorClass} px-2 py-0.5 text-xs font-medium rounded-full flex items-center gap-1`}
     >
       {tag.name}
-      <Popover placement="bottom" isOpen={isOpen} setIsOpen={setIsOpen}>
+      <Popover placement="bottom">
         <Popover.Trigger>
           <button
             type="button"
             className="hover:opacity-60 transition-opacity"
             aria-label="Remove tag"
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsOpen(true);
-            }}
           >
             <PiX className="h-3 w-3" />
           </button>
         </Popover.Trigger>
-        <Popover.Content className="z-50 p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-md rounded-md">
-          <div className="text-xs text-center mb-2">Delete tag?</div>
-          <div className="flex gap-2 justify-center">
-            <Button
-              size="sm"
-              variant="flat"
-              className="h-6 px-2 text-xs"
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsOpen(false);
-              }}
-            >
-              No
-            </Button>
-            <Button
-              size="sm"
-              color="danger"
-              className="h-6 px-2 text-xs"
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsOpen(false);
-                onRemove(tag.id);
-              }}
-            >
-              Yes
-            </Button>
-          </div>
+        <Popover.Content className="z-10">
+          {({ setOpen }) => (
+            <div className="w-56 pb-2 pt-1 text-left rtl:text-right">
+              <Text
+                as="h6"
+                className="mb-0.5 flex items-start text-sm font-semibold text-gray-700 sm:items-center"
+              >
+                Delete Tag
+              </Text>
+              <Text className="mb-2 leading-relaxed text-gray-500">
+                Are you sure you want to remove "{tag.name}" tag?
+              </Text>
+              <div className="flex items-center justify-end gap-2">
+                <Button
+                  size="sm"
+                  className="h-7"
+                  onClick={() => {
+                    onRemove(tag.id);
+                    setOpen(false);
+                  }}
+                >
+                  Yes
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7"
+                  onClick={() => setOpen(false)}
+                >
+                  No
+                </Button>
+              </div>
+            </div>
+          )}
         </Popover.Content>
       </Popover>
     </Badge>
