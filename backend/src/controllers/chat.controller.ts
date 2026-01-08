@@ -237,9 +237,22 @@ export class ChatController {
     try {
       const contactId = c.req.param('id');
       const messageRepo = AppDataSource.getRepository(Message);
+      const contactRepo = AppDataSource.getRepository(Contact);
+
+      // Get contact to find phoneNumberId for WebSocket broadcast
+      const contact = await contactRepo.findOne({
+        where: { id: contactId }
+      });
+
+      if (!contact) {
+        return c.json({
+          success: false,
+          message: 'Contact not found',
+        }, 404);
+      }
 
       // Update all unread incoming messages
-      await messageRepo
+      const updateResult = await messageRepo
         .createQueryBuilder()
         .update(Message)
         .set({ readAt: new Date() })
@@ -247,6 +260,24 @@ export class ChatController {
         .andWhere('direction = :direction', { direction: 'incoming' })
         .andWhere('read_at IS NULL')
         .execute();
+
+      // If any messages were marked as read, broadcast to all users
+      if (updateResult.affected && updateResult.affected > 0) {
+        // Import WebSocket manager dynamically to avoid circular dependency
+        const { chatWebSocketManager } = await import('../services/chat-websocket.service');
+        
+        // Broadcast contact:updated event so other users see unread count = 0
+        chatWebSocketManager.broadcast(contact.phoneNumberId, {
+          type: 'contact:updated',
+          data: {
+            contactId: contact.id,
+            contact: {
+              id: contact.id,
+              unreadCount: 0, // After marking as read, unread count is 0
+            },
+          },
+        });
+      }
 
       return c.json({
         success: true,

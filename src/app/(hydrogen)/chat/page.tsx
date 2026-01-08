@@ -433,16 +433,43 @@ export default function ChatPage() {
       }
     };
 
+    // Handle contact updates (e.g., when another user marks chat as read)
+    const handleContactUpdated = (event: any) => {
+      console.log('[WS] Received contact:updated event:', event);
+      
+      if (event.phoneNumberId === selectedPhoneNumberId) {
+        const { contactId, contact } = event.data;
+        
+        // Update contact in the list
+        setContacts(prevContacts => 
+          prevContacts.map(c => {
+            if (c.id === contactId) {
+              console.log(`[WS] Updating contact ${contactId} unreadCount: ${c.unreadCount} -> ${contact.unreadCount}`);
+              return { ...c, ...contact };
+            }
+            return c;
+          })
+        );
+        
+        // If this is the selected contact, update it too
+        if (selectedContact?.id === contactId) {
+          setSelectedContact(prev => prev ? { ...prev, ...contact } : null);
+        }
+      }
+    };
+
     chatWebSocket.on('connection:success', handleConnectionSuccess);
     chatWebSocket.on('subscribe:success', handleSubscribeSuccess);
     chatWebSocket.on('message:new', handleNewMessage);
     chatWebSocket.on('message:status', handleStatusUpdate);
+    chatWebSocket.on('contact:updated', handleContactUpdated);
 
     return () => {
       chatWebSocket.off('connection:success', handleConnectionSuccess);
       chatWebSocket.off('subscribe:success', handleSubscribeSuccess);
       chatWebSocket.off('message:new', handleNewMessage);
       chatWebSocket.off('message:status', handleStatusUpdate);
+      chatWebSocket.off('contact:updated', handleContactUpdated);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPhoneNumberId, selectedContact?.id]);
