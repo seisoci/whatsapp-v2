@@ -9,6 +9,7 @@ import {
   PiUserDuotone,
   PiShieldCheckDuotone,
   PiLockKeyDuotone,
+  PiFileTextDuotone,
 } from 'react-icons/pi';
 
 export const menuItems = [
@@ -31,13 +32,14 @@ export const menuItems = [
         name: 'Phone Numbers',
         href: routes.phoneNumbers,
       },
-      {
-        name: 'Templates',
-        href: routes.templates,
-      },
+
       {
         name: 'Quick Replies',
         href: routes.quickReplies,
+      },
+      {
+        name: 'Templates',
+        href: routes.templates,
       },
     ],
   },

@@ -1,30 +1,31 @@
 export const routes = {
   eCommerce: {
-    dashboard: "/ecommerce",
-    products: "/ecommerce/products",
-    createProduct: "/ecommerce/products/create",
-    productDetails: (slug: string) => `/ecommerce/products/${slug}`,
-    ediProduct: (slug: string) => `/ecommerce/products/${slug}/edit`,
-    categories: "/ecommerce/categories",
-    createCategory: "/ecommerce/categories/create",
-    editCategory: (id: string) => `/ecommerce/categories/${id}/edit`,
-    orders: "/ecommerce/orders",
-    createOrder: "/ecommerce/orders/create",
-    orderDetails: (id: string) => `/ecommerce/orders/${id}`,
-    editOrder: (id: string) => `/ecommerce/orders/${id}/edit`,
-    reviews: "/ecommerce/reviews",
-    shop: "/ecommerce/shop",
-    cart: "/ecommerce/cart",
-    checkout: "/ecommerce/checkout",
-    trackingId: (id: string) => `/ecommerce/tracking/${id}`,
+    dashboard: "#",
+    products: "#",
+    createProduct: "#",
+    productDetails: (slug: string) => "#",
+    ediProduct: (slug: string) => "#",
+    categories: "#",
+    createCategory: "#",
+    editCategory: (id: string) => "#",
+    orders: "#",
+    createOrder: "#",
+    orderDetails: (id: string) => "#",
+    editOrder: (id: string) => "#",
+    reviews: "#",
+    shop: "#",
+    cart: "#",
+    checkout: "#",
+    trackingId: (id: string) => "#",
   },
-  searchAndFilter: {
-    realEstate: "/search/real-estate",
-    nft: "/search/nft",
-    flight: "/search/flight",
-  },
+
+
   chat: "/chat",
   quickReplies: "/quick-replies",
+
+
+
+
   support: {
     dashboard: "/support",
     inbox: "/support/inbox",
@@ -39,121 +40,34 @@ export const routes = {
     viewTemplate: (id: string) => `/support/templates/${id}`,
     editTemplate: (id: string) => `/support/templates/${id}/edit`,
   },
-  logistics: {
-    dashboard: "/logistics",
-    shipmentList: "/logistics/shipments",
-    customerProfile: "/logistics/customer-profile",
-    createShipment: "/logistics/shipments/create",
-    editShipment: (id: string) => `/logistics/shipments/${id}/edit`,
-    shipmentDetails: (id: string) => `/logistics/shipments/${id}`,
-    tracking: (id: string) => `/logistics/tracking/${id}`,
-  },
-  appointment: {
-    dashboard: "/appointment",
-    appointmentList: "/appointment/list",
-  },
-  crm: {
-    dashboard: "/crm",
-  },
-  affiliate: {
-    dashboard: "https://isomorphic-dnd.vercel.app",
-  },
-  storeAnalytics: {
-    dashboard: "/store-analytics",
-  },
-  bidding: {
-    dashboard: "/bidding",
-  },
-  executive: {
-    dashboard: "/executive",
-  },
-  project: {
-    dashboard: "/project",
-  },
-  socialMedia: {
-    dashboard: "/social-media",
-  },
-  jobBoard: {
-    dashboard: "/job-board",
-    jobFeed: "/job-board/feed",
-  },
-  analytics: "/analytics",
-  financial: {
-    dashboard: "/financial",
-  },
-  podcast: {
-    dashboard: "/podcast",
-  },
-  olt: {
-    dashboard: "/olt",
-    details: (id: string | number) => `/olt/${id}`,
-    cards: (id: string | number) => `/olt/${id}/cards`,
-    ponPorts: (id: string | number) => `/olt/${id}/pon_ports`,
-    uplinks: (id: string | number) => `/olt/${id}/uplinks`,
-    vlans: (id: string | number) => `/olt/${id}/vlans`,
-  },
-  configured: {
-    onus: "/configured",
-    details: (id: string | number) => `/configured/${id}`,
-  },
-  unconfigured: "/unconfigured",
-  authorize: "/authorize",
-  file: {
-    dashboard: "/file",
-    manager: "/file-manager",
-    upload: "/file-manager/upload",
-    create: "/file-manager/create",
-  },
-  pos: {
-    index: "/point-of-sale",
-  },
-  eventCalendar: "/event-calendar",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   rolesPermissions: "/roles-permissions",
   roles: "/roles",
   permissions: "/permissions",
   phoneNumbers: "/phone-numbers",
-  templates: "/templates",
+
   users: "/users",
-  invoice: {
-    home: "/invoice",
-    create: "/invoice/create",
-    details: (id: string) => `/invoice/${id}`,
-    edit: (id: string) => `/invoice/${id}/edit`,
-    builder: "/invoice/builder",
-  },
-  imageViewer: "/image-viewer",
-  widgets: {
-    cards: "/widgets/cards",
-    icons: "/widgets/icons",
-    charts: "/widgets/charts",
-    maps: "/widgets/maps",
-    banners: "/widgets/banners",
-  },
-  tables: {
-    basic: "/tables/basic",
-    collapsible: "/tables/collapsible",
-    enhanced: "/tables/enhanced",
-    pagination: "/tables/pagination",
-    search: "/tables/search",
-    stickyHeader: "/tables/sticky-header",
-    resizable: "/tables/resizable",
-    pinning: "/tables/pinning",
-    dnd: "/tables/dnd",
-    tanTable: "/tables/tan-table",
-    tanTableResizable: "/tables/tan-table-resizable",
-    tanTableDnD: "/tables/tan-table-dnd",
-    tanTablePinning: "/tables/tan-table-pinning",
-    tanTableEnhanced: "/tables/tan-table-enhanced",
-    tanTableCollapsible: "/tables/tan-table-collapsible",
-  },
+
+
+
   multiStep: "/multi-step",
   multiStep2: "/multi-step-2",
-  forms: {
-    profileSettings: "/forms/profile-settings",
-    notificationPreference: "/forms/profile-settings/notification",
-    personalInformation: "/forms/profile-settings/profile",
-    newsletter: "/forms/newsletter",
-  },
+
   emailTemplates: "/email-templates",
   profile: "/profile",
   welcome: "/welcome",
@@ -185,8 +99,8 @@ export const routes = {
     otp5: "/auth/otp-5",
   },
   signIn: "/sign-in",
-  speedProfiles: "/speed-profiles",
-  zones: "/zones",
-  odbs: "/odbs",
-  onuTypes: "/onu-types",
+
+
+
+  templates: "/templates",
 };
