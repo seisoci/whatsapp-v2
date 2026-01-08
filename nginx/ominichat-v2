@@ -40,6 +40,7 @@ server {
 server {
     listen 443 ssl;
     listen [::]:443 ssl;
+    http2 on;
     server_name omnichat-v2.itn.net.id;
 
     # SSL Certificates

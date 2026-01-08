@@ -30,5 +30,6 @@ export const AppDataSource = new DataSource({
     max: 20,
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 2000,
+    timezone: 'Asia/Jakarta',
   },
 });
