@@ -31,7 +31,7 @@ import Zoom from "yet-another-react-lightbox/plugins/zoom";
 import { chatApi, type Contact, type Message } from '@/lib/api/chat';
 import { uploadApi } from '@/lib/api-client';
 import { chatWebSocket } from '@/lib/websocket/chat-websocket';
-import { phoneNumbersApi } from '@/lib/api/phone-numbers';
+
 import { quickReplyApi, type QuickReply } from '@/lib/api/quick-replies';
 import { formatDistanceToNow, format, differenceInCalendarDays } from 'date-fns';
 import { useDebounce } from '@/hooks/use-debounce';
@@ -470,7 +470,7 @@ export default function ChatPage() {
 
   const loadPhoneNumbers = async () => {
     try {
-      const response = await phoneNumbersApi.getAll();
+      const response = await chatApi.getPhoneNumbers();
       const numbers = Array.isArray(response) ? response : (response.data || []);
       setPhoneNumbers(numbers);
       

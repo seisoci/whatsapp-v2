@@ -14,6 +14,9 @@ export type { Contact, Message, SendMessageRequest, Tag };
  * Object-based API for chat-related operations
  */
 export const chatApi = {
+  getPhoneNumbers: () =>
+    apiClient.get('/chat/phone-numbers').then(r => r.data),
+
   getContacts: (params: {
     phoneNumberId: string;
     search?: string;

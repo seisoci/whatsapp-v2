@@ -15,6 +15,7 @@ const chat = new Hono();
 chat.use('/*', authMiddleware);
 
 // Contact endpoints
+chat.get('/phone-numbers', ChatController.getPhoneNumbers);
 chat.get('/contacts', ChatController.getContacts);
 chat.get('/contacts/:id', ChatController.getContact);
 chat.put('/contacts/:id/read', ChatController.markConversationAsRead);

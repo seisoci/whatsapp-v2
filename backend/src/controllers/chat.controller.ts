@@ -7,6 +7,8 @@ import { Context } from 'hono';
 import { AppDataSource } from '../config/database';
 import { Contact } from '../models/Contact';
 import { Message } from '../models/Message';
+import { PhoneNumber } from '../models/PhoneNumber';
+import { WhatsAppService } from '../services/whatsapp.service';
 import { getContactsSchema, markAsReadSchema } from '../validators/chat.validator';
 import { withPermissions } from '../utils/controller.decorator';
 
@@ -16,10 +18,107 @@ export class ChatController {
    */
   static permissions = {
     getContacts: 'chat-index',
+    getPhoneNumbers: 'chat-index',
     getContact: 'chat-index',
     markConversationAsRead: 'chat-update',
     deleteContact: 'chat-destroy',
   };
+
+  /**
+   * GET /api/v1/chat/phone-numbers
+   * Get all phone numbers (accessible with chat-index)
+   */
+  static async getPhoneNumbers(c: Context) {
+    try {
+      const phoneNumberRepository = AppDataSource.getRepository(PhoneNumber);
+
+      const phoneNumbers = await phoneNumberRepository.find({
+        relations: ['creator'],
+        select: {
+          id: true,
+          phoneNumberId: true,
+          accessToken: true,
+          wabaId: true,
+          name: true,
+          isActive: true,
+          createdAt: true,
+          updatedAt: true,
+          creator: {
+            id: true,
+            username: true,
+            email: true,
+          },
+        },
+        order: {
+          createdAt: 'DESC',
+        },
+      });
+
+      // Fetch real-time data from WhatsApp API
+      const enrichedPhoneNumbers = await Promise.all(
+        phoneNumbers.map(async (phone) => {
+          try {
+            const phoneInfo = await WhatsAppService.getPhoneNumberInfo(
+              phone.phoneNumberId,
+              phone.accessToken
+            );
+
+            return {
+              id: phone.id,
+              phoneNumberId: phone.phoneNumberId,
+              wabaId: phone.wabaId,
+              name: phone.name,
+              isActive: phone.isActive,
+              // Real-time data from WhatsApp API
+              displayPhoneNumber: phoneInfo.display_phone_number,
+              verifiedName: phoneInfo.verified_name,
+              qualityRating: phoneInfo.quality_rating,
+              messagingLimitTier: phoneInfo.messaging_limit_tier,
+              isOfficialBusinessAccount: phoneInfo.is_official_business_account,
+              createdAt: phone.createdAt,
+              updatedAt: phone.updatedAt,
+              creator: phone.creator,
+            };
+          } catch (error) {
+            // Return minimal data on failure
+            return {
+              id: phone.id,
+              phoneNumberId: phone.phoneNumberId,
+              wabaId: phone.wabaId,
+              name: phone.name,
+              isActive: phone.isActive,
+              displayPhoneNumber: 'Error fetching data',
+              verifiedName: null,
+              qualityRating: 'UNKNOWN',
+              messagingLimitTier: 'UNKNOWN',
+              isOfficialBusinessAccount: false,
+              createdAt: phone.createdAt,
+              updatedAt: phone.updatedAt,
+              creator: phone.creator,
+              error: 'Failed to fetch WhatsApp data',
+            };
+          }
+        })
+      );
+
+      return c.json(
+        {
+          success: true,
+          data: enrichedPhoneNumbers,
+        },
+        200
+      );
+    } catch (error: any) {
+      console.error('Get phone numbers error:', error);
+      return c.json(
+        {
+          success: false,
+          message: 'Terjadi kesalahan pada server.',
+        },
+        500
+      );
+    }
+  }
 
   /**
    * GET /api/v1/chat/contacts
