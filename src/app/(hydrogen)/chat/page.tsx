@@ -1008,46 +1008,7 @@ export default function ChatPage() {
 
   return (
     <>
-      <style jsx>{`
-        @keyframes fadeInUp {
-          from { opacity: 0; transform: translateY(10px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-fade-in-up {
-          animation: fadeInUp 0.3s ease-out forwards;
-        }
-        /* Custom Scrollbar Styles (Slim - Contact List) */
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 3px;
-          height: 3px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background-color: rgb(var(--primary-default));
-          border-radius: 20px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background-color: rgb(var(--primary-dark));
-        }
 
-        /* Custom Scrollbar Styles (Wide - Message Thread) */
-        .custom-scrollbar-message::-webkit-scrollbar {
-          width: 7px;
-          height: 7px;
-        }
-        .custom-scrollbar-message::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        .custom-scrollbar-message::-webkit-scrollbar-thumb {
-          background-color: rgb(var(--primary-default));
-          border-radius: 20px;
-        }
-        .custom-scrollbar-message::-webkit-scrollbar-thumb:hover {
-          background-color: rgb(var(--primary-dark));
-        }
-      `}</style>
       <div className={`@container fixed inset-0 top-[60px] ${getSidebarOffset()}`}>
         <div className="grid grid-cols-12 gap-0 h-full overflow-hidden bg-white dark:bg-gray-50">
           {/* Sidebar - Contact List */}
