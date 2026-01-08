@@ -27,99 +27,125 @@ export class ChatController {
         }, 400);
       }
 
-      const { phoneNumberId, search, page, limit } = validation.data;
+      const { phoneNumberId, search, filter, page, limit } = validation.data;
       const offset = (page - 1) * limit;
 
-      const contactRepo = AppDataSource.getRepository(Contact);
-      const messageRepo = AppDataSource.getRepository(Message);
-
-      // Build query
-      let queryBuilder = contactRepo
-        .createQueryBuilder('contact')
-        .leftJoinAndSelect('contact.tags', 'tag')
-        .where('contact.phoneNumberId = :phoneNumberId', { phoneNumberId })
-        .orderBy('contact.lastMessageAt', 'DESC', 'NULLS LAST');
+      // OPTIMIZED: Using denormalized unread_count column (auto-updated via PostgreSQL trigger)
+      // This eliminates the expensive correlated subquery for unread counts
+      // Note: Using snake_case column names for raw SQL (database format)
+      let baseQuery = `
+        SELECT 
+          c.*,
+          (SELECT row_to_json(last_msg) FROM (
+            SELECT id, message_type, text_body, media_caption, direction, timestamp, status
+            FROM messages
+            WHERE contact_id = c.id
+            ORDER BY timestamp DESC
+            LIMIT 1
+          ) last_msg) as last_message_data
+        FROM contacts c
+        WHERE c.phone_number_id = $1
+      `;
+      
+      const params: any[] = [phoneNumberId];
+      let paramIndex = 2;
 
       // Search filter
       if (search) {
-        queryBuilder = queryBuilder.andWhere(
-          '(contact.profileName ILIKE :search OR contact.phoneNumber ILIKE :search)',
-          { search: `%${search}%` }
-        );
+        baseQuery += ` AND (c.profile_name ILIKE $${paramIndex} OR c.phone_number ILIKE $${paramIndex})`;
+        params.push(`%${search}%`);
+        paramIndex++;
       }
 
-      // Get total count
-      const total = await queryBuilder.getCount();
+      // Apply unread filter directly on denormalized column (uses partial index)
+      if (filter === 'unread') {
+        baseQuery += ` AND c.unread_count > 0`;
+      }
 
-      // Get contacts with pagination
-      const contacts = await queryBuilder
-        .skip(offset)
-        .take(limit)
-        .getMany();
+      // Get total count (with or without unread filter)
+      const countQuery = `SELECT COUNT(*) as total FROM contacts c WHERE c.phone_number_id = $1${search ? ` AND (c.profile_name ILIKE $2 OR c.phone_number ILIKE $2)` : ''}${filter === 'unread' ? ' AND c.unread_count > 0' : ''}`;
+      const countResult = await AppDataSource.query(countQuery, search ? [phoneNumberId, `%${search}%`] : [phoneNumberId]);
+      const total = parseInt(countResult[0].total);
 
-      // Enrich with last message and unread count
-      const enrichedContacts = await Promise.all(
-        contacts.map(async (contact) => {
-          // Get last message
-          const lastMessage = await messageRepo
-            .createQueryBuilder('message')
-            .where('message.contactId = :contactId', { contactId: contact.id })
-            .orderBy('message.timestamp', 'DESC')
-            .limit(1)
-            .getOne();
+      // Add ordering and pagination
+      baseQuery += ` ORDER BY c.last_message_at DESC NULLS LAST`;
+      baseQuery += ` LIMIT ${limit} OFFSET ${offset}`;
 
-          // Get unread count
-          const unreadCount = await messageRepo
-            .createQueryBuilder('message')
-            .where('message.contactId = :contactId', { contactId: contact.id })
-            .andWhere('message.direction = :direction', { direction: 'incoming' })
-            .andWhere('message.readAt IS NULL')
-            .getCount();
+      // Execute the optimized query
+      const rawContacts = await AppDataSource.query(baseQuery, params);
 
-          // Calculate session info
-          const now = new Date();
-          const sessionExpiresAt = contact.sessionExpiresAt;
-          const isSessionActive = sessionExpiresAt ? now < new Date(sessionExpiresAt) : false;
-          const sessionRemainingSeconds = sessionExpiresAt 
-            ? Math.max(0, Math.floor((new Date(sessionExpiresAt).getTime() - now.getTime()) / 1000))
-            : 0;
+      // Fetch tags for each contact (still need this join)
+      const contactIds = rawContacts.map((c: any) => c.id);
+      let tagsMap: Record<string, any[]> = {};
+      
+      if (contactIds.length > 0) {
+        const tagsQuery = `
+          SELECT ct.contact_id, t.* 
+          FROM contact_tags ct
+          JOIN tags t ON ct.tag_id = t.id
+          WHERE ct.contact_id = ANY($1)
+        `;
+        const tagsResult = await AppDataSource.query(tagsQuery, [contactIds]);
+        
+        tagsResult.forEach((row: any) => {
+          if (!tagsMap[row.contact_id]) {
+            tagsMap[row.contact_id] = [];
+          }
+          tagsMap[row.contact_id].push({
+            id: row.id,
+            name: row.name,
+            color: row.color,
+          });
+        });
+      }
 
-          return {
-            id: contact.id,
-            waId: contact.waId,
-            phoneNumber: contact.phoneNumber,
-            profileName: contact.profileName,
-            businessName: contact.businessName,
-            isBusinessAccount: contact.isBusinessAccount,
-            isBlocked: contact.isBlocked,
-            tags: contact.tags,
-            notes: contact.notes,
-            
-            // Session info (calculated)
-            sessionExpiresAt: contact.sessionExpiresAt,
-            isSessionActive,
-            sessionRemainingSeconds,
-            
-            // Last message preview
-            lastMessage: lastMessage ? {
-              id: lastMessage.id,
-              messageType: lastMessage.messageType,
-              textBody: lastMessage.textBody,
-              mediaCaption: lastMessage.mediaCaption,
-              direction: lastMessage.direction,
-              timestamp: lastMessage.timestamp,
-              status: lastMessage.status,
-            } : null,
-            
-            // Unread count
-            unreadCount,
-            
-            // Timestamps
-            createdAt: contact.createdAt,
-            updatedAt: contact.updatedAt,
-          };
-        })
-      );
+      // Format response - Note: raw SQL returns snake_case column names
+      const now = new Date();
+      const enrichedContacts = rawContacts.map((contact: any) => {
+        const sessionExpiresAt = contact.session_expires_at;
+        const isSessionActive = sessionExpiresAt ? now < new Date(sessionExpiresAt) : false;
+        const sessionRemainingSeconds = sessionExpiresAt 
+          ? Math.max(0, Math.floor((new Date(sessionExpiresAt).getTime() - now.getTime()) / 1000))
+          : 0;
+
+        const lastMessageData = contact.last_message_data;
+
+        return {
+          id: contact.id,
+          waId: contact.wa_id,
+          phoneNumber: contact.phone_number,
+          profileName: contact.profile_name,
+          profilePictureUrl: contact.profile_picture_url,
+          businessName: contact.business_name,
+          isBusinessAccount: contact.is_business_account,
+          isBlocked: contact.is_blocked,
+          tags: tagsMap[contact.id] || [],
+          notes: contact.notes,
+          
+          // Session info (calculated)
+          sessionExpiresAt: contact.session_expires_at,
+          isSessionActive,
+          sessionRemainingSeconds,
+          
+          // Last message preview (from subquery) - also snake_case
+          lastMessage: lastMessageData ? {
+            id: lastMessageData.id,
+            messageType: lastMessageData.message_type,
+            textBody: lastMessageData.text_body,
+            mediaCaption: lastMessageData.media_caption,
+            direction: lastMessageData.direction,
+            timestamp: lastMessageData.timestamp,
+            status: lastMessageData.status,
+          } : null,
+          
+          // Unread count (from subquery)
+          unreadCount: parseInt(contact.unread_count) || 0,
+          
+          // Timestamps
+          createdAt: contact.created_at,
+          updatedAt: contact.updated_at,
+        };
+      });
 
       return c.json({
         success: true,

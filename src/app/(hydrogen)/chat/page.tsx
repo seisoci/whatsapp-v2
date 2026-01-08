@@ -152,6 +152,15 @@ export default function ChatPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearchQuery, selectedPhoneNumberId]);
 
+  // Refetch contacts when filter changes
+  useEffect(() => {
+    if (selectedPhoneNumberId) {
+      setContactPage(1);
+      loadContacts(1, false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chatFilter]);
+
   // Load contacts when phone number selected
   useEffect(() => {
     if (selectedPhoneNumberId) {
@@ -440,6 +449,7 @@ export default function ChatPage() {
       const response = await chatApi.getContacts({
         phoneNumberId: selectedPhoneNumberId,
         search: searchQuery || undefined,
+        filter: chatFilter === 'unread' ? 'unread' : 'all',
         page,
         limit: 50,
       });
@@ -993,11 +1003,11 @@ export default function ChatPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedContact]);
 
-  const filteredContacts = contacts.filter((contact) => {
-    if (chatFilter === 'unread') return contact.unreadCount > 0;
-    if (chatFilter === 'favorite') return false; // No favorite field in Contact
-    return true;
-  });
+  // Server-side filtering is now used, so just use contacts directly
+  // Client-side filtering kept only for favorite (if needed in future)
+  const filteredContacts = chatFilter === 'favorite' 
+    ? contacts.filter(contact => false) // No favorite field yet
+    : contacts;
 
   console.log('[DEBUG] Contacts state:', {
     totalContacts: contacts.length,

@@ -96,6 +96,10 @@ export class Contact {
     return Math.floor((this.sessionExpiresAt.getTime() - now.getTime()) / 1000);
   }
 
+  // Denormalized unread count (auto-updated via PostgreSQL trigger)
+  @Column({ name: 'unread_count', type: 'integer', default: 0 })
+  unreadCount: number;
+
   // Additional Fields
   @ManyToMany(() => Tag, (tag) => tag.contacts, { cascade: true })
   @JoinTable({

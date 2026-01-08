@@ -14,10 +14,10 @@ export type { Contact, Message, SendMessageRequest, Tag };
  * Object-based API for chat-related operations
  */
 export const chatApi = {
-  // Contact operations
   getContacts: (params: {
     phoneNumberId: string;
     search?: string;
+    filter?: 'all' | 'unread';
     page?: number;
     limit?: number;
   }) => apiClient.get('/chat/contacts', { params }).then(r => r.data),

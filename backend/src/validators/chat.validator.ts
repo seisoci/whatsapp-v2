@@ -11,6 +11,7 @@ import { z } from 'zod';
 export const getContactsSchema = z.object({
   phoneNumberId: z.string().uuid('Invalid phone number ID'),
   search: z.string().optional(),
+  filter: z.enum(['all', 'unread']).optional().default('all'),
   page: z.string().regex(/^\d+$/).transform(Number).default('1'),
   limit: z.string().regex(/^\d+$/).transform(Number).default('50'),
 });
