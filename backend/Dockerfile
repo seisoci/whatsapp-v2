@@ -22,8 +22,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY package.json bun.lock tsconfig.json ./
 COPY src ./src
 
-# Expose port
-EXPOSE 3001
+
 
 # Start the application
 CMD ["bun", "run", "start"]
