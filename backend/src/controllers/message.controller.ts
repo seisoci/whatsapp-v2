@@ -92,9 +92,7 @@ export class MessageController {
 
       // Get authenticated user ID from context (set by auth middleware)
       const user = c.get('user');
-      console.log('👤 User from context:', JSON.stringify(user, null, 2));
       const userId = user?.userId;
-      console.log('📝 Extracted userId:', userId);
 
       // Get contact
       const contactRepo = AppDataSource.getRepository(Contact);
@@ -196,7 +194,6 @@ export class MessageController {
       // 📢 WEBSOCKET: Broadcast outgoing message to all clients subscribed to this phone number
       if (result.savedMessage) {
         const savedMessage = result.savedMessage;
-        console.log(`[WS] Broadcasting outgoing message for contact ${contact.id} to room ${phoneNumber.id}`);
         
         chatWebSocketManager.broadcast(phoneNumber.id, {
           type: 'message:new',

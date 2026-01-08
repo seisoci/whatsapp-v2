@@ -204,6 +204,12 @@ export class WhatsAppWebhookService {
     // Update session tracking (customer sent message)
     const messageTimestamp = new Date(parseInt(messageData.timestamp) * 1000);
     await WhatsAppMessagingService.updateCustomerSession(contact.id, messageTimestamp);
+    
+    // Refresh contact to get updated session fields for WebSocket broadcast
+    const updatedContact = await contactRepo.findOne({ where: { id: contact.id } });
+    if (updatedContact) {
+      contact = updatedContact;
+    }
 
     // Store message
     const message = messageRepo.create({
@@ -336,7 +342,13 @@ export class WhatsAppWebhookService {
     }
 
     // 📢 WEBSOCKET: Broadcast new message to all clients subscribed to this phone number
-    console.log(`[WS] Broadcasting message:new for contact ${contact.id} to room ${internalPhoneNumberId}`);
+    // Calculate session remaining seconds for frontend
+    const now = new Date();
+    const sessionExpiresAt = contact.sessionExpiresAt;
+    const sessionRemainingSeconds = sessionExpiresAt 
+      ? Math.max(0, Math.floor((new Date(sessionExpiresAt).getTime() - now.getTime()) / 1000))
+      : 0;
+
     chatWebSocketManager.broadcast(internalPhoneNumberId, {
       type: 'message:new',
       data: {
@@ -345,6 +357,7 @@ export class WhatsAppWebhookService {
              lastCustomerMessageAt: contact.lastCustomerMessageAt,
              sessionExpiresAt: contact.sessionExpiresAt,
              isSessionActive: contact.isSessionActive, // Using the getter on the entity
+             sessionRemainingSeconds, // Add this for frontend timer
         },
         message: {
           id: message.id,

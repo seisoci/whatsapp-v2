@@ -23,7 +23,6 @@ export class WhatsAppWebhookController {
       const verifyToken = process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN || 'your_verify_token_here';
 
       if (mode === 'subscribe' && token === verifyToken) {
-        console.log('✅ Webhook verified successfully');
         return c.text(challenge || '', 200);
       }
 
@@ -62,11 +61,6 @@ export class WhatsAppWebhookController {
 
       const headers = c.req.header();
       const ip = c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || 'unknown';
-
-      console.log('📨 Received webhook', {
-        object: payload.object,
-        entries: payload.entry?.length || 0,
-      });
 
       // Optional: Verify webhook signature for security
       // const signature = c.req.header('x-hub-signature-256');
