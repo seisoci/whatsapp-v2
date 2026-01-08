@@ -1,14 +1,16 @@
-
-
 services:
-  omnichat-api:
+  omnichat-ui:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: omnichat-api
+      args:
+        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+    container_name: omnichat-ui
     restart: unless-stopped
     ports:
-      - "127.0.0.1:${PORT:-3001}:${PORT:-3001}"
+      - "127.0.0.1:${PORT:-3000}:${PORT:-3000}"
+    environment:
+      - HOSTNAME=0.0.0.0
     env_file:
       - .env
     extra_hosts:
