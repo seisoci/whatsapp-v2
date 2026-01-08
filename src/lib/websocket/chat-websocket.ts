@@ -47,7 +47,6 @@ export class ChatWebSocketClient {
         this.ws = new WebSocket(wsUrl);
 
         this.ws.onopen = () => {
-          console.log('✅ WebSocket connected');
           this.reconnectAttempts = 0;
           this.isIntentionalClose = false;
 
@@ -77,7 +76,6 @@ export class ChatWebSocketClient {
         };
 
         this.ws.onclose = () => {
-          console.log('🔌 WebSocket disconnected');
           this.stopHeartbeat();
 
           // Auto-reconnect unless intentionally closed
@@ -190,7 +188,6 @@ export class ChatWebSocketClient {
     this.reconnectAttempts++;
     const delay = this.reconnectDelay * this.reconnectAttempts;
     
-    console.log(`🔄 Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
     
     this.reconnectTimeout = setTimeout(() => {
       this.connect().catch(error => {

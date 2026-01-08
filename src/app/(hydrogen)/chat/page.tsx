@@ -165,7 +165,6 @@ export default function ChatPage() {
   useEffect(() => {
     if (selectedPhoneNumberId) {
       setSearchQuery(''); // Reset search when switching numbers (will trigger debounce effect with empty, reloading contacts)
-      console.log('[WS] Subscribing to phone number:', selectedPhoneNumberId);
       loadContacts();
 
       // Wait for WebSocket to be connected before subscribing
@@ -173,7 +172,6 @@ export default function ChatPage() {
         if (chatWebSocket.isConnected()) {
           chatWebSocket.subscribe(selectedPhoneNumberId);
         } else {
-          console.log('[WS] Not connected yet, waiting...');
           setTimeout(subscribeWhenReady, 500);
         }
       };
@@ -219,15 +217,12 @@ export default function ChatPage() {
   // WebSocket event listeners
   useEffect(() => {
     const handleConnectionSuccess = (event: any) => {
-      console.log('[WS] ✅ Connection established:', event);
     };
 
     const handleSubscribeSuccess = (event: any) => {
-      console.log('[WS] ✅ Subscribed to room:', event.data.phoneNumberId);
     };
 
     const handleNewMessage = async (event: any) => {
-      console.log('[WS] Received message:new event:', event);
       
       if (event.phoneNumberId === selectedPhoneNumberId) {
         const rawMessage = event.data.message;
@@ -301,7 +296,6 @@ export default function ChatPage() {
           // If we're in "unread" filter mode and this is an incoming message,
           // add the contact to the top of the list using WebSocket event data
           if (rawMessage.direction === 'incoming' && event.data.contact) {
-            console.log('[WS] Adding contact to unread list from WebSocket data');
             const newContact = {
               ...event.data.contact,
               lastMessage: {
@@ -329,7 +323,6 @@ export default function ChatPage() {
         // Use functional check to avoid stale closure
         setContacts(prevContacts => {
           if (!prevContacts.find(c => c.id === event.data.contactId) && !event.data.contact) {
-            console.log('[WS] New contact detected and no contact data in event, reloading contact list');
             // Schedule reload outside setState
             setTimeout(() => loadContacts(), 0);
           }
@@ -338,7 +331,6 @@ export default function ChatPage() {
 
         // If this contact's conversation is open, add message
         if (event.data.contactId === selectedContact?.id) {
-          console.log('[WS] Adding message to current conversation:', formattedMessage);
           
           setMessages(prev => {
             // Check if message already exists (by ID or WAMID)
@@ -348,7 +340,6 @@ export default function ChatPage() {
             );
 
             if (exists) {
-              console.log('[WS] Message already exists, skipping add:', formattedMessage.id);
               return prev;
             }
 
@@ -364,7 +355,6 @@ export default function ChatPage() {
                );
 
                if (potentialDuplicate) {
-                 console.log('[WS] Found optimistic match, updating it instead of adding new:', potentialDuplicate.id);
                  return prev.map(m => m.id === potentialDuplicate.id ? formattedMessage : m);
                }
             }
@@ -377,7 +367,6 @@ export default function ChatPage() {
           // mark as read immediately so other users see unread count = 0
           if (formattedMessage.direction === 'incoming') {
             chatApi.markConversationAsRead(selectedContact.id)
-              .then(() => console.log('[WS] Auto-marked incoming message as read (chat is open)'))
               .catch((error) => console.error('[WS] Failed to mark message as read:', error));
           }
         }
@@ -385,13 +374,9 @@ export default function ChatPage() {
     };
 
     const handleStatusUpdate = (event: any) => {
-      console.log('[WS] Received message:status event:', JSON.stringify(event, null, 2));
       
       // Only check contactId - phoneNumberId is implicit in WebSocket subscription
       if (event.data.contactId === selectedContact?.id) {
-        console.log('[WS] Contact match! Updating message status:', event.data.status);
-        console.log('[WS] Target WAMID:', event.data.wamid);
-        console.log('[WS] Target DB ID:', event.data.messageId);
 
         setMessages(prev =>
           prev.map(msg => {
@@ -401,12 +386,10 @@ export default function ChatPage() {
             // 1. Match by WAMID (Best for optimistic messages that have been updated with WAMID)
             if (msg.wamid && event.data.wamid && msg.wamid === event.data.wamid) {
               isMatch = true;
-              console.log('✅ MATCH by WAMID:', msg.wamid);
             }
             // 2. Match by Database ID (Standard match)
             else if (msg.id === event.data.messageId) {
               isMatch = true;
-              console.log('✅ MATCH by DB ID:', msg.id);
             }
             // 3. Fallback: Fuzzy Match by Content + Destination (For optimistic messages if WAMID missing)
             // Sometimes status update arrives before WAMID is set in UI state
@@ -417,12 +400,10 @@ export default function ChatPage() {
                const timeDiff = Math.abs(new Date(msg.timestamp).getTime() - new Date().getTime());
                if (timeDiff < 60000) { // Created within last minute
                  isMatch = true;
-                 console.log('⚠️ FUZZY MATCH by Recency (Optimistic):', msg.id);
                }
             }
 
             if (isMatch) {
-               console.log(`[WS] Updating ${msg.id} status: ${msg.status} -> ${event.data.status}`);
                return { 
                  ...msg, 
                  status: event.data.status,
@@ -435,13 +416,11 @@ export default function ChatPage() {
           })
         );
       } else {
-        console.log('[WS] Ignoring status update for different contact:', event.data.contactId);
       }
     };
 
     // Handle contact updates (e.g., when another user marks chat as read)
     const handleContactUpdated = (event: any) => {
-      console.log('[WS] Received contact:updated event:', event);
       
       if (event.phoneNumberId === selectedPhoneNumberId) {
         const { contactId, contact } = event.data;
@@ -450,7 +429,6 @@ export default function ChatPage() {
         setContacts(prevContacts => 
           prevContacts.map(c => {
             if (c.id === contactId) {
-              console.log(`[WS] Updating contact ${contactId} unreadCount: ${c.unreadCount} -> ${contact.unreadCount}`);
               return { ...c, ...contact };
             }
             return c;
@@ -484,7 +462,6 @@ export default function ChatPage() {
     try {
       if (!chatWebSocket.isConnected()) {
         await chatWebSocket.connect();
-        console.log('✅ WebSocket connected');
       }
     } catch (error) {
       console.error('WebSocket connection failed:', error);
@@ -509,7 +486,6 @@ export default function ChatPage() {
   const loadContacts = async (page: number = 1, append: boolean = false) => {
     if (!selectedPhoneNumberId) return;
     
-    console.log('Loading contacts for phone number:', selectedPhoneNumberId, 'page:', page);
     if (!append) setLoading(true);
     try {
       const response = await chatApi.getContacts({
@@ -519,7 +495,6 @@ export default function ChatPage() {
         page,
         limit: 50,
       });
-      console.log('Contacts response:', response);
       
       // API client already unwraps response.data, so response IS the array
       const newContacts = Array.isArray(response) ? response : (response.data || []);
@@ -550,26 +525,17 @@ export default function ChatPage() {
     const targetContact = contact || selectedContact;
     if (!targetContact) return;
     
-    console.log('[DEBUG] Loading messages for contact:', targetContact.id);
     setLoading(true);
     try {
       const response = await chatApi.getMessages({
         contactId: targetContact.id,
         limit: 50,
       });
-      console.log('[DEBUG] Messages response:', response);
       
       // API client already unwraps response.data
       const msgs = Array.isArray(response) ? response : (response.data || []);
       
-      // DEBUG: Log all message statuses
-      console.log('[DEBUG] Loaded message statuses:', msgs.map(m => ({
-        id: m.id,
-        wamid: m.wamid,
-        direction: m.direction,
-        status: m.status,
-        textBody: m.textBody?.substring(0, 20),
-      })));
+
       
       // Preserve optimistic messages (messages with temp- IDs) when merging with API data
       setMessages(prevMessages => {
@@ -578,9 +544,6 @@ export default function ChatPage() {
         // Deduplicate: Filter out optimistic messages that are already in the loaded messages (match by WAMID)
         const loadedWamids = new Set(msgs.map(m => m.wamid).filter(Boolean));
         
-        console.log('[DEBUG] Deduplication check:');
-        console.log('  - Loaded WAMIDs:', Array.from(loadedWamids));
-        console.log('  - Optimistic messages:', optimisticMessages.map(m => ({ id: m.id, wamid: m.wamid, status: m.status, text: m.textBody })));
 
         const uniqueOptimisticMessages = optimisticMessages.filter(optMsg => {
           // 1. Strict Deduplication by WAMID
@@ -607,15 +570,12 @@ export default function ChatPage() {
           });
 
           if (isFuzzyDuplicate) {
-             console.log(`[Dedupe] Dropping fuzzy duplicate ${optMsg.id} ("${optMsg.textBody?.substring(0, 10)}...")`);
              return false;
           }
 
           return true; // Keep if no duplicate found
         });
 
-        console.log('[DEBUG] Preserving', uniqueOptimisticMessages.length, 'unique optimistic messages (deduplicated from', optimisticMessages.length, ')');
-        console.log('[DEBUG] Loaded', msgs.length, 'messages from API');
         
         // Merge: API messages + unique optimistic messages (in chronological order)
         return [...msgs, ...uniqueOptimisticMessages];
@@ -770,9 +730,6 @@ export default function ChatPage() {
 
       const result = await chatApi.sendMessage(sendPayload);
 
-      console.log('📨 Send message result:', result);
-      console.log('💾 Saved message from backend:', result.message);
-      console.log('👤 User info:', result.message?.user);
 
       // Update optimistic message with real data from backend
       // result is already unwrapped: { whatsapp: {...}, message: {...} }
@@ -786,8 +743,6 @@ export default function ChatPage() {
               // Only override these if they're not in the backend response
               ...(mediaUrl && !result.message?.mediaUrl ? { mediaUrl } : {}),
             };
-            console.log('🔄 Updated message:', updated);
-            console.log('👤 Updated message user:', updated.user);
             return updated;
           }
           return msg;
@@ -1075,12 +1030,7 @@ export default function ChatPage() {
     ? contacts.filter(contact => false) // No favorite field yet
     : contacts;
 
-  console.log('[DEBUG] Contacts state:', {
-    totalContacts: contacts.length,
-    filteredContacts: filteredContacts.length,
-    chatFilter,
-    selectedPhoneNumberId,
-  });
+
 
   return (
     <>
@@ -1103,9 +1053,7 @@ export default function ChatPage() {
                   <Select
                     value={selectedPhoneNumberId}
                     onChange={(selected: any) => {
-                      console.log('Selected:', selected);
                       const value = typeof selected === 'string' ? selected : selected?.value;
-                      console.log('Setting phoneNumberId:', value);
                       setSelectedPhoneNumberId(value || '');
                     }}
                     options={phoneNumbers.map((phone) => ({
@@ -1155,7 +1103,6 @@ export default function ChatPage() {
                   // Trigger when within 10px of bottom
                   const isNearBottom = target.scrollHeight - target.scrollTop - target.clientHeight < 10;
                   if (isNearBottom && hasMoreContacts && !loading) {
-                    console.log('[DEBUG] Loading more contacts, page:', contactPage + 1);
                     loadContacts(contactPage + 1, true);
                   }
                 }}
