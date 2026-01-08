@@ -4,7 +4,7 @@
   "description": "A nextjs template to build dashboard",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbo",
+    "dev": "BACKEND_URL=http://localhost:3001 next dev --turbo",
     "lint": "next lint",
     "build": "next build",
     "type:check": "tsc --noEmit",

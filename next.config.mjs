@@ -110,15 +110,21 @@ const nextConfig = {
       },
     ];
   },
-  // Proxy /api requests to backend
+  // Proxy /api requests to backend (disabled - using direct backend API)
   async rewrites() {
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    // Rewrites disabled in development - frontend calls backend directly
+    // For production with same domain, uncomment the rewrites below
+    return [];
+
+    /* Production proxy example:
+    const backendUrl = process.env.BACKEND_URL || 'http://localhost:3001';
     return [
       {
         source: '/api/:path*',
         destination: `${backendUrl}/api/:path*`,
       },
     ];
+    */
   },
   webpack: (config, { dev, isServer }) => {
     config.resolve.alias = {

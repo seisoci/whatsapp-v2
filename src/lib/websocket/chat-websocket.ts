@@ -40,6 +40,8 @@ export class ChatWebSocketClient {
           return;
         }
 
+        // Use WSS for production (https) and WS for development (http)
+        // IMPORTANT: In production, always use wss:// for encrypted connection
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const host = process.env.NEXT_PUBLIC_WS_URL || window.location.host;
         const wsUrl = `${protocol}//${host}/ws/chat?token=${token}`;
