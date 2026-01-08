@@ -56,6 +56,7 @@ export const authMiddleware = async (c: Context, next: Next) => {
       );
     }
 
+    console.log('🔐 [Auth] Setting user context:', { userId: decoded.userId, email: decoded.email });
     c.set('user', decoded);
 
     await next();
