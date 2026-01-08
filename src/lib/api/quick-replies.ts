@@ -10,7 +10,7 @@ import type { QuickReply } from '../types/quick-replies';
 export type { QuickReply };
 
 export const quickReplyApi = {
-  getAll: () => apiClient.get<QuickReply[]>('/quick-replies').then(r => r.data),
+  getAll: () => apiClient.get<QuickReply[]>('/quick-replies'),
   
   create: (data: { shortcut: string; text: string }) => 
     apiClient.post<QuickReply>('/quick-replies', data).then(r => r.data),
