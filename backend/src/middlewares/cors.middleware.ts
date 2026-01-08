@@ -18,9 +18,6 @@ export const corsMiddleware = async (c: Context, next: Next) => {
     allowAllOrigins = true;
   } else if (origin && allowedOrigins.includes(origin)) {
     c.header('Access-Control-Allow-Origin', origin);
-  } else if (origin) {
-    // Fallback: allow the requesting origin in development
-    c.header('Access-Control-Allow-Origin', origin);
   }
 
   // Allowed HTTP methods

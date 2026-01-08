@@ -11,6 +11,8 @@ const publicRoutes = [
   '/_next',
   '/static',
   '/favicon.ico',
+  '/logo-itn-with-name.svg',
+  '/logo-itn.svg',
 ];
 
 
@@ -58,10 +60,10 @@ async function refreshAccessToken(refreshToken: string): Promise<string | null> 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Check if route is public
-  const isPublicRoute = publicRoutes.some((route) =>
-    pathname.startsWith(route)
-  );
+  // Check if route is public or is a static file (image)
+  const isPublicRoute = 
+    publicRoutes.some((route) => pathname.startsWith(route)) ||
+    /\.(svg|png|jpg|jpeg|gif|webp)$/i.test(pathname);
 
   // Skip middleware for public routes (except sign-in check)
   if (isPublicRoute && !pathname.startsWith('/sign-in')) {

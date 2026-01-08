@@ -23,10 +23,6 @@ const envSchema = z.object({
   MAX_LOGIN_ATTEMPTS: z.string().default('5'),
   LOCK_TIME: z.string().default('15'),
 
-  // Rate Limiting - Global
-  RATE_LIMIT_WINDOW: z.string().default('15'),
-  RATE_LIMIT_MAX: z.string().default('100'),
-
   // Rate Limiting - Auth Endpoints (login/register)
   AUTH_RATE_LIMIT_WINDOW: z.string().default('15'),
   AUTH_RATE_LIMIT_MAX: z.string().default('20'),
