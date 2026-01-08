@@ -226,7 +226,7 @@ export default function ChatPage() {
       console.log('[WS] ✅ Subscribed to room:', event.data.phoneNumberId);
     };
 
-    const handleNewMessage = (event: any) => {
+    const handleNewMessage = async (event: any) => {
       console.log('[WS] Received message:new event:', event);
       
       if (event.phoneNumberId === selectedPhoneNumberId) {
@@ -373,7 +373,13 @@ export default function ChatPage() {
           });
           scrollToBottom();
           
-          // If we are viewing this contact, mark as read immediately in UI (backend should handle actual read receipts)
+          // If this is an incoming message and we are viewing this contact,
+          // mark as read immediately so other users see unread count = 0
+          if (formattedMessage.direction === 'incoming') {
+            chatApi.markConversationAsRead(selectedContact.id)
+              .then(() => console.log('[WS] Auto-marked incoming message as read (chat is open)'))
+              .catch((error) => console.error('[WS] Failed to mark message as read:', error));
+          }
         }
       }
     };
