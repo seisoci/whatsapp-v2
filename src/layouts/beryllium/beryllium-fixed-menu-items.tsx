@@ -52,7 +52,7 @@ export const berylliumMenuItems: MenuItemsType[] = [
       },
       {
         name: 'Chat',
-        href: '#',
+        href: routes.chat,
         icon: PiChatsDuotone,
       },
       {

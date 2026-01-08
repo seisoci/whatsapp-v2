@@ -20,7 +20,7 @@ export const berylliumSidebarMenuItems = [
   },
   {
     name: 'Chat',
-    href: '#',
+    href: routes.chat,
     icon: <PiChatsDuotone />,
   },
   {
