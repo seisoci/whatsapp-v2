@@ -6,8 +6,18 @@
 import { Context } from 'hono';
 import { AppDataSource } from '../config/database';
 import { Tag } from '../models/Tag';
+import { withPermissions } from '../utils/controller.decorator';
 
 export class TagController {
+  /**
+   * Permission definitions
+   */
+  static permissions = {
+    getAll: 'chat-index',
+    create: 'chat-store',
+    delete: 'chat-destroy',
+  };
+
   /**
    * GET /api/v1/tags
    * List all tags
@@ -98,3 +108,9 @@ export class TagController {
     }
   }
 }
+
+export const TagControllerWithPermissions = withPermissions(
+  TagController,
+  TagController.permissions
+);
+

@@ -8,8 +8,19 @@ import { AppDataSource } from '../config/database';
 import { Contact } from '../models/Contact';
 import { Message } from '../models/Message';
 import { getContactsSchema, markAsReadSchema } from '../validators/chat.validator';
+import { withPermissions } from '../utils/controller.decorator';
 
 export class ChatController {
+  /**
+   * Permission definitions
+   */
+  static permissions = {
+    getContacts: 'chat-index',
+    getContact: 'chat-index',
+    markConversationAsRead: 'chat-update',
+    deleteContact: 'chat-destroy',
+  };
+
   /**
    * GET /api/v1/chat/contacts
    * Get all contacts for a phone number with last message and unread count
@@ -325,3 +336,9 @@ export class ChatController {
     }
   }
 }
+
+export const ChatControllerWithPermissions = withPermissions(
+  ChatController,
+  ChatController.permissions
+);
+

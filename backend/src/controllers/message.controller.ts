@@ -11,8 +11,18 @@ import { PhoneNumber } from '../models/PhoneNumber';
 import { WhatsAppMessagingService } from '../services/whatsapp-messaging.service';
 import { chatWebSocketManager } from '../services/chat-websocket.service';
 import { getMessagesSchema, sendMessageSchema } from '../validators/chat.validator';
+import { withPermissions } from '../utils/controller.decorator';
 
 export class MessageController {
+  /**
+   * Permission definitions
+   */
+  static permissions = {
+    getMessages: 'chat-index',
+    sendMessage: 'chat-store',
+    markAsRead: 'chat-update',
+  };
+
   /**
    * GET /api/v1/chat/messages
    * Get message history for a contact
@@ -278,3 +288,9 @@ export class MessageController {
     }
   }
 }
+
+export const MessageControllerWithPermissions = withPermissions(
+  MessageController,
+  MessageController.permissions
+);
+

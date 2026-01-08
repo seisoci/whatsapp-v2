@@ -4,9 +4,9 @@
  */
 
 import { Hono } from 'hono';
-import { ChatController } from '../controllers/chat.controller';
-import { MessageController } from '../controllers/message.controller';
-import { ContactTagController } from '../controllers/contact-tag.controller';
+import { ChatControllerWithPermissions as ChatController } from '../controllers/chat.controller';
+import { MessageControllerWithPermissions as MessageController } from '../controllers/message.controller';
+import { ContactTagControllerWithPermissions as ContactTagController } from '../controllers/contact-tag.controller';
 import { authMiddleware } from '../middlewares';
 
 const chat = new Hono();

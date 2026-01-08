@@ -7,8 +7,17 @@ import { Context } from 'hono';
 import { AppDataSource } from '../config/database';
 import { Contact } from '../models/Contact';
 import { Tag } from '../models/Tag';
+import { withPermissions } from '../utils/controller.decorator';
 
 export class ContactTagController {
+  /**
+   * Permission definitions
+   */
+  static permissions = {
+    addTag: 'chat-store',
+    removeTag: 'chat-destroy',
+  };
+
   /**
    * POST /api/v1/chat/contacts/:contactId/tags
    * Add tag to contact
@@ -153,3 +162,9 @@ export class ContactTagController {
     }
   }
 }
+
+export const ContactTagControllerWithPermissions = withPermissions(
+  ContactTagController,
+  ContactTagController.permissions
+);
+

@@ -2,12 +2,26 @@ import { Context } from 'hono';
 import { storageService } from '../services';
 import { AppDataSource } from '../config/database';
 import { User } from '../models/User';
+import { withPermissions } from '../utils/controller.decorator';
 
 /**
  * Upload Controller
  * Handle file uploads ke MinIO S3
  */
 export class UploadController {
+  /**
+   * Permission definitions
+   */
+  static permissions = {
+    uploadFile: 'chat-store',
+    uploadMultipleFiles: 'chat-store',
+    uploadAvatar: 'chat-store',
+    getFileInfo: 'chat-index',
+    downloadFile: 'chat-index',
+    listFiles: 'chat-index',
+    deleteFile: 'chat-destroy',
+  };
+
   /**
    * Upload single file
    */
@@ -417,7 +431,7 @@ export class UploadController {
       c.header('Content-Disposition', `attachment; filename="${fileName}"`);
       c.header('Content-Length', buffer.length.toString());
 
-      return c.body(buffer);
+      return c.body(buffer as any);
     } catch (error: any) {
       console.error('Download file error:', error);
       return c.json(
@@ -525,3 +539,9 @@ export class UploadController {
     }
   }
 }
+
+export const UploadControllerWithPermissions = withPermissions(
+  UploadController,
+  UploadController.permissions
+);
+

@@ -4,7 +4,7 @@
  */
 
 import { Hono } from 'hono';
-import { TagController } from '../controllers/tag.controller';
+import { TagControllerWithPermissions as TagController } from '../controllers/tag.controller';
 import { authMiddleware } from '../middlewares';
 
 const tags = new Hono();
