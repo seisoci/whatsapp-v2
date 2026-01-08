@@ -100,9 +100,10 @@ export class MessageController {
 
       const { contactId, phoneNumberId, type, text, template, media } = validation.data;
 
-      // Get authenticated user ID from context (set by auth middleware)
+      // Get authenticated user ID from context
+      // If wrapped with permissions, user is User entity (has .id)
       const user = c.get('user');
-      const userId = user?.userId;
+      const userId = user?.id; // as requested by user
 
       // Get contact
       const contactRepo = AppDataSource.getRepository(Contact);
