@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import Table from '@core/components/table';
 import { useTanStackTable } from '@core/components/table/custom/use-TanStack-Table';
 import TablePagination from '@core/components/table/pagination';
-import { User } from '@/data/users-data';
+import { User } from '@/lib/api/types/users';
 import { createUsersColumns } from './columns';
 import { PiMagnifyingGlassBold } from 'react-icons/pi';
 import { Flex, Input, Title, Loader, Select, Button } from 'rizzui';
@@ -74,50 +74,9 @@ export default function UsersTable() {
           setUserData([]);
         }
       } catch (apiError: any) {
-        // Fallback to local data if API is not available
-
-        // Import local data for fallback
-        const { usersData } = await import('@/data/users-data');
-
-        // Apply filters locally
-        let filteredData = [...usersData];
-
-        // Apply search filter
-        if (currentSearch) {
-          filteredData = filteredData.filter(
-            (user) =>
-              user.name.toLowerCase().includes(currentSearch.toLowerCase()) ||
-              user.email.toLowerCase().includes(currentSearch.toLowerCase())
-          );
-        }
-
-        // Apply sorting
-        if (sortBy) {
-          filteredData.sort((a, b) => {
-            const aValue = a[sortBy as keyof User];
-            const bValue = b[sortBy as keyof User];
-
-            if (aValue < bValue) return sortOrder === 'desc' ? 1 : -1;
-            if (aValue > bValue) return sortOrder === 'desc' ? -1 : 1;
-            return 0;
-          });
-        }
-
-        // Calculate pagination
-        const startIndex = (currentPage - 1) * currentPerPage;
-        const endIndex = startIndex + currentPerPage;
-        const paginatedData = filteredData.slice(startIndex, endIndex);
-
-        setTotalRecords(filteredData.length);
-        setUserData(paginatedData);
-
-        // Show info toast only on first load
-        if (isInitialLoad) {
-          toast.error(
-            'Users API endpoint not available yet. Using local dummy data. Backend /api/v1/users endpoint needs to be implemented.',
-            { duration: 5000 }
-          );
-        }
+        setUserData([]);
+        const errorMessage = apiError?.response?.data?.message || apiError?.message || 'Failed to load users';
+        toast.error(errorMessage);
       }
     } catch (error: any) {
       setUserData([]);

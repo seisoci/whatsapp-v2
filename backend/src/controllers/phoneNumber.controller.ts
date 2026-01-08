@@ -9,7 +9,7 @@ export class PhoneNumberController {
    * Permission definitions
    */
   static permissions = {
-    index: 'phone-number-index',
+    index: 'chat-index',
     show: 'phone-number-index',
     store: 'phone-number-store',
     update: 'phone-number-update',

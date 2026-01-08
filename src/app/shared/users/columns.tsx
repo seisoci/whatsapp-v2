@@ -1,7 +1,7 @@
 'use client';
 
 import { createColumnHelper } from '@tanstack/react-table';
-import { User } from '@/data/users-data';
+import { User } from '@/lib/api/types/users';
 import { Badge, Text, ActionIcon, Tooltip, Avatar } from 'rizzui';
 import PencilIcon from '@core/components/icons/pencil';
 import { PiLockKeyOpenDuotone } from 'react-icons/pi';
@@ -47,14 +47,14 @@ export const createUsersColumns = ({
       <Text className="text-sm">{row.original.email}</Text>
     ),
   }),
-  columnHelper.accessor('created_at', {
-    id: 'created_at',
+  columnHelper.accessor('createdAt', {
+    id: 'createdAt',
     size: 140,
     header: 'Created Date',
     enableSorting: true,
     cell: ({ row }) => (
       <Text className="text-sm">
-        {row.original.created_at ? new Date(row.original.created_at).toLocaleDateString('en-US', {
+        {row.original.createdAt ? new Date(row.original.createdAt).toLocaleDateString('en-US', {
           month: 'short',
           day: 'numeric',
           year: 'numeric',
