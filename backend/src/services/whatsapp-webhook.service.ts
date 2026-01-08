@@ -354,10 +354,25 @@ export class WhatsAppWebhookService {
       data: {
         contactId: contact.id,
         contact: {
+             // Include full contact data for frontend to add new contacts to list
+             id: contact.id,
+             waId: contact.waId,
+             phoneNumber: contact.phoneNumber,
+             profileName: contact.profileName,
+             profilePictureUrl: contact.profilePictureUrl,
+             businessName: contact.businessName,
+             isBusinessAccount: contact.isBusinessAccount,
+             isBlocked: contact.isBlocked,
+             notes: contact.notes,
+             // Session info
              lastCustomerMessageAt: contact.lastCustomerMessageAt,
              sessionExpiresAt: contact.sessionExpiresAt,
              isSessionActive: contact.isSessionActive, // Using the getter on the entity
              sessionRemainingSeconds, // Add this for frontend timer
+             // Tags (if loaded)
+             tags: contact.tags || [],
+             // Unread count from database (trigger keeps this updated)
+             unreadCount: contact.unreadCount || 0,
         },
         message: {
           id: message.id,

@@ -293,15 +293,48 @@ export default function ChatPage() {
             return [updatedContact, ...newContacts];
           }
 
-          // Contact not found - keep current state, will reload outside
+          // Contact not found in current list
+          // This can happen when:
+          // 1. It's a completely new contact
+          // 2. Filter is "unread" and this contact had unreadCount=0 before (so not in filtered list)
+          
+          // If we're in "unread" filter mode and this is an incoming message,
+          // add the contact to the top of the list using WebSocket event data
+          if (rawMessage.direction === 'incoming' && event.data.contact) {
+            console.log('[WS] Adding contact to unread list from WebSocket data');
+            const newContact = {
+              ...event.data.contact,
+              lastMessage: {
+                id: rawMessage.id,
+                messageType: rawMessage.messageType,
+                textBody: rawMessage.textBody || rawMessage.mediaCaption || `[${rawMessage.messageType}]`,
+                mediaCaption: rawMessage.mediaCaption || null,
+                direction: rawMessage.direction,
+                timestamp: rawMessage.timestamp,
+                status: rawMessage.status || 'delivered',
+              },
+              lastMessageTimestamp: rawMessage.timestamp,
+              unreadCount: (event.data.contact.unreadCount || 0) + 1,
+            };
+            // Filter out any existing contact with the same ID to avoid duplicates
+            const filteredContacts = prevContacts.filter(c => c.id !== newContact.id);
+            return [newContact, ...filteredContacts];
+          }
+
+          // Otherwise keep current state, will reload outside
           return prevContacts;
         });
 
-        // If contact doesn't exist, reload all contacts (done outside setContacts to avoid conflicts)
-        if (!contacts.find(c => c.id === event.data.contactId)) {
-          console.log('[WS] New contact detected, reloading contact list');
-          loadContacts();
-        }
+        // If contact doesn't exist in full list (not just filtered), reload all contacts
+        // Use functional check to avoid stale closure
+        setContacts(prevContacts => {
+          if (!prevContacts.find(c => c.id === event.data.contactId) && !event.data.contact) {
+            console.log('[WS] New contact detected and no contact data in event, reloading contact list');
+            // Schedule reload outside setState
+            setTimeout(() => loadContacts(), 0);
+          }
+          return prevContacts;
+        });
 
         // If this contact's conversation is open, add message
         if (event.data.contactId === selectedContact?.id) {
