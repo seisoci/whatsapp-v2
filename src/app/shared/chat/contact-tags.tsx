@@ -7,12 +7,12 @@ import { chatApi, type Tag, type Contact } from '@/lib/api/chat';
 import DeletePopover from '@/components/delete-popover';
 
 const TAG_COLORS = [
-  { name: 'Blue', value: 'blue', class: 'bg-blue-100 text-blue-700' },
-  { name: 'Red', value: 'red', class: 'bg-red-100 text-red-700' },
-  { name: 'Green', value: 'green', class: 'bg-green-100 text-green-700' },
-  { name: 'Yellow', value: 'yellow', class: 'bg-yellow-100 text-yellow-700' },
-  { name: 'Purple', value: 'purple', class: 'bg-purple-100 text-purple-700' },
-  { name: 'Gray', value: 'gray', class: 'bg-gray-100 text-gray-700' },
+  { name: 'Blue', value: 'blue', class: 'bg-blue-100 text-blue-700', previewClass: 'bg-blue-500' },
+  { name: 'Red', value: 'red', class: 'bg-red-100 text-red-700', previewClass: 'bg-red-500' },
+  { name: 'Green', value: 'green', class: 'bg-green-100 text-green-700', previewClass: 'bg-green-500' },
+  { name: 'Yellow', value: 'yellow', class: 'bg-yellow-100 text-yellow-700', previewClass: 'bg-yellow-500' },
+  { name: 'Purple', value: 'purple', class: 'bg-purple-100 text-purple-700', previewClass: 'bg-purple-500' },
+  { name: 'Gray', value: 'gray', class: 'bg-gray-100 text-gray-700', previewClass: 'bg-gray-500' },
 ];
 
 interface TagItemProps {
@@ -203,7 +203,7 @@ export default function ContactTags({ contact, onUpdate }: ContactTagsProps) {
                       key={color.value}
                       type="button"
                       onClick={() => setSelectedColor(color.value)}
-                      className={`w-5 h-5 rounded-full ${color.class.split(' ')[0]} transition-transform hover:scale-110 ${selectedColor === color.value ? 'ring-2 ring-offset-2 ring-gray-400 scale-110' : ''}`}
+                      className={`w-5 h-5 rounded-full ${color.previewClass} transition-transform hover:scale-110 ${selectedColor === color.value ? 'ring-2 ring-offset-2 ring-gray-400 scale-110' : ''}`}
                       title={color.name}
                     />
                   ))}
