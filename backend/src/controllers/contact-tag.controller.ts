@@ -50,16 +50,36 @@ export class ContactTagController {
       contact.tags.push(tag);
       await contactRepo.save(contact);
 
+
       // Re-fetch to ensure fresh state
       const updatedContact = await contactRepo.findOne({
         where: { id: contact.id },
         relations: ['tags'],
       });
 
+      if (!updatedContact) {
+        return c.json({ success: false, message: 'Contact not found after update' }, 500);
+      }
+
+      // Calculate session info (same as chat.controller.ts)
+      const now = new Date();
+      const sessionExpiresAt = updatedContact.sessionExpiresAt;
+      const isSessionActive = sessionExpiresAt ? now < new Date(sessionExpiresAt) : false;
+      const sessionRemainingSeconds = sessionExpiresAt 
+        ? Math.max(0, Math.floor((new Date(sessionExpiresAt).getTime() - now.getTime()) / 1000))
+        : 0;
+
+      // Return enriched contact with session info
+      const enrichedContact = {
+        ...updatedContact,
+        isSessionActive,
+        sessionRemainingSeconds,
+      };
+
       return c.json({
         success: true,
         message: 'Tag added successfully',
-        data: updatedContact,
+        data: enrichedContact,
       });
     } catch (error: any) {
       console.error('Error adding tag to contact:', error);
@@ -96,16 +116,36 @@ export class ContactTagController {
         await contactRepo.save(contact);
       }
 
+
       // Re-fetch to ensure fresh state
       const updatedContact = await contactRepo.findOne({
         where: { id: contact.id },
         relations: ['tags'],
       });
 
+      if (!updatedContact) {
+        return c.json({ success: false, message: 'Contact not found after update' }, 500);
+      }
+
+      // Calculate session info (same as chat.controller.ts)
+      const now = new Date();
+      const sessionExpiresAt = updatedContact.sessionExpiresAt;
+      const isSessionActive = sessionExpiresAt ? now < new Date(sessionExpiresAt) : false;
+      const sessionRemainingSeconds = sessionExpiresAt 
+        ? Math.max(0, Math.floor((new Date(sessionExpiresAt).getTime() - now.getTime()) / 1000))
+        : 0;
+
+      // Return enriched contact with session info
+      const enrichedContact = {
+        ...updatedContact,
+        isSessionActive,
+        sessionRemainingSeconds,
+      };
+
       return c.json({
         success: true,
         message: 'Tag removed successfully',
-        data: updatedContact,
+        data: enrichedContact,
       });
     } catch (error: any) {
       console.error('Error removing tag from contact:', error);
