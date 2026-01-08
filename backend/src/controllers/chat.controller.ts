@@ -11,7 +11,6 @@ import { PhoneNumber } from '../models/PhoneNumber';
 import { WhatsAppService } from '../services/whatsapp.service';
 import { getContactsSchema, markAsReadSchema } from '../validators/chat.validator';
 import { withPermissions } from '../utils/controller.decorator';
-import { nowJakarta } from '../utils/timezone';
 
 export class ChatController {
   /**
@@ -129,7 +128,7 @@ export class ChatController {
     try {
       const query = c.req.query();
       const validation = getContactsSchema.safeParse(query);
-
+      
       if (!validation.success) {
         return c.json({
           success: false,
@@ -157,7 +156,7 @@ export class ChatController {
         FROM contacts c
         WHERE c.phone_number_id = $1
       `;
-
+      
       const params: any[] = [phoneNumberId];
       let paramIndex = 2;
 
@@ -188,7 +187,7 @@ export class ChatController {
       // Fetch tags for each contact (still need this join)
       const contactIds = rawContacts.map((c: any) => c.id);
       let tagsMap: Record<string, any[]> = {};
-
+      
       if (contactIds.length > 0) {
         const tagsQuery = `
           SELECT ct.contact_id, t.* 
@@ -197,7 +196,7 @@ export class ChatController {
           WHERE ct.contact_id = ANY($1)
         `;
         const tagsResult = await AppDataSource.query(tagsQuery, [contactIds]);
-
+        
         tagsResult.forEach((row: any) => {
           if (!tagsMap[row.contact_id]) {
             tagsMap[row.contact_id] = [];
@@ -215,7 +214,7 @@ export class ChatController {
       const enrichedContacts = rawContacts.map((contact: any) => {
         const sessionExpiresAt = contact.session_expires_at;
         const isSessionActive = sessionExpiresAt ? now < new Date(sessionExpiresAt) : false;
-        const sessionRemainingSeconds = sessionExpiresAt
+        const sessionRemainingSeconds = sessionExpiresAt 
           ? Math.max(0, Math.floor((new Date(sessionExpiresAt).getTime() - now.getTime()) / 1000))
           : 0;
 
@@ -232,12 +231,12 @@ export class ChatController {
           isBlocked: contact.is_blocked,
           tags: tagsMap[contact.id] || [],
           notes: contact.notes,
-
+          
           // Session info (calculated)
           sessionExpiresAt: contact.session_expires_at,
           isSessionActive,
           sessionRemainingSeconds,
-
+          
           // Last message preview (from subquery) - also snake_case
           lastMessage: lastMessageData ? {
             id: lastMessageData.id,
@@ -248,10 +247,10 @@ export class ChatController {
             timestamp: lastMessageData.timestamp,
             status: lastMessageData.status,
           } : null,
-
+          
           // Unread count (from subquery)
           unreadCount: parseInt(contact.unread_count) || 0,
-
+          
           // Timestamps
           createdAt: contact.created_at,
           updatedAt: contact.updated_at,
@@ -303,7 +302,7 @@ export class ChatController {
       const now = new Date();
       const sessionExpiresAt = contact.sessionExpiresAt;
       const isSessionActive = sessionExpiresAt ? now < new Date(sessionExpiresAt) : false;
-      const sessionRemainingSeconds = sessionExpiresAt
+      const sessionRemainingSeconds = sessionExpiresAt 
         ? Math.max(0, Math.floor((new Date(sessionExpiresAt).getTime() - now.getTime()) / 1000))
         : 0;
 
@@ -366,7 +365,7 @@ export class ChatController {
       const updateResult = await messageRepo
         .createQueryBuilder()
         .update(Message)
-        .set({ readAt: nowJakarta() })
+        .set({ readAt: new Date() })
         .where('contact_id = :contactId', { contactId })
         .andWhere('direction = :direction', { direction: 'incoming' })
         .andWhere('read_at IS NULL')
@@ -376,7 +375,7 @@ export class ChatController {
       if (updateResult.affected && updateResult.affected > 0) {
         // Import WebSocket manager dynamically to avoid circular dependency
         const { chatWebSocketManager } = await import('../services/chat-websocket.service');
-
+        
         // Broadcast contact:updated event so other users see unread count = 0
         chatWebSocketManager.broadcast(contact.phoneNumberId, {
           type: 'contact:updated',

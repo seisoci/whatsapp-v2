@@ -12,7 +12,6 @@ import { WhatsAppMessagingService } from '../services/whatsapp-messaging.service
 import { chatWebSocketManager } from '../services/chat-websocket.service';
 import { getMessagesSchema, sendMessageSchema } from '../validators/chat.validator';
 import { withPermissions } from '../utils/controller.decorator';
-import { nowJakarta } from '../utils/timezone';
 
 export class MessageController {
   /**
@@ -32,7 +31,7 @@ export class MessageController {
     try {
       const query = c.req.query();
       const validation = getMessagesSchema.safeParse(query);
-
+      
       if (!validation.success) {
         return c.json({
           success: false,
@@ -205,7 +204,7 @@ export class MessageController {
       // 📢 WEBSOCKET: Broadcast outgoing message to all clients subscribed to this phone number
       if (result.savedMessage) {
         const savedMessage = result.savedMessage;
-
+        
         chatWebSocketManager.broadcast(phoneNumber.id, {
           type: 'message:new',
           data: {
@@ -271,7 +270,7 @@ export class MessageController {
         }, 400);
       }
 
-      message.readAt = nowJakarta();
+      message.readAt = new Date();
       await messageRepo.save(message);
 
       return c.json({

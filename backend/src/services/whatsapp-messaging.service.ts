@@ -7,10 +7,9 @@ import { AppDataSource } from '../config/database';
 import { Contact } from '../models/Contact';
 import { Message } from '../models/Message';
 import { PhoneNumber } from '../models/PhoneNumber';
-import { WhatsAppService } from './whatsapp.service';
-import { nowJakarta } from '../utils/timezone';
+import {WhatsAppService } from './whatsapp.service';
 
-const WHATSAPP_API_BASE_URL = process.env.WHATSAPP_API_VERSION
+const WHATSAPP_API_BASE_URL = process.env.WHATSAPP_API_VERSION 
   ? `https://graph.facebook.com/${process.env.WHATSAPP_API_VERSION}`
   : 'https://graph.facebook.com/v18.0';
 
@@ -71,11 +70,11 @@ export class WhatsAppMessagingService {
     contact.lastCustomerMessageAt = messageTimestamp;
     // Session expires 24 hours after customer message
     contact.sessionExpiresAt = new Date(messageTimestamp.getTime() + 24 * 60 * 60 * 1000);
-
+    
     if (!contact.firstMessageAt) {
       contact.firstMessageAt = messageTimestamp;
     }
-
+    
     contact.lastMessageAt = messageTimestamp;
 
     await contactRepo.save(contact);
@@ -350,8 +349,8 @@ export class WhatsAppMessagingService {
       mediaUrl: params.mediaUrl,
       mediaId: params.mediaId,
       mediaFilename: params.mediaFilename,
-      timestamp: nowJakarta(),
-      sentAt: nowJakarta(),
+      timestamp: new Date(),
+      sentAt: new Date(),
     });
 
     const savedMessage = await messageRepo.save(message);
@@ -362,13 +361,13 @@ export class WhatsAppMessagingService {
       await contactRepo.update(
         { id: params.contactId },
         {
-          lastMessageAt: nowJakarta(),
-          updatedAt: nowJakarta()
+          lastMessageAt: new Date(),
+          updatedAt: new Date()
         }
       );
       console.log(`Updated lastMessageAt for contact ${params.contactId}`);
     } catch (error) {
-      console.error(`Failed to update contact lastMessageAt:`, error);
+       console.error(`Failed to update contact lastMessageAt:`, error);
     }
 
     // Reload message with user relation
@@ -391,7 +390,7 @@ export class WhatsAppMessagingService {
     errorMessage?: string;
   }): Promise<void> {
     const messageRepo = AppDataSource.getRepository(Message);
-
+    
     const message = await messageRepo.findOne({ where: { wamid: params.wamid } });
     if (!message) {
       console.warn(`Message not found for wamid: ${params.wamid}`);
@@ -419,7 +418,7 @@ export class WhatsAppMessagingService {
     }
 
     message.status = params.status;
-
+    
     switch (params.status) {
       case 'sent':
         // Only update if sentAt is not already set (preserve original sent time)

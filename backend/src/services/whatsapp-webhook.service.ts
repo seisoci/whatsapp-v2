@@ -12,7 +12,6 @@ import { PhoneNumber } from '../models/PhoneNumber';
 import { WhatsAppMessagingService } from './whatsapp-messaging.service';
 import { WhatsAppMediaService } from './whatsapp-media.service';
 import { chatWebSocketManager } from './chat-websocket.service';
-import { unixToJakarta } from '../utils/timezone';
 
 interface WhatsAppWebhookPayload {
   object: string;
@@ -40,14 +39,14 @@ export class WhatsAppWebhookService {
    */
   static async processWebhook(payload: WhatsAppWebhookPayload, headers: any, ip: string): Promise<void> {
     const startTime = Date.now();
-
+    
     // Generate idempotency key from payload
     const idempotencyKey = this.generateIdempotencyKey(payload);
-
+    
     // Check if webhook already processed
     const webhookLogRepo = AppDataSource.getRepository(WebhookLog);
     const existingLog = await webhookLogRepo.findOne({ where: { idempotencyKey } });
-
+    
     if (existingLog && existingLog.processingStatus === 'success') {
       console.log(`Webhook already processed: ${idempotencyKey}`);
       return;
@@ -77,7 +76,7 @@ export class WhatsAppWebhookService {
             // Process messages
             if (value.messages) {
               for (const message of value.messages) {
-                // Pass contacts array to get profile info (optional)
+            // Pass contacts array to get profile info (optional)
                 await this.processIncomingMessage(message, value.metadata, value.contacts || [], webhookLog.id);
               }
             }
@@ -129,7 +128,7 @@ export class WhatsAppWebhookService {
 
     // Get WhatsApp phone_number_id from metadata
     const whatsappPhoneNumberId = metadata.phone_number_id;
-
+    
     // Lookup our PhoneNumber entity by WhatsApp's phone_number_id
     const phoneNumber = await phoneNumberRepo.findOne({
       where: { phoneNumberId: whatsappPhoneNumberId }
@@ -166,13 +165,13 @@ export class WhatsAppWebhookService {
     }
 
     // Get or create contact
-    let contact = await contactRepo.findOne({
-      where: {
-        waId: waId,
-        phoneNumberId: internalPhoneNumberId
-      }
+    let contact = await contactRepo.findOne({ 
+      where: { 
+        waId: waId, 
+        phoneNumberId: internalPhoneNumberId 
+      } 
     });
-
+    
     if (!contact) {
       contact = contactRepo.create({
         waId: waId,
@@ -185,27 +184,27 @@ export class WhatsAppWebhookService {
     } else {
       // Update profile name and picture if we have new info
       let updated = false;
-
+      
       if (profileName && contact.profileName !== profileName) {
         contact.profileName = profileName;
         updated = true;
       }
-
+      
       // Update profile picture if we successfully downloaded new one to S3
       if (s3ProfilePictureUrl && contact.profilePictureUrl !== s3ProfilePictureUrl) {
         contact.profilePictureUrl = s3ProfilePictureUrl;
         updated = true;
       }
-
+      
       if (updated) {
         await contactRepo.save(contact);
       }
     }
 
     // Update session tracking (customer sent message)
-    const messageTimestamp = unixToJakarta(parseInt(messageData.timestamp));
+    const messageTimestamp = new Date(parseInt(messageData.timestamp) * 1000);
     await WhatsAppMessagingService.updateCustomerSession(contact.id, messageTimestamp);
-
+    
     // Refresh contact to get updated session fields for WebSocket broadcast
     const updatedContact = await contactRepo.findOne({ where: { id: contact.id } });
     if (updatedContact) {
@@ -230,7 +229,7 @@ export class WhatsAppWebhookService {
       case 'text':
         message.textBody = messageData.text?.body;
         break;
-
+      
       case 'image':
       case 'video':
       case 'audio':
@@ -242,7 +241,7 @@ export class WhatsAppWebhookService {
         message.mediaSha256 = mediaData?.sha256;
         message.mediaCaption = mediaData?.caption;
         message.mediaFilename = mediaData?.filename;
-
+        
         // Auto-download media and upload to S3
         if (mediaData?.id) {
           try {
@@ -272,30 +271,30 @@ export class WhatsAppWebhookService {
           }
         }
         break;
-
+      
       case 'location':
         message.locationLatitude = messageData.location?.latitude;
         message.locationLongitude = messageData.location?.longitude;
         message.locationName = messageData.location?.name;
         message.locationAddress = messageData.location?.address;
         break;
-
+      
       case 'interactive':
         message.interactiveType = messageData.interactive?.type;
         message.interactivePayload = messageData.interactive;
-
+        
         // Handle button reply
         if (messageData.interactive?.type === 'button_reply') {
           message.buttonPayload = messageData.interactive.button_reply?.id;
           message.buttonText = messageData.interactive.button_reply?.title;
         }
         break;
-
+      
       case 'reaction':
         message.reactionMessageId = messageData.reaction?.message_id;
         message.reactionEmoji = messageData.reaction?.emoji;
         break;
-
+      
       case 'contacts':
         message.contactsPayload = messageData.contacts;
         break;
@@ -346,7 +345,7 @@ export class WhatsAppWebhookService {
     // Calculate session remaining seconds for frontend
     const now = new Date();
     const sessionExpiresAt = contact.sessionExpiresAt;
-    const sessionRemainingSeconds = sessionExpiresAt
+    const sessionRemainingSeconds = sessionExpiresAt 
       ? Math.max(0, Math.floor((new Date(sessionExpiresAt).getTime() - now.getTime()) / 1000))
       : 0;
 
@@ -355,25 +354,25 @@ export class WhatsAppWebhookService {
       data: {
         contactId: contact.id,
         contact: {
-          // Include full contact data for frontend to add new contacts to list
-          id: contact.id,
-          waId: contact.waId,
-          phoneNumber: contact.phoneNumber,
-          profileName: contact.profileName,
-          profilePictureUrl: contact.profilePictureUrl,
-          businessName: contact.businessName,
-          isBusinessAccount: contact.isBusinessAccount,
-          isBlocked: contact.isBlocked,
-          notes: contact.notes,
-          // Session info
-          lastCustomerMessageAt: contact.lastCustomerMessageAt,
-          sessionExpiresAt: contact.sessionExpiresAt,
-          isSessionActive: contact.isSessionActive, // Using the getter on the entity
-          sessionRemainingSeconds, // Add this for frontend timer
-          // Tags (if loaded)
-          tags: contact.tags || [],
-          // Unread count from database (trigger keeps this updated)
-          unreadCount: contact.unreadCount || 0,
+             // Include full contact data for frontend to add new contacts to list
+             id: contact.id,
+             waId: contact.waId,
+             phoneNumber: contact.phoneNumber,
+             profileName: contact.profileName,
+             profilePictureUrl: contact.profilePictureUrl,
+             businessName: contact.businessName,
+             isBusinessAccount: contact.isBusinessAccount,
+             isBlocked: contact.isBlocked,
+             notes: contact.notes,
+             // Session info
+             lastCustomerMessageAt: contact.lastCustomerMessageAt,
+             sessionExpiresAt: contact.sessionExpiresAt,
+             isSessionActive: contact.isSessionActive, // Using the getter on the entity
+             sessionRemainingSeconds, // Add this for frontend timer
+             // Tags (if loaded)
+             tags: contact.tags || [],
+             // Unread count from database (trigger keeps this updated)
+             unreadCount: contact.unreadCount || 0,
         },
         message: {
           id: message.id,
@@ -406,14 +405,14 @@ export class WhatsAppWebhookService {
     // Get WhatsApp phone_number_id from metadata (if available in status)
     // Status updates don't always have metadata, so we'll need to lookup from message
     const whatsappPhoneNumberId = statusData.metadata?.phone_number_id;
-
+    
     let internalPhoneNumberId: string | undefined;
-
+    
     if (whatsappPhoneNumberId) {
       const phoneNumber = await phoneNumberRepo.findOne({
         where: { phoneNumberId: whatsappPhoneNumberId }
       });
-
+      
       if (phoneNumber) {
         internalPhoneNumberId = phoneNumber.id;
       }
@@ -424,13 +423,13 @@ export class WhatsAppWebhookService {
     const message = await messageRepo.findOne({
       where: { wamid: statusData.id },
     });
-
+    
     if (!message) {
       console.error('❌ Message not found for status update:', statusData.id);
       console.error('Status data:', JSON.stringify(statusData, null, 2));
       return;
     }
-
+    
     console.log('✅ Found message:', {
       id: message.id,
       wamid: message.wamid,
@@ -438,7 +437,7 @@ export class WhatsAppWebhookService {
       newStatus: statusData.status,
     });
 
-    const statusTimestamp = unixToJakarta(parseInt(statusData.timestamp));
+    const statusTimestamp = new Date(parseInt(statusData.timestamp) * 1000);
 
     // Status Hierarchy Logic: Prevent stale updates processing
     // e.g. If message is already 'delivered', ignore 'sent' updates
@@ -518,10 +517,10 @@ export class WhatsAppWebhookService {
           messageId: message.id,
           wamid: message.wamid,
           status: statusData.status,
-          timestamp: statusData.timestamp ? unixToJakarta(parseInt(statusData.timestamp)) : new Date(),
+          timestamp: statusData.timestamp ? new Date(parseInt(statusData.timestamp) * 1000) : new Date(),
         },
       };
-
+      
       console.log('📢 [WebSocket] Broadcasting status update:', JSON.stringify(wsPayload, null, 2));
       chatWebSocketManager.broadcast(contact.phoneNumberId, wsPayload);
     } else {
@@ -558,7 +557,7 @@ export class WhatsAppWebhookService {
       .createHmac('sha256', appSecret)
       .update(payload)
       .digest('hex');
-
+    
     return signature === `sha256=${expectedSignature}`;
   }
 }

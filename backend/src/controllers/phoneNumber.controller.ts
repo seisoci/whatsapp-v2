@@ -3,7 +3,6 @@ import { AppDataSource } from '../config/database';
 import { PhoneNumber } from '../models/PhoneNumber';
 import { WhatsAppService } from '../services/whatsapp.service';
 import { withPermissions } from '../utils/controller.decorator';
-import { nowJakarta } from '../utils/timezone';
 
 export class PhoneNumberController {
   /**
@@ -428,7 +427,7 @@ export class PhoneNumberController {
       phoneNumber.qualityRating = phoneInfo.quality_rating || 'UNKNOWN';
       phoneNumber.messagingLimitTier = phoneInfo.messaging_limit_tier || 'TIER_NOT_SET';
       phoneNumber.isOfficialBusinessAccount = phoneInfo.is_official_business_account || false;
-      phoneNumber.lastSyncAt = nowJakarta();
+      phoneNumber.lastSyncAt = new Date();
 
       await phoneNumberRepository.save(phoneNumber);
 

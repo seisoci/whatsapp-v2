@@ -6,7 +6,6 @@ import { JWTService } from '../utils/jwt';
 import { loginSchema, refreshTokenSchema } from '../validators';
 import { LoginResponse } from '../types';
 import { randomBytes } from 'crypto';
-import { nowJakarta } from '../utils/timezone';
 
 export class AuthController {
 
@@ -70,7 +69,7 @@ export class AuthController {
       }
 
       // Update last login info
-      user.lastLoginAt = nowJakarta();
+      user.lastLoginAt = new Date();
       user.lastLoginIp = c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || null;
       await userRepository.save(user);
 
@@ -246,7 +245,7 @@ export class AuthController {
       if (refreshToken) {
         // Revoke refresh token
         refreshToken.isRevoked = true;
-        refreshToken.revokedAt = nowJakarta();
+        refreshToken.revokedAt = new Date();
         await refreshTokenRepository.save(refreshToken);
       }
 
