@@ -1,0 +1,120 @@
+# =============================================================================
+# Nginx Configuration for OmniChat V2
+# Domain: omnichat-v2.itn.net.id
+# 
+# Deployment:
+#   1. Copy to: /etc/nginx/sites-available/omnichat-v2
+#   2. Create symlink: ln -s /etc/nginx/sites-available/omnichat-v2 /etc/nginx/sites-enabled/
+#   3. Test: nginx -t
+#   4. Reload: systemctl reload nginx
+# =============================================================================
+
+# Upstream definitions
+upstream omnichat_frontend {
+    server 127.0.0.1:3000;
+    keepalive 64;
+}
+
+upstream omnichat_backend {
+    server 127.0.0.1:3001;
+    keepalive 64;
+}
+
+# HTTP → HTTPS Redirect
+server {
+    listen 80;
+    listen [::]:80;
+    server_name omnichat-v2.itn.net.id;
+
+    # Let's Encrypt ACME Challenge
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+# HTTPS Server
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    server_name omnichat-v2.itn.net.id;
+
+    # SSL Certificates
+    ssl_certificate /etc/letsencrypt/live/omnichat-v2.itn.net.id/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/omnichat-v2.itn.net.id/privkey.pem;
+
+    # SSL Settings
+    ssl_session_timeout 1d;
+    ssl_session_cache shared:OmniChatSSL:10m;
+    ssl_session_tickets off;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384;
+    ssl_prefer_server_ciphers off;
+
+    # OCSP Stapling
+    ssl_stapling on;
+    ssl_stapling_verify on;
+    resolver 8.8.8.8 8.8.4.4 valid=300s;
+
+    # Security Headers
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
+
+    # Logging
+    access_log /var/log/nginx/omnichat-v2.access.log;
+    error_log /var/log/nginx/omnichat-v2.error.log;
+
+    # Gzip
+    gzip on;
+    gzip_vary on;
+    gzip_types text/plain text/css application/json application/javascript text/xml application/xml;
+
+    # Backend API
+    location /api/ {
+        proxy_pass http://omnichat_backend;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_connect_timeout 60s;
+        proxy_read_timeout 60s;
+        client_max_body_size 100M;
+    }
+
+    # WebSocket
+    location /ws/chat {
+        proxy_pass http://omnichat_backend;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 86400s;
+        proxy_buffering off;
+    }
+
+    # Frontend (Next.js)
+    location / {
+        proxy_pass http://omnichat_frontend;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Connection "";
+    }
+
+    # Static files caching
+    location /_next/static {
+        proxy_pass http://omnichat_frontend;
+        add_header Cache-Control "public, max-age=31536000, immutable";
+    }
+}
