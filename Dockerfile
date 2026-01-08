@@ -9,12 +9,14 @@ WORKDIR /app
 # Install dependencies based on the preferred package manager
 COPY package.json pnpm-lock.yaml* ./
 
+# Enable corepack and install pnpm version from package.json
+RUN corepack enable && corepack prepare pnpm@9.1.4 --activate
+
 # Install dependencies
 # Use --frozen-lockfile in CI/production for reproducibility
 # If lockfile is out of sync, build will fail - this is intentional
 # Run 'pnpm install' locally first to update lockfile before deploying
-RUN corepack enable pnpm && \
-    if [ -f pnpm-lock.yaml ]; then \
+RUN if [ -f pnpm-lock.yaml ]; then \
         echo "📦 Installing from lockfile..." && \
         pnpm i --frozen-lockfile; \
     else \
@@ -36,7 +38,7 @@ ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_TURNSTILE_SITE_KEY=$NEXT_PUBLIC_TURNSTILE_SITE_KEY
 ENV NEXT_TELEMETRY_DISABLED=1
 
-RUN corepack enable pnpm && pnpm build
+RUN corepack enable && corepack prepare pnpm@9.1.4 --activate && pnpm build
 
 # Production image, copy all the files and run next
 FROM base AS runner
@@ -54,14 +56,15 @@ COPY --from=builder /app/public ./public
 RUN mkdir .next
 RUN chown nextjs:nodejs .next
 
-# Automatically leverage output traces to reduce image size
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+# Copy built application (without standalone due to Next.js 16 + Turbopack + middleware bug)
+COPY --from=builder --chown=nextjs:nodejs /app/.next ./.next
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules
+COPY --from=builder --chown=nextjs:nodejs /app/package.json ./package.json
 
 USER nextjs
 
+EXPOSE 3000
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
 
-
-
-
-CMD ["node", "server.js"]
+CMD ["node_modules/.bin/next", "start"]

@@ -12,7 +12,6 @@ const protectedRoutes = [
   '/file-manager',
   '/invoice',
   '/forms/profile-settings',
-  '/terminal',
 ];
 
 const publicRoutes = ['/sign-in', '/sign-up', '/forgot-password'];

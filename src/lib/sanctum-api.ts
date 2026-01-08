@@ -283,21 +283,6 @@ export async function getOltSelect(searchName?: string) {
   });
 }
 
-export async function openTerminal(oltId: number | string) {
-  await ensureCsrfCookie();
-
-  const payload = { olt_id: oltId };
-  return apiRequest<{ id: string; channel: string }>(`/api/${API_VERSION}/terminal/open`, {
-    method: 'POST',
-    body: JSON.stringify(payload),
-  });
-}
-
-export async function closeTerminal(sessionId: string) {
-  return apiRequest(`/api/${API_VERSION}/terminal/${sessionId}/close`, {
-    method: 'POST',
-  });
-}
 
 // Speed Profiles
 export async function getSpeedProfiles(upDown?: 'download' | 'upload') {

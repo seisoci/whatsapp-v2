@@ -8,7 +8,7 @@ const __dirname = path.dirname(__filename);
 /** @type {import('next').NextConfig} */
 
 const nextConfig = {
-  output: 'standalone', // Required for Docker deployment
+  // output: 'standalone', // Required for Docker deployment - disabled due to middleware bug in Next.js 16
   typescript: {
     // !! WARN !!
     // Dangerously allow production builds to successfully complete even if
