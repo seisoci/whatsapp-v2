@@ -8,6 +8,27 @@ import { LoginResponse } from '../types';
 import { randomBytes } from 'crypto';
 
 export class AuthController {
+  /**
+   * Helper function to extract the client's real IP address
+   * When using Cloudflare, prioritize CF-Connecting-IP header
+   * Otherwise, extract the first IP from x-forwarded-for (which can contain multiple IPs)
+   */
+  private static getClientIp(c: Context): string | null {
+    // Cloudflare provides the real client IP in CF-Connecting-IP header
+    const cfConnectingIp = c.req.header('cf-connecting-ip');
+    if (cfConnectingIp) {
+      return cfConnectingIp;
+    }
+
+    // Fallback to x-forwarded-for (take only the first IP before comma)
+    const forwardedFor = c.req.header('x-forwarded-for');
+    if (forwardedFor) {
+      return forwardedFor.split(',')[0].trim();
+    }
+
+    // Final fallback to x-real-ip
+    return c.req.header('x-real-ip') || null;
+  }
 
 
   static async login(c: Context) {
@@ -70,7 +91,7 @@ export class AuthController {
 
       // Update last login info
       user.lastLoginAt = new Date();
-      user.lastLoginIp = c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || null;
+      user.lastLoginIp = this.getClientIp(c);
       await userRepository.save(user);
 
       // Generate tokens
@@ -91,7 +112,7 @@ export class AuthController {
         userId: user.id,
         token: refreshTokenString,
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 hari
-        ipAddress: c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || null,
+        ipAddress: this.getClientIp(c),
         userAgent: c.req.header('user-agent') || null,
       });
 
