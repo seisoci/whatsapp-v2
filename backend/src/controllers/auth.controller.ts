@@ -91,7 +91,7 @@ export class AuthController {
 
       // Update last login info
       user.lastLoginAt = new Date();
-      user.lastLoginIp = this.getClientIp(c);
+      user.lastLoginIp = AuthController.getClientIp(c);
       await userRepository.save(user);
 
       // Generate tokens
