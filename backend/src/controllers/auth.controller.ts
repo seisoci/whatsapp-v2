@@ -112,7 +112,7 @@ export class AuthController {
         userId: user.id,
         token: refreshTokenString,
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 hari
-        ipAddress: this.getClientIp(c),
+        ipAddress: AuthController.getClientIp(c),
         userAgent: c.req.header('user-agent') || null,
       });
 
