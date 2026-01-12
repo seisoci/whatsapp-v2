@@ -112,6 +112,8 @@ export default function ChatPage() {
   const [contactPage, setContactPage] = useState(1);
   const [hasMoreContacts, setHasMoreContacts] = useState(true);
   const [copiedPhone, setCopiedPhone] = useState(false);
+  const [totalContacts, setTotalContacts] = useState(0);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   // Attachment state
   const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
@@ -168,6 +170,7 @@ export default function ChatPage() {
     if (selectedPhoneNumberId) {
       setSearchQuery(''); // Reset search when switching numbers (will trigger debounce effect with empty, reloading contacts)
       loadContacts();
+      loadContactsStats(); // Load accurate stats from backend
 
       // Wait for WebSocket to be connected before subscribing
       const subscribeWhenReady = () => {
@@ -318,7 +321,12 @@ export default function ChatPage() {
             // Remove from old position and add to top
             const newContacts = [...prevContacts];
             newContacts.splice(contactIndex, 1);
-            return [updatedContact, ...newContacts];
+            const finalContacts = [updatedContact, ...newContacts];
+
+            // Refresh stats from backend for accurate counts
+            loadContactsStats();
+
+            return finalContacts;
           }
 
           // Contact not found in current list
@@ -345,7 +353,12 @@ export default function ChatPage() {
             };
             // Filter out any existing contact with the same ID to avoid duplicates
             const filteredContacts = prevContacts.filter(c => c.id !== newContact.id);
-            return [newContact, ...filteredContacts];
+            const updatedContacts = [newContact, ...filteredContacts];
+
+            // Refresh stats from backend for accurate counts
+            loadContactsStats();
+
+            return updatedContacts;
           }
 
           // Otherwise keep current state, will reload outside
@@ -538,7 +551,7 @@ export default function ChatPage() {
       } else {
         setContacts(newContacts);
       }
-      
+
       // Check if there are more contacts
       setHasMoreContacts(newContacts.length === 50);
       setContactPage(page);
@@ -552,6 +565,18 @@ export default function ChatPage() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadContactsStats = async () => {
+    if (!selectedPhoneNumberId) return;
+
+    try {
+      const response = await chatApi.getContactsStats(selectedPhoneNumberId);
+      setTotalContacts(response.totalContacts);
+      setUnreadCount(response.unreadCount);
+    } catch (error: any) {
+      console.error('Failed to load contacts stats:', error);
     }
   };
 
@@ -628,11 +653,16 @@ export default function ChatPage() {
     setShowChat(true);
     
     // Reset unread count for this contact (mark as read)
-    setContacts(prevContacts =>
-      prevContacts.map(c =>
+    setContacts(prevContacts => {
+      const updated = prevContacts.map(c =>
         c.id === contact.id ? { ...c, unreadCount: 0 } : c
-      )
-    );
+      );
+
+      // Refresh stats from backend for accurate counts
+      loadContactsStats();
+
+      return updated;
+    });
     
     // Load messages immediately with contact parameter to avoid race condition
     loadMessages(contact);
@@ -1156,17 +1186,35 @@ export default function ChatPage() {
                     size="sm"
                     variant={chatFilter === 'all' ? 'solid' : 'outline'}
                     onClick={() => setChatFilter('all')}
-                    className="flex-1"
+                    className="flex-1 flex items-center justify-center gap-2"
                   >
-                    All
+                    <span>All</span>
+                    {totalContacts > 0 && (
+                      <span className={`inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-xs font-medium ${
+                        chatFilter === 'all'
+                          ? 'bg-white/20 text-white'
+                          : 'bg-gray-200 text-gray-700'
+                      }`}>
+                        {totalContacts}
+                      </span>
+                    )}
                   </Button>
                   <Button
                     size="sm"
                     variant={chatFilter === 'unread' ? 'solid' : 'outline'}
                     onClick={() => setChatFilter('unread')}
-                    className="flex-1"
+                    className="flex-1 flex items-center justify-center gap-2"
                   >
-                    Unread
+                    <span>Unread</span>
+                    {unreadCount > 0 && (
+                      <span className={`inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-xs font-medium ${
+                        chatFilter === 'unread'
+                          ? 'bg-white/20 text-white'
+                          : 'bg-blue-500 text-white'
+                      }`}>
+                        {unreadCount}
+                      </span>
+                    )}
                   </Button>
                 </div>
 

@@ -17,6 +17,7 @@ chat.use('/*', authMiddleware);
 // Contact endpoints
 chat.get('/phone-numbers', ChatController.getPhoneNumbers);
 chat.get('/contacts', ChatController.getContacts);
+chat.get('/contacts/stats', ChatController.getContactsStats); // Must be before /contacts/:id
 chat.get('/contacts/:id', ChatController.getContact);
 chat.put('/contacts/:id/read', ChatController.markConversationAsRead);
 chat.delete('/contacts/:id', ChatController.deleteContact);

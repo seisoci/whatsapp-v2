@@ -25,6 +25,9 @@ export const chatApi = {
     limit?: number;
   }) => apiClient.get('/chat/contacts', { params }).then(r => r.data),
 
+  getContactsStats: (phoneNumberId: string) =>
+    apiClient.get('/chat/contacts/stats', { params: { phoneNumberId } }).then(r => r.data),
+
   getContact: (contactId: string) =>
     apiClient.get(`/chat/contacts/${contactId}`).then(r => r.data),
 

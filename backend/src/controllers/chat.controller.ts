@@ -20,6 +20,7 @@ export class ChatController {
     getContacts: 'chat-index',
     getPhoneNumbers: 'chat-index',
     getContact: 'chat-index',
+    getContactsStats: 'chat-index',
     markConversationAsRead: 'chat-update',
     deleteContact: 'chat-destroy',
   };
@@ -272,6 +273,56 @@ export class ChatController {
       return c.json({
         success: false,
         message: 'Failed to get contacts',
+        error: error.message,
+      }, 500);
+    }
+  }
+
+  /**
+   * GET /api/v1/chat/contacts/stats
+   * Get contact statistics (total contacts and unread count)
+   */
+  static async getContactsStats(c: Context) {
+    try {
+      const phoneNumberId = c.req.query('phoneNumberId');
+
+      if (!phoneNumberId) {
+        return c.json({
+          success: false,
+          message: 'phoneNumberId is required',
+        }, 400);
+      }
+
+      // Get total contacts count
+      const totalQuery = `
+        SELECT COUNT(*) as total
+        FROM contacts
+        WHERE phone_number_id = $1
+      `;
+      const totalResult = await AppDataSource.query(totalQuery, [phoneNumberId]);
+      const totalContacts = parseInt(totalResult[0].total);
+
+      // Get unread contacts count (contacts with unread_count > 0)
+      const unreadQuery = `
+        SELECT COUNT(*) as unread
+        FROM contacts
+        WHERE phone_number_id = $1 AND unread_count > 0
+      `;
+      const unreadResult = await AppDataSource.query(unreadQuery, [phoneNumberId]);
+      const unreadCount = parseInt(unreadResult[0].unread);
+
+      return c.json({
+        success: true,
+        data: {
+          totalContacts,
+          unreadCount,
+        },
+      });
+    } catch (error: any) {
+      console.error('Error getting contacts stats:', error);
+      return c.json({
+        success: false,
+        message: 'Failed to get contacts stats',
         error: error.message,
       }, 500);
     }
