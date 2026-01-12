@@ -22,6 +22,7 @@ import {
   PiPaperclipHorizontal,
   PiMicrophone,
   PiVideoCamera,
+  PiCopy,
 } from 'react-icons/pi';
 import React, { useState, useRef, useEffect } from 'react';
 import Lightbox from "yet-another-react-lightbox";
@@ -110,6 +111,7 @@ export default function ChatPage() {
   const debouncedSearchQuery = useDebounce(searchQuery, 500);
   const [contactPage, setContactPage] = useState(1);
   const [hasMoreContacts, setHasMoreContacts] = useState(true);
+  const [copiedPhone, setCopiedPhone] = useState(false);
 
   // Attachment state
   const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
@@ -874,6 +876,16 @@ export default function ChatPage() {
     }
   };
 
+  const copyPhoneNumber = async (phoneNumber: string) => {
+    try {
+      await navigator.clipboard.writeText(phoneNumber);
+      setCopiedPhone(true);
+      setTimeout(() => setCopiedPhone(false), 2000);
+    } catch (error) {
+      console.error('Failed to copy phone number:', error);
+    }
+  };
+
   // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -1240,8 +1252,26 @@ export default function ChatPage() {
                       className="h-10 w-10"
                     />
                     <div>
-                      <h6 className="text-sm font-semibold">{selectedContact.profileName || selectedContact.phoneNumber}</h6>
                       <div className="flex items-center gap-2">
+                        <h6 className="text-sm font-semibold">{selectedContact.profileName || selectedContact.phoneNumber}</h6>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-xs text-gray-600 dark:text-gray-400">
+                          {selectedContact.phoneNumber}
+                        </p>
+                        <button
+                          onClick={() => copyPhoneNumber(selectedContact.phoneNumber)}
+                          className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                          title={copiedPhone ? 'Copied!' : 'Copy phone number'}
+                        >
+                          {copiedPhone ? (
+                            <PiCheck className="h-3.5 w-3.5 text-green-600" />
+                          ) : (
+                            <PiCopy className="h-3.5 w-3.5" />
+                          )}
+                        </button>
+                      </div>
+                      <div className="flex items-center gap-2 mt-1">
                         <p className="text-xs text-gray-500">
                           {selectedContact.isSessionActive && selectedContact.sessionExpiresAt ? (
                             <span className="text-green-600 font-bold tabular-nums">
@@ -1252,13 +1282,13 @@ export default function ChatPage() {
                           )}
                         </p>
                         <span className="text-gray-300">|</span>
-                        <ContactTags 
-                          contact={selectedContact} 
+                        <ContactTags
+                          contact={selectedContact}
                           onUpdate={(updatedContact) => {
                             // Update local contact state and list
                             setSelectedContact(updatedContact);
                             setContacts(prev => prev.map(c => c.id === updatedContact.id ? updatedContact : c));
-                          }} 
+                          }}
                         />
                       </div>
                     </div>
