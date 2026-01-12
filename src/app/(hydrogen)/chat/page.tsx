@@ -225,7 +225,8 @@ export default function ChatPage() {
     };
 
     const handleNewMessage = async (event: any) => {
-      
+      console.log('[WS] New message event:', event);
+
       if (event.phoneNumberId === selectedPhoneNumberId) {
         const rawMessage = event.data.message;
         
@@ -258,6 +259,11 @@ export default function ChatPage() {
 
           // If contact exists, update it and move to top
           if (contactIndex !== -1) {
+            // Calculate unread count first before merging
+            const newUnreadCount = (rawMessage.direction === 'incoming' && selectedContact?.id !== contactId)
+              ? (prevContacts[contactIndex].unreadCount || 0) + 1
+              : prevContacts[contactIndex].unreadCount;
+
             const updatedContact = {
               ...prevContacts[contactIndex],
               // lastMessage must fully match the Contact interface from lib/api/chat.ts
@@ -271,17 +277,42 @@ export default function ChatPage() {
                 status: rawMessage.status || 'delivered',
               },
               lastMessageTimestamp: rawMessage.timestamp,
-              // Update session info if available in event
+              // Update session info if available in event (after lastMessage so session fields override)
               ...(event.data.contact || {}),
-              // Increment unread count if message is incoming and not currently selected
-              unreadCount: (rawMessage.direction === 'incoming' && selectedContact?.id !== contactId)
-                ? (prevContacts[contactIndex].unreadCount || 0) + 1
-                : prevContacts[contactIndex].unreadCount
+              // Override unread count with our calculated value
+              unreadCount: newUnreadCount
             };
 
-            // Also update selectedContact if it matches
-            if (selectedContact?.id === contactId && event.data.contact) {
-                 setSelectedContact(prev => prev ? ({ ...prev, ...event.data.contact }) : null);
+            console.log('[WS] Updated contact session info:', {
+              contactId,
+              isSessionActive: updatedContact.isSessionActive,
+              sessionExpiresAt: updatedContact.sessionExpiresAt,
+              hasContactData: !!event.data.contact,
+              rawEventContact: event.data.contact
+            });
+
+            // Also update selectedContact if it matches - use updatedContact for consistency
+            if (selectedContact?.id === contactId) {
+              if (event.data.contact) {
+                // Use the already-merged updatedContact to ensure consistency
+                setSelectedContact(updatedContact);
+              } else {
+                // If no contact data in WS event, fetch fresh contact data for session info
+                console.log('[WS] No contact data in event, fetching fresh contact...');
+                chatApi.getContact(contactId)
+                  .then(freshContact => {
+                    console.log('[WS] Fresh contact fetched:', {
+                      isSessionActive: freshContact.isSessionActive,
+                      sessionExpiresAt: freshContact.sessionExpiresAt
+                    });
+                    setSelectedContact(freshContact);
+                    // Also update in contacts list
+                    setContacts(prevContacts =>
+                      prevContacts.map(c => c.id === contactId ? { ...c, ...freshContact } : c)
+                    );
+                  })
+                  .catch(error => console.error('[WS] Failed to fetch fresh contact:', error));
+              }
             }
 
             // Remove from old position and add to top
@@ -333,7 +364,8 @@ export default function ChatPage() {
 
         // If this contact's conversation is open, add message
         if (event.data.contactId === selectedContact?.id) {
-          
+          console.log('[WS] Message for currently open chat, adding to messages');
+
           setMessages(prev => {
             // Check if message already exists (by ID or WAMID)
             const exists = prev.some(m => 
