@@ -1301,7 +1301,17 @@ export default function ChatPage() {
                                   <span className="text-3xl">{msg.reactionEmoji || '👍'}</span>
                                   <div className="flex items-center gap-1">
                                     <span className={`text-[10px] ${isOwn ? 'text-blue-100' : 'text-gray-500'}`}>
-                                      {format(new Date(msg.timestamp), 'HH:mm')}
+                                      {(() => {
+                                        const date = new Date(msg.timestamp);
+                                        const now = new Date();
+                                        const diff = differenceInCalendarDays(now, date);
+
+                                        if (diff >= 1) {
+                                          return format(date, 'dd/MM/yyyy HH:mm');
+                                        }
+
+                                        return format(date, 'HH:mm');
+                                      })()}
                                     </span>
                                   </div>
                                 </div>
@@ -1385,7 +1395,17 @@ export default function ChatPage() {
                                   {/* Timestamp & Status for Media */}
                                   <div className="flex justify-end items-center gap-1 mt-1">
                                      <span className={`text-[10px] ${isOwn ? 'text-blue-100' : 'text-gray-500'}`}>
-                                      {format(new Date(msg.timestamp), 'HH:mm')}
+                                      {(() => {
+                                        const date = new Date(msg.timestamp);
+                                        const now = new Date();
+                                        const diff = differenceInCalendarDays(now, date);
+
+                                        if (diff >= 1) {
+                                          return format(date, 'dd/MM/yyyy HH:mm');
+                                        }
+
+                                        return format(date, 'HH:mm');
+                                      })()}
                                     </span>
                                     {isOwn && <span className={isOwn ? 'text-white' : ''}>{getStatusIcon(msg.status)}</span>}
                                   </div>
@@ -1400,7 +1420,17 @@ export default function ChatPage() {
                                         ? 'text-white opacity-90'
                                         : 'text-gray-500 dark:text-gray-400'
                                     }`}>
-                                      {format(new Date(msg.timestamp), 'HH:mm')}
+                                      {(() => {
+                                        const date = new Date(msg.timestamp);
+                                        const now = new Date();
+                                        const diff = differenceInCalendarDays(now, date);
+
+                                        if (diff >= 1) {
+                                          return format(date, 'dd/MM/yyyy HH:mm');
+                                        }
+
+                                        return format(date, 'HH:mm');
+                                      })()}
                                     </span>
                                     {isOwn && (
                                       <span className="flex-shrink-0 leading-none opacity-90">
