@@ -374,32 +374,48 @@ export default function ChatPage() {
           // This can happen when:
           // 1. It's a completely new contact
           // 2. Filter is "unread" and this contact had unreadCount=0 before (so not in filtered list)
+          // 3. Filter is "archived" and this contact is not archived (or vice versa)
           
-          // If we're in "unread" filter mode and this is an incoming message,
-          // add the contact to the top of the list using WebSocket event data
+          // If this is an incoming message and we have contact data, check if it should be added
           if (rawMessage.direction === 'incoming' && event.data.contact) {
-            const newContact = {
-              ...event.data.contact,
-              lastMessage: {
-                id: rawMessage.id,
-                messageType: rawMessage.messageType,
-                textBody: rawMessage.textBody || rawMessage.mediaCaption || `[${rawMessage.messageType}]`,
-                mediaCaption: rawMessage.mediaCaption || null,
-                direction: rawMessage.direction,
-                timestamp: rawMessage.timestamp,
-                status: rawMessage.status || 'delivered',
-              },
-              lastMessageTimestamp: rawMessage.timestamp,
-              unreadCount: (event.data.contact.unreadCount || 0) + 1,
-            };
-            // Filter out any existing contact with the same ID to avoid duplicates
-            const filteredContacts = prevContacts.filter(c => c.id !== newContact.id);
-            const updatedContacts = [newContact, ...filteredContacts];
+            const incomingContact = event.data.contact;
+            const isContactArchived = incomingContact.isArchived || false;
+            
+            // Only add to list if it matches current filter
+            // If filter is 'archived', only show archived contacts
+            // If filter is 'all' or 'unread', only show non-archived contacts
+            const shouldAddToCurrentFilter = 
+              (chatFilter === 'archived' && isContactArchived) ||
+              (chatFilter !== 'archived' && !isContactArchived);
+            
+            if (shouldAddToCurrentFilter) {
+              const newContact = {
+                ...incomingContact,
+                lastMessage: {
+                  id: rawMessage.id,
+                  messageType: rawMessage.messageType,
+                  textBody: rawMessage.textBody || rawMessage.mediaCaption || `[${rawMessage.messageType}]`,
+                  mediaCaption: rawMessage.mediaCaption || null,
+                  direction: rawMessage.direction,
+                  timestamp: rawMessage.timestamp,
+                  status: rawMessage.status || 'delivered',
+                },
+                lastMessageTimestamp: rawMessage.timestamp,
+                unreadCount: (incomingContact.unreadCount || 0) + 1,
+              };
+              // Filter out any existing contact with the same ID to avoid duplicates
+              const filteredContacts = prevContacts.filter(c => c.id !== newContact.id);
+              const updatedContacts = [newContact, ...filteredContacts];
 
-            // Refresh stats from backend for accurate counts
+              // Refresh stats from backend for accurate counts
+              loadContactsStats();
+
+              return updatedContacts;
+            }
+            
+            // Contact doesn't match current filter, just refresh stats
             loadContactsStats();
-
-            return updatedContacts;
+            return prevContacts;
           }
 
           // Otherwise keep current state, will reload outside
@@ -1386,106 +1402,113 @@ export default function ChatPage() {
                           {contact.lastMessage?.textBody || `[${contact.lastMessage?.messageType}]` || 'No messages'}
                         </p>
                       </div>
-                      <div className="flex flex-col items-end gap-1">
-                        {contact.lastMessage && (
-                          <span className="text-[10px] text-gray-500">
-                            {(() => {
-                              const date = new Date(contact.lastMessage.timestamp);
-                              const now = new Date();
-                              const diff = differenceInCalendarDays(now, date);
-                              
-                              if (diff >= 1) {
-                                return format(date, 'dd/MM/yyyy');
-                              }
-                              
-                              return formatDistanceToNow(date, { addSuffix: true })
-                                .replace('about ', '')
-                                .replace('less than a minute ago', 'just now');
-                            })()}
-                          </span>
-                        )}
-                        {contact.unreadCount > 0 && (
-                          <span className="flex h-4 w-4 items-center justify-center rounded-full bg-blue-500 text-[10px] text-white">
-                            {contact.unreadCount}
-                          </span>
-                        )}
-                        {contact.isSessionActive && (
-                          <span className="text-[10px] text-green-600">
-                            ⏱ {Math.floor(contact.sessionRemainingSeconds / 3600)}h
-                          </span>
-                        )}
-                        {/* Pinned indicator */}
-                        {pinnedContacts.includes(contact.id) && (
-                          <PiPushPin className="h-3 w-3 text-yellow-500" title="Pinned" />
-                        )}
-                        {/* Options menu button */}
-                        <div className="relative">
-                          <ActionIcon
-                            size="sm"
-                            variant="text"
-                            className="text-gray-400 hover:text-gray-600"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setContactOptionsMenuId(contactOptionsMenuId === contact.id ? null : contact.id);
-                            }}
-                            title="Options"
-                          >
-                            <PiDotsThreeVertical className="h-4 w-4" />
-                          </ActionIcon>
-                          {/* Dropdown menu */}
-                          {contactOptionsMenuId === contact.id && (
-                            <div
-                              ref={contactOptionsMenuRef}
-                              className="absolute right-0 top-6 z-50 w-36 rounded-md border border-gray-200 bg-white py-1 shadow-lg"
+                      {/* Right side - timestamp, badges, and options */}
+                      <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                        {/* First row: timestamp + options button */}
+                        <div className="flex items-center gap-1">
+                          {contact.lastMessage && (
+                            <span className="text-[10px] text-gray-500">
+                              {(() => {
+                                const date = new Date(contact.lastMessage.timestamp);
+                                const now = new Date();
+                                const diff = differenceInCalendarDays(now, date);
+                                
+                                if (diff >= 1) {
+                                  return format(date, 'dd/MM/yyyy');
+                                }
+                                
+                                return formatDistanceToNow(date, { addSuffix: true })
+                                  .replace('about ', '')
+                                  .replace('less than a minute ago', 'just now');
+                              })()}
+                            </span>
+                          )}
+                          {/* Options menu button */}
+                          <div className="relative">
+                            <ActionIcon
+                              size="sm"
+                              variant="text"
+                              className="text-gray-400 hover:text-gray-600"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setContactOptionsMenuId(contactOptionsMenuId === contact.id ? null : contact.id);
+                              }}
+                              title="Options"
                             >
+                              <PiDotsThreeVertical className="h-4 w-4" />
+                            </ActionIcon>
+                            {/* Dropdown menu */}
+                            {contactOptionsMenuId === contact.id && (
                               <div
-                                role="button"
-                                tabIndex={0}
-                                className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs hover:bg-gray-100 cursor-pointer"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handlePinContact(contact.id);
-                                }}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter' || e.key === ' ') {
+                                ref={contactOptionsMenuRef}
+                                className="absolute right-0 top-6 z-50 w-36 rounded-md border border-gray-200 bg-white py-1 shadow-lg"
+                              >
+                                <div
+                                  role="button"
+                                  tabIndex={0}
+                                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs hover:bg-gray-100 cursor-pointer"
+                                  onClick={(e) => {
                                     e.stopPropagation();
                                     handlePinContact(contact.id);
-                                  }
-                                }}
-                              >
-                                <PiPushPin className={`h-4 w-4 ${pinnedContacts.includes(contact.id) ? 'text-yellow-500' : ''}`} />
-                                {pinnedContacts.includes(contact.id) ? 'Unpin chat' : 'Pin chat'}
-                              </div>
-                              <div
-                                role="button"
-                                tabIndex={0}
-                                className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs hover:bg-gray-100 cursor-pointer"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setContactOptionsMenuId(null);
-                                  handleArchiveContact(contact);
-                                }}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter' || e.key === ' ') {
+                                  }}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter' || e.key === ' ') {
+                                      e.stopPropagation();
+                                      handlePinContact(contact.id);
+                                    }
+                                  }}
+                                >
+                                  <PiPushPin className={`h-4 w-4 ${pinnedContacts.includes(contact.id) ? 'text-yellow-500' : ''}`} />
+                                  {pinnedContacts.includes(contact.id) ? 'Unpin chat' : 'Pin chat'}
+                                </div>
+                                <div
+                                  role="button"
+                                  tabIndex={0}
+                                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs hover:bg-gray-100 cursor-pointer"
+                                  onClick={(e) => {
                                     e.stopPropagation();
                                     setContactOptionsMenuId(null);
                                     handleArchiveContact(contact);
-                                  }
-                                }}
-                              >
-                                {contact.isArchived ? (
-                                  <>
-                                    <PiArrowCounterClockwise className="h-4 w-4" />
-                                    Unarchive
-                                  </>
-                                ) : (
-                                  <>
-                                    <PiArchive className="h-4 w-4" />
-                                    Archive
-                                  </>
-                                )}
+                                  }}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter' || e.key === ' ') {
+                                      e.stopPropagation();
+                                      setContactOptionsMenuId(null);
+                                      handleArchiveContact(contact);
+                                    }
+                                  }}
+                                >
+                                  {contact.isArchived ? (
+                                    <>
+                                      <PiArrowCounterClockwise className="h-4 w-4" />
+                                      Unarchive
+                                    </>
+                                  ) : (
+                                    <>
+                                      <PiArchive className="h-4 w-4" />
+                                      Archive
+                                    </>
+                                  )}
+                                </div>
                               </div>
-                            </div>
+                            )}
+                          </div>
+                        </div>
+                        {/* Second row: badges */}
+                        <div className="flex items-center gap-1">
+                          {contact.unreadCount > 0 && (
+                            <span className="flex h-4 w-4 items-center justify-center rounded-full bg-blue-500 text-[10px] text-white">
+                              {contact.unreadCount}
+                            </span>
+                          )}
+                          {contact.isSessionActive && (
+                            <span className="text-[10px] text-green-600">
+                              ⏱ {Math.floor(contact.sessionRemainingSeconds / 3600)}h
+                            </span>
+                          )}
+                          {/* Pinned indicator */}
+                          {pinnedContacts.includes(contact.id) && (
+                            <PiPushPin className="h-3 w-3 text-yellow-500" title="Pinned" />
                           )}
                         </div>
                       </div>
