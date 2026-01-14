@@ -27,7 +27,9 @@ import {
   PiArrowCounterClockwise,
   PiDotsThreeVertical,
   PiPushPin,
+  PiHouse,
 } from 'react-icons/pi';
+import Link from 'next/link';
 import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import Lightbox from "yet-another-react-lightbox";
 import "yet-another-react-lightbox/styles.css";
@@ -1246,7 +1248,8 @@ export default function ChatPage() {
 
   return (
     <>
-      <div className={`@container fixed inset-0 top-[60px] ${getSidebarOffset()}`}>
+      {/* Fullscreen Chat Layout: z-[9999] and top-0 to cover the global header */}
+      <div className={`@container fixed inset-0 top-0 z-[9999] ${getSidebarOffset()}`}>
         <div className="grid grid-cols-12 gap-0 h-full overflow-hidden bg-white dark:bg-gray-50">
           {/* Sidebar - Contact List */}
           <div
@@ -1257,16 +1260,25 @@ export default function ChatPage() {
             <div className="flex h-full flex-col">
               {/* Header with Phone Number Selector */}
               <div className="border-b border-gray-200 p-4">
-                <div className="mb-4">
-                  <label className="text-xs font-medium text-gray-700 mb-2 block">
-                    WhatsApp Number
-                  </label>
-                  <Select
-                    value={selectedPhoneNumberId}
-                    onChange={(selected: any) => {
-                      const value = typeof selected === 'string' ? selected : selected?.value;
-                      setSelectedPhoneNumberId(value || '');
-                    }}
+                <div className="mb-4 flex items-end gap-2">
+                  <Link href="/">
+                    <ActionIcon 
+                      size="lg" 
+                      className="h-10 w-10 shrink-0 bg-[rgb(var(--primary-default))] text-white hover:bg-[rgb(var(--primary-default))]/90"
+                    >
+                      <PiHouse className="h-5 w-5" />
+                    </ActionIcon>
+                  </Link>
+                  <div className="flex-1 min-w-0">
+                    <label className="text-xs font-medium text-gray-700 mb-1 block">
+                      WhatsApp Number
+                    </label>
+                    <Select
+                      value={selectedPhoneNumberId}
+                      onChange={(selected: any) => {
+                        const value = typeof selected === 'string' ? selected : selected?.value;
+                        setSelectedPhoneNumberId(value || '');
+                      }}
                     options={phoneNumbers.map((phone) => ({
                       label: phone.verifiedName || phone.displayPhoneNumber,
                       value: phone.id,
@@ -1296,6 +1308,7 @@ export default function ChatPage() {
                     placeholder="Select WhatsApp Number"
                     className="w-full"
                   />
+                  </div>
                 </div>
                 <Input
                   type="search"
@@ -1330,7 +1343,7 @@ export default function ChatPage() {
                       <span className={`inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-xs font-medium ${
                         chatFilter === 'all'
                           ? 'bg-white/20 text-white'
-                          : 'bg-gray-200 text-gray-700'
+                          : 'bg-[rgb(var(--primary-default))] text-white'
                       }`}>
                         {totalContacts}
                       </span>
@@ -1347,7 +1360,7 @@ export default function ChatPage() {
                       <span className={`inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-xs font-medium ${
                         chatFilter === 'unread'
                           ? 'bg-white/20 text-white'
-                          : 'bg-blue-500 text-white'
+                          : 'bg-[rgb(var(--primary-default))] text-white'
                       }`}>
                         {unreadCount}
                       </span>
@@ -1364,7 +1377,7 @@ export default function ChatPage() {
                       <span className={`inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-xs font-medium ${
                         chatFilter === 'archived'
                           ? 'bg-white/20 text-white'
-                          : 'bg-gray-400 text-white'
+                          : 'bg-[rgb(var(--primary-default))] text-white'
                       }`}>
                         {archivedCount}
                       </span>
@@ -1524,7 +1537,7 @@ export default function ChatPage() {
                         {/* Second row: badges */}
                         <div className="flex items-center gap-1">
                           {contact.unreadCount > 0 && (
-                            <span className="flex h-4 w-4 items-center justify-center rounded-full bg-blue-500 text-[10px] text-white">
+                            <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[rgb(var(--primary-default))] text-[10px] text-white">
                               {contact.unreadCount}
                             </span>
                           )}
