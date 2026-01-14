@@ -1658,7 +1658,7 @@ export default function ChatPage() {
                                     <img 
                                       src={msg.mediaUrl} 
                                       alt="Image" 
-                                      className="max-w-sm rounded mb-2 cursor-pointer hover:opacity-90 transition-opacity" 
+                                      className="w-full max-w-[280px] sm:max-w-sm rounded mb-2 cursor-pointer hover:opacity-90 transition-opacity" 
                                       onClick={() => {
                                         setLightboxSlides([{
                                           src: msg.mediaUrl,
@@ -1669,13 +1669,13 @@ export default function ChatPage() {
                                     />
                                   )}
                                   {msg.messageType === 'sticker' && (
-                                    <img src={msg.mediaUrl} alt="Sticker" className="max-w-[200px] mb-2" />
+                                    <img src={msg.mediaUrl} alt="Sticker" className="w-full max-w-[150px] sm:max-w-[200px] mb-2" />
                                   )}
                                   {msg.messageType === 'video' && (
                                     <video 
                                       src={msg.mediaUrl} 
                                       controls 
-                                      className="max-w-sm rounded mb-2 cursor-pointer"
+                                      className="w-full max-w-[280px] sm:max-w-sm rounded mb-2 cursor-pointer"
                                       onClick={(e) => {
                                         // If clicking on video (not controls), open in lightbox
                                         if (e.target === e.currentTarget) {
@@ -1692,7 +1692,7 @@ export default function ChatPage() {
                                     />
                                   )}
                                   {msg.messageType === 'audio' && (
-                                    <audio src={msg.mediaUrl} controls className="mb-2" />
+                                    <audio src={msg.mediaUrl} controls className="w-full max-w-[280px] sm:max-w-sm mb-2" />
                                   )}
                                   {msg.messageType === 'document' && (
                                     <a
