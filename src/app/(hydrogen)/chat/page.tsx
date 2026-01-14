@@ -23,6 +23,10 @@ import {
   PiMicrophone,
   PiVideoCamera,
   PiCopy,
+  PiArchive,
+  PiArrowCounterClockwise,
+  PiDotsThreeVertical,
+  PiPushPin,
 } from 'react-icons/pi';
 import React, { useState, useRef, useEffect } from 'react';
 import Lightbox from "yet-another-react-lightbox";
@@ -102,7 +106,7 @@ export default function ChatPage() {
   const [filteredQuickReplies, setFilteredQuickReplies] = useState<QuickReply[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(0);
-  const [chatFilter, setChatFilter] = useState<'all' | 'unread' | 'favorite'>('all');
+  const [chatFilter, setChatFilter] = useState<'all' | 'unread' | 'archived'>('all');
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxSlides, setLightboxSlides] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -114,6 +118,43 @@ export default function ChatPage() {
   const [copiedPhone, setCopiedPhone] = useState(false);
   const [totalContacts, setTotalContacts] = useState(0);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [archivedCount, setArchivedCount] = useState(0);
+
+  // Pinned chats (local storage)
+  const [pinnedContacts, setPinnedContacts] = useState<string[]>([]);
+  const [contactOptionsMenuId, setContactOptionsMenuId] = useState<string | null>(null);
+  const contactOptionsMenuRef = useRef<HTMLDivElement>(null);
+
+  // Load pinned contacts from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('pinnedContacts');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved) as string[];
+        if (Array.isArray(parsed)) {
+          setPinnedContacts(parsed);
+        }
+      } catch (e) {
+        console.error('Failed to parse pinned contacts:', e);
+      }
+    }
+  }, []);
+
+  // Save pinned contacts to localStorage
+  const savePinnedContacts = (ids: string[]) => {
+    setPinnedContacts(ids);
+    localStorage.setItem('pinnedContacts', JSON.stringify(ids));
+  };
+
+  const handlePinContact = (contactId: string) => {
+    const isPinned = pinnedContacts.includes(contactId);
+    if (isPinned) {
+      savePinnedContacts(pinnedContacts.filter(id => id !== contactId));
+    } else {
+      savePinnedContacts([...pinnedContacts, contactId]);
+    }
+    setContactOptionsMenuId(null);
+  };
 
   // Attachment state
   const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
@@ -538,7 +579,7 @@ export default function ChatPage() {
       const response = await chatApi.getContacts({
         phoneNumberId: selectedPhoneNumberId,
         search: searchQuery || undefined,
-        filter: chatFilter === 'unread' ? 'unread' : 'all',
+        filter: chatFilter,
         page,
         limit: 50,
       });
@@ -575,6 +616,7 @@ export default function ChatPage() {
       const response = await chatApi.getContactsStats(selectedPhoneNumberId);
       setTotalContacts(response.totalContacts);
       setUnreadCount(response.unreadCount);
+      setArchivedCount(response.archivedCount || 0);
     } catch (error: any) {
       console.error('Failed to load contacts stats:', error);
     }
@@ -679,6 +721,41 @@ export default function ChatPage() {
   const handleBackToList = () => {
     setShowChat(false);
     setSelectedContact(null); // Clear selected contact for 'no conversation' state
+  };
+
+  const handleArchiveContact = async (contact: Contact) => {
+    try {
+      const isCurrentlyArchived = contact.isArchived;
+      
+      // Optimistic UI update - remove from current list
+      setContacts(prev => prev.filter(c => c.id !== contact.id));
+      
+      // Update stats optimistically
+      if (isCurrentlyArchived) {
+        // Unarchiving: move to All tab
+        setArchivedCount(prev => Math.max(0, prev - 1));
+        setTotalContacts(prev => prev + 1);
+      } else {
+        // Archiving: move to Archived tab
+        setArchivedCount(prev => prev + 1);
+        setTotalContacts(prev => Math.max(0, prev - 1));
+      }
+      
+      // Call API
+      if (isCurrentlyArchived) {
+        await chatApi.unarchiveContact(contact.id);
+      } else {
+        await chatApi.archiveContact(contact.id);
+      }
+      
+      // Reload stats from server for accuracy
+      loadContactsStats();
+    } catch (error) {
+      console.error('Failed to archive/unarchive contact:', error);
+      // Reload contacts on error to restore correct state
+      loadContacts();
+      loadContactsStats();
+    }
   };
 
   const handleSendMessage = async () => {
@@ -1098,11 +1175,29 @@ export default function ChatPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedContact]);
 
-  // Server-side filtering is now used, so just use contacts directly
-  // Client-side filtering kept only for favorite (if needed in future)
-  const filteredContacts = chatFilter === 'favorite' 
-    ? contacts.filter(contact => false) // No favorite field yet
-    : contacts;
+  // Server-side filtering is now used, sort with pinned contacts first
+  const filteredContacts = [...contacts].sort((a, b) => {
+    const aIsPinned = pinnedContacts.includes(a.id);
+    const bIsPinned = pinnedContacts.includes(b.id);
+    if (aIsPinned && !bIsPinned) return -1;
+    if (!aIsPinned && bIsPinned) return 1;
+    return 0;
+  });
+
+  // Close contact options menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (contactOptionsMenuRef.current && !contactOptionsMenuRef.current.contains(event.target as Node)) {
+        setContactOptionsMenuId(null);
+      }
+    };
+    if (contactOptionsMenuId) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [contactOptionsMenuId]);
 
 
 
@@ -1215,7 +1310,36 @@ export default function ChatPage() {
                       </span>
                     )}
                   </Button>
+                  <Button
+                    size="sm"
+                    variant={chatFilter === 'archived' ? 'solid' : 'outline'}
+                    onClick={() => setChatFilter('archived')}
+                    className="flex-1 flex items-center justify-center gap-2"
+                  >
+                    <span>Archived</span>
+                    {archivedCount > 0 && (
+                      <span className={`inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-xs font-medium ${
+                        chatFilter === 'archived'
+                          ? 'bg-white/20 text-white'
+                          : 'bg-gray-400 text-white'
+                      }`}>
+                        {archivedCount}
+                      </span>
+                    )}
+                  </Button>
                 </div>
+
+                {/* Archived messages header - shown when not in archived filter and there are archived contacts */}
+                {chatFilter !== 'archived' && archivedCount > 0 && (
+                  <button
+                    onClick={() => setChatFilter('archived')}
+                    className="flex w-full items-center gap-3 border-b border-gray-200 bg-gray-50 px-4 py-3 text-left hover:bg-gray-100 transition-colors"
+                  >
+                    <PiArchive className="h-5 w-5 text-gray-500" />
+                    <span className="text-sm font-medium text-gray-700">Archived messages</span>
+                    <span className="ml-auto text-xs text-gray-500">({archivedCount})</span>
+                  </button>
+                )}
 
                 {(loading && contacts.length === 0) ? (
                   // Initial Loading Skeletons
@@ -1232,10 +1356,17 @@ export default function ChatPage() {
                   <div className="p-4 text-center text-gray-500">No conversations</div>
                 ) : (
                   filteredContacts.map((contact) => (
-                    <button
+                    <div
                       key={contact.id}
+                      role="button"
+                      tabIndex={0}
                       onClick={() => handleContactClick(contact)}
-                      className={`flex w-full items-center gap-2 border-b border-gray-100 p-2 text-left transition-colors hover:bg-gray-50 ${
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          handleContactClick(contact);
+                        }
+                      }}
+                      className={`flex w-full items-center gap-2 border-b border-gray-100 p-2 text-left transition-colors hover:bg-gray-50 cursor-pointer ${
                         selectedContact?.id === contact.id ? 'bg-gray-50' : ''
                       }`}
                     >
@@ -1283,8 +1414,82 @@ export default function ChatPage() {
                             ⏱ {Math.floor(contact.sessionRemainingSeconds / 3600)}h
                           </span>
                         )}
+                        {/* Pinned indicator */}
+                        {pinnedContacts.includes(contact.id) && (
+                          <PiPushPin className="h-3 w-3 text-yellow-500" title="Pinned" />
+                        )}
+                        {/* Options menu button */}
+                        <div className="relative">
+                          <ActionIcon
+                            size="sm"
+                            variant="text"
+                            className="text-gray-400 hover:text-gray-600"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setContactOptionsMenuId(contactOptionsMenuId === contact.id ? null : contact.id);
+                            }}
+                            title="Options"
+                          >
+                            <PiDotsThreeVertical className="h-4 w-4" />
+                          </ActionIcon>
+                          {/* Dropdown menu */}
+                          {contactOptionsMenuId === contact.id && (
+                            <div
+                              ref={contactOptionsMenuRef}
+                              className="absolute right-0 top-6 z-50 w-36 rounded-md border border-gray-200 bg-white py-1 shadow-lg"
+                            >
+                              <div
+                                role="button"
+                                tabIndex={0}
+                                className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs hover:bg-gray-100 cursor-pointer"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handlePinContact(contact.id);
+                                }}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' || e.key === ' ') {
+                                    e.stopPropagation();
+                                    handlePinContact(contact.id);
+                                  }
+                                }}
+                              >
+                                <PiPushPin className={`h-4 w-4 ${pinnedContacts.includes(contact.id) ? 'text-yellow-500' : ''}`} />
+                                {pinnedContacts.includes(contact.id) ? 'Unpin chat' : 'Pin chat'}
+                              </div>
+                              <div
+                                role="button"
+                                tabIndex={0}
+                                className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs hover:bg-gray-100 cursor-pointer"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setContactOptionsMenuId(null);
+                                  handleArchiveContact(contact);
+                                }}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' || e.key === ' ') {
+                                    e.stopPropagation();
+                                    setContactOptionsMenuId(null);
+                                    handleArchiveContact(contact);
+                                  }
+                                }}
+                              >
+                                {contact.isArchived ? (
+                                  <>
+                                    <PiArrowCounterClockwise className="h-4 w-4" />
+                                    Unarchive
+                                  </>
+                                ) : (
+                                  <>
+                                    <PiArchive className="h-4 w-4" />
+                                    Archive
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </button>
+                    </div>
                   ))
                 )}
               </div>

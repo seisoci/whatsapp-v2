@@ -20,7 +20,7 @@ export const chatApi = {
   getContacts: (params: {
     phoneNumberId: string;
     search?: string;
-    filter?: 'all' | 'unread';
+    filter?: 'all' | 'unread' | 'archived';
     page?: number;
     limit?: number;
   }) => apiClient.get('/chat/contacts', { params }).then(r => r.data),
@@ -33,6 +33,12 @@ export const chatApi = {
 
   markConversationAsRead: (contactId: string) =>
     apiClient.put(`/chat/contacts/${contactId}/read`).then(r => r.data),
+
+  archiveContact: (contactId: string) =>
+    apiClient.put(`/chat/contacts/${contactId}/archive`).then(r => r.data),
+
+  unarchiveContact: (contactId: string) =>
+    apiClient.put(`/chat/contacts/${contactId}/unarchive`).then(r => r.data),
 
   deleteContact: (contactId: string) =>
     apiClient.delete(`/chat/contacts/${contactId}`).then(r => r.data),

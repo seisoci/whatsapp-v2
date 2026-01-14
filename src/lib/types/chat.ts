@@ -27,6 +27,7 @@ export interface Contact {
     status: string;
   } | null;
   unreadCount: number;
+  isArchived: boolean;
   createdAt: string;
   updatedAt: string;
 }

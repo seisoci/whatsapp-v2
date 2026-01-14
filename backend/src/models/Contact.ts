@@ -100,6 +100,10 @@ export class Contact {
   @Column({ name: 'unread_count', type: 'integer', default: 0 })
   unreadCount: number;
 
+  // Archive status for chat tabs feature
+  @Column({ name: 'is_archived', default: false })
+  isArchived: boolean;
+
   // Additional Fields
   @ManyToMany(() => Tag, (tag) => tag.contacts, { cascade: true })
   @JoinTable({

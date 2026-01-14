@@ -20,6 +20,8 @@ chat.get('/contacts', ChatController.getContacts);
 chat.get('/contacts/stats', ChatController.getContactsStats); // Must be before /contacts/:id
 chat.get('/contacts/:id', ChatController.getContact);
 chat.put('/contacts/:id/read', ChatController.markConversationAsRead);
+chat.put('/contacts/:id/archive', ChatController.archiveContact);
+chat.put('/contacts/:id/unarchive', ChatController.unarchiveContact);
 chat.delete('/contacts/:id', ChatController.deleteContact);
 
 // Message endpoints

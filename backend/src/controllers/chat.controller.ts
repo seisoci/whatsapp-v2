@@ -22,6 +22,8 @@ export class ChatController {
     getContact: 'chat-index',
     getContactsStats: 'chat-index',
     markConversationAsRead: 'chat-update',
+    archiveContact: 'chat-update',
+    unarchiveContact: 'chat-update',
     deleteContact: 'chat-destroy',
   };
 
@@ -168,13 +170,33 @@ export class ChatController {
         paramIndex++;
       }
 
-      // Apply unread filter directly on denormalized column (uses partial index)
-      if (filter === 'unread') {
-        baseQuery += ` AND c.unread_count > 0`;
+      // Apply filter based on archive status and unread count
+      if (filter === 'archived') {
+        // Show only archived contacts
+        baseQuery += ` AND c.is_archived = true`;
+      } else {
+        // For 'all' and 'unread', exclude archived contacts
+        baseQuery += ` AND c.is_archived = false`;
+        if (filter === 'unread') {
+          baseQuery += ` AND c.unread_count > 0`;
+        }
       }
 
-      // Get total count (with or without unread filter)
-      const countQuery = `SELECT COUNT(*) as total FROM contacts c WHERE c.phone_number_id = $1${search ? ` AND (c.profile_name ILIKE $2 OR c.phone_number ILIKE $2)` : ''}${filter === 'unread' ? ' AND c.unread_count > 0' : ''}`;
+      // Build count query conditions
+      let countConditions = 'c.phone_number_id = $1';
+      if (search) {
+        countConditions += ` AND (c.profile_name ILIKE $2 OR c.phone_number ILIKE $2)`;
+      }
+      if (filter === 'archived') {
+        countConditions += ' AND c.is_archived = true';
+      } else {
+        countConditions += ' AND c.is_archived = false';
+        if (filter === 'unread') {
+          countConditions += ' AND c.unread_count > 0';
+        }
+      }
+      
+      const countQuery = `SELECT COUNT(*) as total FROM contacts c WHERE ${countConditions}`;
       const countResult = await AppDataSource.query(countQuery, search ? [phoneNumberId, `%${search}%`] : [phoneNumberId]);
       const total = parseInt(countResult[0].total);
 
@@ -252,6 +274,9 @@ export class ChatController {
           // Unread count (from subquery)
           unreadCount: parseInt(contact.unread_count) || 0,
           
+          // Archive status
+          isArchived: contact.is_archived || false,
+          
           // Timestamps
           createdAt: contact.created_at,
           updatedAt: contact.updated_at,
@@ -293,29 +318,39 @@ export class ChatController {
         }, 400);
       }
 
-      // Get total contacts count
+      // Get total contacts count (non-archived only)
       const totalQuery = `
         SELECT COUNT(*) as total
         FROM contacts
-        WHERE phone_number_id = $1
+        WHERE phone_number_id = $1 AND is_archived = false
       `;
       const totalResult = await AppDataSource.query(totalQuery, [phoneNumberId]);
       const totalContacts = parseInt(totalResult[0].total);
 
-      // Get unread contacts count (contacts with unread_count > 0)
+      // Get unread contacts count (contacts with unread_count > 0, non-archived)
       const unreadQuery = `
         SELECT COUNT(*) as unread
         FROM contacts
-        WHERE phone_number_id = $1 AND unread_count > 0
+        WHERE phone_number_id = $1 AND unread_count > 0 AND is_archived = false
       `;
       const unreadResult = await AppDataSource.query(unreadQuery, [phoneNumberId]);
       const unreadCount = parseInt(unreadResult[0].unread);
+
+      // Get archived contacts count
+      const archivedQuery = `
+        SELECT COUNT(*) as archived
+        FROM contacts
+        WHERE phone_number_id = $1 AND is_archived = true
+      `;
+      const archivedResult = await AppDataSource.query(archivedQuery, [phoneNumberId]);
+      const archivedCount = parseInt(archivedResult[0].archived);
 
       return c.json({
         success: true,
         data: {
           totalContacts,
           unreadCount,
+          archivedCount,
         },
       });
     } catch (error: any) {
@@ -481,6 +516,106 @@ export class ChatController {
       return c.json({
         success: false,
         message: 'Failed to delete contact',
+        error: error.message,
+      }, 500);
+    }
+  }
+
+  /**
+   * PUT /api/v1/chat/contacts/:id/archive
+   * Archive a contact (hide from main chat list)
+   */
+  static async archiveContact(c: Context) {
+    try {
+      const contactId = c.req.param('id');
+      const contactRepo = AppDataSource.getRepository(Contact);
+
+      const contact = await contactRepo.findOne({
+        where: { id: contactId }
+      });
+
+      if (!contact) {
+        return c.json({
+          success: false,
+          message: 'Contact not found',
+        }, 404);
+      }
+
+      // Update archive status
+      await contactRepo.update(contactId, { isArchived: true });
+
+      // Broadcast contact:updated event so other users see the change
+      const { chatWebSocketManager } = await import('../services/chat-websocket.service');
+      chatWebSocketManager.broadcast(contact.phoneNumberId, {
+        type: 'contact:updated',
+        data: {
+          contactId: contact.id,
+          contact: {
+            id: contact.id,
+            isArchived: true,
+          },
+        },
+      });
+
+      return c.json({
+        success: true,
+        message: 'Contact archived successfully',
+      });
+    } catch (error: any) {
+      console.error('Error archiving contact:', error);
+      return c.json({
+        success: false,
+        message: 'Failed to archive contact',
+        error: error.message,
+      }, 500);
+    }
+  }
+
+  /**
+   * PUT /api/v1/chat/contacts/:id/unarchive
+   * Unarchive a contact (restore to main chat list)
+   */
+  static async unarchiveContact(c: Context) {
+    try {
+      const contactId = c.req.param('id');
+      const contactRepo = AppDataSource.getRepository(Contact);
+
+      const contact = await contactRepo.findOne({
+        where: { id: contactId }
+      });
+
+      if (!contact) {
+        return c.json({
+          success: false,
+          message: 'Contact not found',
+        }, 404);
+      }
+
+      // Update archive status
+      await contactRepo.update(contactId, { isArchived: false });
+
+      // Broadcast contact:updated event so other users see the change
+      const { chatWebSocketManager } = await import('../services/chat-websocket.service');
+      chatWebSocketManager.broadcast(contact.phoneNumberId, {
+        type: 'contact:updated',
+        data: {
+          contactId: contact.id,
+          contact: {
+            id: contact.id,
+            isArchived: false,
+          },
+        },
+      });
+
+      return c.json({
+        success: true,
+        message: 'Contact unarchived successfully',
+      });
+    } catch (error: any) {
+      console.error('Error unarchiving contact:', error);
+      return c.json({
+        success: false,
+        message: 'Failed to unarchive contact',
         error: error.message,
       }, 500);
     }
