@@ -28,7 +28,7 @@ import {
   PiDotsThreeVertical,
   PiPushPin,
 } from 'react-icons/pi';
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import Lightbox from "yet-another-react-lightbox";
 import "yet-another-react-lightbox/styles.css";
 import Video from "yet-another-react-lightbox/plugins/video";
@@ -110,6 +110,7 @@ export default function ChatPage() {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxSlides, setLightboxSlides] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [messagesLoading, setMessagesLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearchQuery = useDebounce(searchQuery, 500);
@@ -175,6 +176,7 @@ export default function ChatPage() {
   const emojiPickerRef = useRef<HTMLDivElement>(null);
   const quickReplyRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Load phone numbers on mount
@@ -638,11 +640,21 @@ export default function ChatPage() {
     }
   };
 
+  // Helper: scrollToBottom with optional delay
+  const scrollToBottom = (behavior: ScrollBehavior = 'auto', delay = 100) => {
+    setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior });
+    }, delay);
+  };
+
   const loadMessages = async (contact?: Contact) => {
     const targetContact = contact || selectedContact;
     if (!targetContact) return;
     
     setLoading(true);
+    setMessagesLoading(true); // Hide messages container
+    setMessages([]); // Clear old messages so we don't flash them or previous conversation
+    
     try {
       const response = await chatApi.getMessages({
         contactId: targetContact.id,
@@ -698,15 +710,34 @@ export default function ChatPage() {
         return [...msgs, ...uniqueOptimisticMessages];
       });
       
-      scrollToBottom();
+      // Wait for DOM render
+      await new Promise(resolve => setTimeout(resolve, 50));
+      
+      // Force scroll to bottom using direct property setting (most reliable)
+      if (chatContainerRef.current) {
+        chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+      }
+      
+      // Double check and retry after a small delay to handle layout shifts (images etc)
+      await new Promise(resolve => setTimeout(resolve, 100));
+      if (chatContainerRef.current) {
+        chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+      }
+      
     } catch (error) {
       console.error('Failed to load messages:', error);
     } finally {
       setLoading(false);
+      setMessagesLoading(false); // Reveal messages
     }
   };
 
   const handleContactClick = async (contact: Contact) => {
+    // Immediate reset to prevent flashing old content
+    setMessages([]);
+    setMessagesLoading(true);
+    setLoading(true);
+
     setSelectedContact(contact);
     setShowChat(true);
     
@@ -1009,11 +1040,7 @@ export default function ChatPage() {
     }
   };
 
-  const scrollToBottom = (behavior: ScrollBehavior = 'auto') => {
-    setTimeout(() => {
-      messagesEndRef.current?.scrollIntoView({ behavior });
-    }, 100);
-  };
+
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -1603,14 +1630,25 @@ export default function ChatPage() {
                 </div>
 
                 {/* Messages */}
-                <div className="flex-1 overflow-y-auto p-4 min-h-0 custom-scrollbar-message">
+                <div 
+                  ref={chatContainerRef}
+                  className={`flex-1 overflow-y-auto p-4 min-h-0 custom-scrollbar-message relative ${messagesLoading ? 'invisible' : 'visible'}`}
+                  style={{ scrollBehavior: 'auto' }}
+                >
+                  {/* Loading overlay - show while messages load */}
+                  {messagesLoading && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/50 backdrop-blur-sm pointer-events-none">
+                       {/* This is a global overlay just in case, but rely on invisible class for container */}
+                    </div>
+                  )}
+
                   <div className="space-y-1">
                     {messages.map((msg) => {
                       const isOwn = msg.direction === 'outgoing';
                       return (
                         <div
                           key={msg.id}
-                          className={`group flex items-start gap-1 ${isOwn ? 'flex-row-reverse' : ''} animate-fade-in-up`}
+                          className={`group flex items-start gap-1 ${isOwn ? 'flex-row-reverse' : ''} ${!messagesLoading ? 'animate-fade-in-up' : ''}`}
                         >
                           <div className={`max-w-[65%] ${isOwn ? 'items-end' : 'items-start'} flex flex-col`}>
                             {/* User name for outgoing messages */}
