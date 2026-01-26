@@ -39,7 +39,7 @@ export const menuItems = [
       },
       {
         name: 'Templates',
-        href: routes.templates,
+        href: routes.templates.dashboard,
       },
     ],
   },

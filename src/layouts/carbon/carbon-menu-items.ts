@@ -108,7 +108,7 @@ export const carbonMenuItems: MenuItemsType[] = [
     menuItems: [
       {
         name: 'Templates',
-        href: routes.templates,
+        href: routes.templates.dashboard,
         icon: PiBrowser,
       },
 

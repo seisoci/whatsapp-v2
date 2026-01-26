@@ -41,7 +41,7 @@ export const berylliumSidebarMenuItems = [
       },
       {
         name: 'Templates',
-        href: routes.templates,
+        href: routes.templates.dashboard,
         icon: <PiFileTextDuotone />,
       },
     ],

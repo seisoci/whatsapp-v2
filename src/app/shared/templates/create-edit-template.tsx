@@ -342,7 +342,7 @@ export default function CreateEditTemplate({
     return {
       phoneNumberId: template?.phoneNumberId || '',
       name: template?.name || '',
-      language: template?.language || 'en',
+      language: template?.language || 'id',
       category: template?.category || 'UTILITY',
       headerType: headerType as 'NONE' | 'TEXT' | 'IMAGE' | 'VIDEO' | 'DOCUMENT',
       headerText: headerComp?.text || '',

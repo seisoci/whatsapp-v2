@@ -96,7 +96,7 @@ export const lithiumMenuItems: LithiumMenuItem = {
       },
       {
         name: 'Templates',
-        href: routes.templates,
+        href: routes.templates.dashboard,
         icon: PiFileTextDuotone,
       },
     ],
@@ -118,7 +118,7 @@ export const lithiumMenuItems: LithiumMenuItem = {
       },
       {
         name: 'Templates',
-        href: routes.templates,
+        href: routes.templates.dashboard,
         icon: PiFileTextDuotone,
       },
     ],
