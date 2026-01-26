@@ -177,8 +177,36 @@ export class TemplateController {
    */
   static async store(c: Context) {
     try {
-      const body = await c.req.json();
-      const { phoneNumberId, name, language, category, components } = body;
+      // Parse form data (supports both JSON and multipart)
+      const contentType = c.req.header('content-type') || '';
+      let phoneNumberId, name, language, category, components, mediaFile;
+
+      if (contentType.includes('multipart/form-data')) {
+        // Handle multipart form data with file
+        const body = await c.req.parseBody();
+        phoneNumberId = body.phoneNumberId as string;
+        name = body.name as string;
+        language = body.language as string;
+        category = body.category as string;
+        
+        // Parse components if it's a string
+        if (typeof body.components === 'string') {
+          components = JSON.parse(body.components);
+        } else {
+          components = body.components;
+        }
+        
+        // Get media file if provided
+        mediaFile = body.mediaFile as File | undefined;
+      } else {
+        // Handle regular JSON data
+        const body = await c.req.json();
+        phoneNumberId = body.phoneNumberId;
+        name = body.name;
+        language = body.language;
+        category = body.category;
+        components = body.components;
+      }
 
       if (!phoneNumberId || !name || !language || !category || !components) {
         return c.json(
@@ -205,12 +233,71 @@ export class TemplateController {
         );
       }
 
+      // Upload media file if provided and header is media type
+      if (mediaFile && Array.isArray(components)) {
+        const headerComponent = components.find((c: any) => c.type === 'HEADER');
+        
+        if (headerComponent && ['IMAGE', 'VIDEO', 'DOCUMENT'].includes(headerComponent.format)) {
+          console.log('[Template Create] Uploading media file to WhatsApp API...');
+          
+          try {
+            // Convert File to Buffer
+            const arrayBuffer = await mediaFile.arrayBuffer();
+            const buffer = Buffer.from(arrayBuffer);
+            
+            // Upload to WhatsApp API using Resumable Upload (required for templates)
+            const mediaHandle = await WhatsAppService.uploadMediaForTemplate(
+              phoneNumber.accessToken,
+              buffer,
+              mediaFile.type
+            );
+            
+            if (mediaHandle) {
+              // Update header component with media handle
+              headerComponent.example = {
+                header_handle: [mediaHandle],
+              };
+              console.log('[Template Create] Media uploaded, Handle:', mediaHandle);
+            } else {
+              return c.json(
+                {
+                  success: false,
+                  message: 'Gagal upload media ke WhatsApp API (No Handle).',
+                },
+                500
+              );
+            }
+          } catch (uploadError: any) {
+            console.error('[Template Create] Media upload error:', uploadError);
+            return c.json(
+              {
+                success: false,
+                message: `Gagal upload media: ${uploadError.message}`,
+              },
+              500
+            );
+          }
+        }
+      }
+
+      // Sanitize components before sending to WhatsApp
+      const sanitizedComponents = components.map((c: any) => {
+        // Remove 'text' from media headers
+        if (c.type === 'HEADER' && ['IMAGE', 'VIDEO', 'DOCUMENT'].includes(c.format)) {
+          const { text, ...rest } = c;
+          return rest;
+        }
+        return c;
+      });
+
       const templateData = {
         name,
         language,
         category,
-        components,
+        components: sanitizedComponents,
       };
+
+      console.log('[Template Create] Sending payload to WhatsApp:', JSON.stringify(templateData, null, 2));
 
       const result = await WhatsAppService.createMessageTemplate(
         phoneNumber.wabaId,
@@ -247,6 +334,9 @@ export class TemplateController {
       const body = await c.req.json();
       const { phoneNumberId, ...templateData } = body;
 
+      console.log('[Template Update] Received request for template:', templateId);
+      console.log('[Template Update] Data:', JSON.stringify({ phoneNumberId, components: templateData.components?.length }, null, 2));
+
       if (!phoneNumberId) {
         return c.json(
           {
@@ -272,11 +362,49 @@ export class TemplateController {
         );
       }
 
+      // Validate components
+      if (!templateData.components || !Array.isArray(templateData.components)) {
+        return c.json(
+          {
+            success: false,
+            message: 'Components harus berupa array.',
+          },
+          400
+        );
+      }
+
+      // For update, we can only update components. Name, language, and category are immutable.
+      const components = templateData.components;
+
+      // Log media headers for debugging (but don't reject URLs - they might be from original template)
+      for (const component of components) {
+        if (component.type === 'HEADER' && ['IMAGE', 'VIDEO', 'DOCUMENT'].includes(component.format)) {
+          const handle = component.example?.header_handle?.[0];
+          
+          if (!handle) {
+            console.warn('[Template Update] Media header missing handle - WhatsApp API may reject this:', component.format);
+          } else if (typeof handle === 'string' && (handle.startsWith('http://') || handle.startsWith('https://'))) {
+            console.log('[Template Update] Media header contains URL (preserved from original):', handle.substring(0, 50));
+            // Don't reject - this might be the original template's URL, which WhatsApp API may accept for existing templates
+          } else {
+            console.log('[Template Update] Valid media handle found:', handle);
+          }
+        }
+      }
+
+      const updateData = {
+        components: components,
+      };
+
+      console.log('[Template Update] Sending to WhatsApp API:', JSON.stringify(updateData, null, 2));
+
       const result = await WhatsAppService.updateMessageTemplate(
         templateId,
         phoneNumber.accessToken,
-        templateData
+        updateData,
       );
+
+      console.log('[Template Update] Success:', result);
 
       return c.json(
         {
@@ -287,11 +415,27 @@ export class TemplateController {
         200
       );
     } catch (error: any) {
-      console.error('Update template error:', error);
+      console.error('[Template Update] Error:', error);
+      
+      // Try to parse WhatsApp API error if it's a JSON string
+      let errorMessage = error.message || 'Gagal update template.';
+      try {
+        const parsedError = JSON.parse(errorMessage);
+        if (parsedError.error?.message) {
+          errorMessage = parsedError.error.message;
+        } else if (parsedError.error?.error_user_msg) {
+          errorMessage = parsedError.error.error_user_msg;
+        } else if (parsedError.error?.error_user_title) {
+          errorMessage = parsedError.error.error_user_title + ': ' + (parsedError.error.error_user_msg || parsedError.error.message);
+        }
+      } catch (e) {
+        // Not a JSON error, use as is
+      }
+
       return c.json(
         {
           success: false,
-          message: error.message || 'Gagal update template.',
+          message: errorMessage,
         },
         500
       );

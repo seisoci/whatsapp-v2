@@ -404,9 +404,36 @@ export class WhatsAppService {
     mimeType: string
   ): Promise<any> {
     try {
-      // Create FormData for multipart upload
-      const FormData = (await import('form-data')).default;
-      const form = new FormData();
+      // Use native FormData if available (Node 18+, Bun)
+      if (typeof FormData !== 'undefined') {
+        const form = new FormData();
+        form.append('messaging_product', 'whatsapp');
+        
+        const blob = new Blob([fileBuffer], { type: mimeType });
+        form.append('file', blob, fileName);
+
+        const response = await fetch(
+          `${WHATSAPP_API_BASE_URL}/${phoneNumberId}/media`,
+          {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+            body: form,
+          }
+        );
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error?.message || 'Failed to upload media');
+        }
+
+        return await response.json();
+      }
+
+      // Fallback for older Node versions using 'form-data' package
+      const FormDataPkg = (await import('form-data')).default;
+      const form = new FormDataPkg();
 
       form.append('messaging_product', 'whatsapp');
       form.append('file', fileBuffer, {
@@ -435,6 +462,71 @@ export class WhatsAppService {
     } catch (error: any) {
       console.error('WhatsApp API Error:', error);
       throw new Error(`WhatsApp API Error: ${error.message}`);
+    }
+  }
+
+  /**
+   * Upload media for Template (Resumable Upload)
+   * Required for creating templates with media headers.
+   * Returns media handle (h) specifically for templates.
+   */
+  static async uploadMediaForTemplate(
+    accessToken: string,
+    fileBuffer: Buffer,
+    mimeType: string
+  ): Promise<string> {
+    try {
+      // Step 1: Initiate Upload Session
+      // Using 'app' node allows Facebook to infer App ID from Access Token
+      const startSessionUrl = `${WHATSAPP_API_BASE_URL}/app/uploads?file_length=${fileBuffer.length}&file_type=${mimeType}`;
+      
+      const sessionResponse = await fetch(startSessionUrl, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      if (!sessionResponse.ok) {
+        const error = await sessionResponse.json();
+        throw new Error(error.error?.message || 'Failed to initiate upload session');
+      }
+
+      const sessionData = await sessionResponse.json();
+      const uploadSessionId = sessionData.id;
+
+      if (!uploadSessionId) {
+        throw new Error('No upload session ID returned');
+      }
+
+      // Step 2: Upload File Content
+      const uploadUrl = `${WHATSAPP_API_BASE_URL}/${uploadSessionId}`;
+      
+      const uploadResponse = await fetch(uploadUrl, {
+        method: 'POST',
+        headers: {
+          Authorization: `OAuth ${accessToken}`, // OAuth prefix required for this endpoint
+          'file_offset': '0',
+        },
+        body: fileBuffer,
+      });
+
+      if (!uploadResponse.ok) {
+        const error = await uploadResponse.json();
+        throw new Error(error.error?.message || 'Failed to upload file content');
+      }
+
+      const uploadResult = await uploadResponse.json();
+      
+      // The handle 'h' is what we need for the template
+      if (!uploadResult.h) {
+        throw new Error('No media handle (h) returned from upload');
+      }
+
+      return uploadResult.h;
+    } catch (error: any) {
+      console.error('Resumable Upload Error:', error);
+      throw new Error(`Resumable Upload Failed: ${error.message}`);
     }
   }
 
@@ -587,6 +679,7 @@ export class WhatsAppService {
     templateData: any
   ): Promise<any> {
     try {
+      console.log('DEBUG UPDATE TEMPLATE PAYLOAD:', JSON.stringify(templateData, null, 2));
       const response = await fetch(
         `${WHATSAPP_API_BASE_URL}/${templateId}`,
         {
@@ -601,7 +694,8 @@ export class WhatsAppService {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error?.message || 'Failed to update message template');
+        console.error('WhatsApp API Error Full:', JSON.stringify(error, null, 2));
+        throw new Error(JSON.stringify(error));
       }
 
       return await response.json();

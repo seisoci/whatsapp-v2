@@ -6,6 +6,7 @@ import { Button, Input, Select, Text, Textarea, Title } from 'rizzui';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { templatesApi } from '@/lib/api/templates';
+import { mediaApi } from '@/lib/api/media';
 import { phoneNumbersApi } from '@/lib/api/phone-numbers';
 import { Template } from './index';
 import toast from 'react-hot-toast';
@@ -29,25 +30,86 @@ import {
 } from 'react-icons/pi';
 
 const createTemplateSchema = z.object({
-  phoneNumberId: z.string().min(1, 'Phone number is required'),
-  name: z.string().min(1, 'Template name is required').max(512),
-  language: z.string().min(1, 'Language is required'),
+  phoneNumberId: z.string().min(1, 'Nomor telepon wajib diisi'),
+  name: z
+    .string()
+    .min(1, 'Nama template wajib diisi')
+    .max(512)
+    .regex(/^[a-z0-9_]+$/, 'Nama hanya boleh huruf kecil, angka, dan garis bawah'),
+  language: z.string().min(1, 'Bahasa wajib diisi'),
   category: z.enum(['MARKETING', 'UTILITY', 'AUTHENTICATION']),
   headerType: z.enum(['NONE', 'TEXT', 'IMAGE', 'VIDEO', 'DOCUMENT']),
   headerText: z.string().max(60).optional(),
-  bodyText: z.string().min(1, 'Body text is required').max(1024),
+  bodyText: z.string().min(1, 'Isi pesan wajib diisi').max(1024),
   footerText: z.string().max(60).optional(),
   buttons: z
     .array(
       z.object({
         type: z.enum(['QUICK_REPLY', 'URL', 'PHONE_NUMBER']),
-        text: z.string().min(1, 'Button text is required').max(25),
-        url: z.string().url('URL tidak valid').optional().or(z.literal('')),
+        text: z.string().min(1, 'Teks tombol wajib diisi').max(25),
+        url: z.string().optional(),
         phoneNumber: z.string().optional(),
       })
     )
     .max(10, 'Maksimal 10 tombol')
     .optional(),
+}).superRefine((data, ctx) => {
+  if (data.headerType === 'TEXT' && !data.headerText) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Teks judul wajib diisi jika jenis judul adalah Teks',
+      path: ['headerText'],
+    });
+  }
+
+  // Validate that variables are not at start or end of text
+  const variableAtStartOrEnd = (text: string): boolean => {
+    if (!text) return false;
+    const trimmedText = text.trim();
+    // Check if starts with {{number}} or ends with {{number}}
+    return /^\{\{\d+\}\}/.test(trimmedText) || /\{\{\d+\}\}$/.test(trimmedText);
+  };
+
+  // Check header text
+  if (data.headerType === 'TEXT' && data.headerText) {
+    if (variableAtStartOrEnd(data.headerText)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Variabel tidak boleh di awal atau akhir teks. Contoh benar: "Halo {{1}}, selamat datang"',
+        path: ['headerText'],
+      });
+    }
+  }
+
+  // Check body text
+  if (data.bodyText) {
+    if (variableAtStartOrEnd(data.bodyText)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Variabel tidak boleh di awal atau akhir teks. Contoh benar: "Terima kasih, {{1}} sudah berbelanja"',
+        path: ['bodyText'],
+      });
+    }
+  }
+  
+  if (data.buttons) {
+    data.buttons.forEach((button, index) => {
+      if (button.type === 'URL' && !button.url) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'URL wajib diisi',
+          path: ['buttons', index, 'url'],
+        });
+      }
+      if (button.type === 'PHONE_NUMBER' && !button.phoneNumber) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Nomor telepon wajib diisi',
+          path: ['buttons', index, 'phoneNumber'],
+        });
+      }
+    });
+  }
 });
 
 type CreateTemplateInput = z.infer<typeof createTemplateSchema>;
@@ -254,9 +316,16 @@ export default function CreateEditTemplate({
   const [isLoading, setIsLoading] = useState(false);
   const [phoneNumbers, setPhoneNumbers] = useState<any[]>([]);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  
+  // Media upload states
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadedMediaHandle, setUploadedMediaHandle] = useState<string | null>(null);
+  const [uploadingMedia, setUploadingMedia] = useState(false);
+  const [mediaPreviewUrl, setMediaPreviewUrl] = useState<string | null>(null);
   const bodyTextareaRef = useRef<HTMLTextAreaElement>(null);
   const headerInputRef = useRef<HTMLInputElement>(null);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
+  const [mediaFile, setMediaFile] = useState<File | null>(null);
 
   // Helper to extract initial values from existing template components
   const getInitialValues = () => {
@@ -301,6 +370,14 @@ export default function CreateEditTemplate({
     defaultValues: getInitialValues(),
   });
 
+  // Debug form errors
+  useEffect(() => {
+    if (Object.keys(errors).length > 0) {
+      console.log('Form validation errors:', errors);
+      toast.error('Please check the form for errors');
+    }
+  }, [errors]);
+
   const { fields, append, remove } = useFieldArray({
     control,
     name: 'buttons',
@@ -338,25 +415,173 @@ export default function CreateEditTemplate({
     }
   };
 
+  // File validation helper
+  const validateFile = (file: File, headerType: string): { valid: boolean; error?: string } => {
+    const validations: Record<string, { types: string[]; maxSize: number; label: string }> = {
+      IMAGE: {
+        types: ['image/jpeg', 'image/png'],
+        maxSize: 5 * 1024 * 1024,
+        label: 'IMAGE (JPG, PNG, max 5MB)',
+      },
+      VIDEO: {
+        types: ['video/mp4', 'video/3gpp'],
+        maxSize: 16 * 1024 * 1024,
+        label: 'VIDEO (MP4, 3GP, max 16MB)',
+      },
+      DOCUMENT: {
+        types: [
+          'application/pdf',
+          'application/msword',
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          'application/vnd.ms-excel',
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          'application/vnd.ms-powerpoint',
+          'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+        ],
+        maxSize: 100 * 1024 * 1024,
+        label: 'DOCUMENT (PDF, DOC, XLS, PPT, max 100MB)',
+      },
+    };
+
+    const validation = validations[headerType];
+    if (!validation) return { valid: false, error: 'Tipe header tidak valid' };
+    if (!validation.types.includes(file.type)) {
+      return { valid: false, error: `File harus bertipe ${validation.label}` };
+    }
+    if (file.size > validation.maxSize) {
+      const maxSizeMB = Math.round(validation.maxSize / (1024 * 1024));
+      return { valid: false, error: `Ukuran file maksimal ${maxSizeMB}MB` };
+    }
+    return { valid: true };
+  };
+
+  // Handle file selection (validate and save temporarily)
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const validation = validateFile(file, watchHeaderType);
+    if (!validation.valid) {
+      toast.error(validation.error || 'File tidak valid');
+      event.target.value = '';
+      return;
+    }
+
+    // Save file temporarily
+    setSelectedFile(file);
+    
+    // Generate preview for images
+    if (watchHeaderType === 'IMAGE') {
+      const reader = new FileReader();
+      reader.onloadend = () => setMediaPreviewUrl(reader.result as string);
+      reader.readAsDataURL(file);
+    } else {
+      setMediaPreviewUrl(null);
+    }
+
+    toast.success('File siap diupload saat template dibuat');
+  };
+
+  const handleClearFile = () => {
+    setSelectedFile(null);
+    setUploadedMediaHandle(null);
+    setMediaPreviewUrl(null);
+  };
+
+
   const onSubmit: SubmitHandler<CreateTemplateInput> = async (data) => {
     setIsLoading(true);
     try {
       const components: any[] = [];
 
-      // Header
+      // Helper to generate examples
+      const generateExamples = (text: string, count: number) => {
+        return Array.from({ length: count }, (_, i) => `Variable ${i + 1}`);
+      };
+
+      // Check if we're editing and header type changed
+      const originalHeader = template?.components?.find((c) => c.type === 'HEADER');
+      const isEditingWithMediaHeader = template && originalHeader && ['IMAGE', 'VIDEO', 'DOCUMENT'].includes(originalHeader.format || '');
+      const headerTypeChanged = template && originalHeader && originalHeader.format !== data.headerType;
+
+      // Header handling
       if (data.headerType !== 'NONE') {
-        components.push({
+        const headerVars = countVariables(data.headerText || '');
+        const headerComponent: any = {
           type: 'HEADER',
           format: data.headerType,
           text: data.headerType === 'TEXT' ? data.headerText : undefined,
-        });
+        };
+
+        if (data.headerType === 'TEXT' && headerVars > 0) {
+          headerComponent.example = {
+            header_text: [generateExamples(data.headerText || '', headerVars)],
+          };
+        } else if (['IMAGE', 'VIDEO', 'DOCUMENT'].includes(data.headerType)) {
+          if (!template) {
+            // Creating NEW template with media header - require selected file
+            if (!selectedFile) {
+              toast.error('Silakan pilih sample file terlebih dahulu untuk header media.', { duration: 5000 });
+              setIsLoading(false);
+              return;
+            }
+            // Backend will handle upload and setting the header example
+            console.log('Media file selected for new template, will be uploaded by backend');
+          } else {
+            // We're EDITING an existing template
+            if (originalHeader && originalHeader.format === data.headerType) {
+              // Same media type - preserve original example/handle
+              headerComponent.example = originalHeader.example;
+              console.log('Preserving original media header example:', headerComponent.example);
+            } else if (headerTypeChanged) {
+              // User tried to change header type from one to another
+              toast.error(
+                'Tidak bisa mengubah tipe header saat edit template. ' +
+                'Header akan dipertahankan, hanya body/footer/buttons yang diupdate.',
+                { duration: 5000 }
+              );
+              // Use original header instead of the new one
+              if (originalHeader) {
+                components.push(originalHeader);
+              }
+            } else {
+              // Editing template but something is wrong with original header
+              console.warn('Editing template with media type but no matching original header found', {
+                dataHeaderType: data.headerType,
+                originalHeaderFormat: originalHeader?.format
+              });
+              // Try to preserve whatever we have
+              if (originalHeader?.example) {
+                headerComponent.example = originalHeader.example;
+              }
+            }
+          }
+        }
+        
+        // Only push if we haven't already pushed originalHeader due to type change
+        if (!headerTypeChanged || data.headerType === 'TEXT') {
+          components.push(headerComponent);
+        }
+      } else if (originalHeader) {
+        // User selected NONE but original template has header - preserve it
+        console.log('Preserving original header (user selected NONE):', originalHeader);
+        components.push(originalHeader);
       }
 
       // Body
-      components.push({
+      const bodyVars = countVariables(data.bodyText);
+      const bodyComponent: any = {
         type: 'BODY',
         text: data.bodyText,
-      });
+      };
+
+      if (bodyVars > 0) {
+        bodyComponent.example = {
+          body_text: [generateExamples(data.bodyText, bodyVars)],
+        };
+      }
+
+      components.push(bodyComponent);
 
       // Footer
       if (data.footerText) {
@@ -368,15 +593,19 @@ export default function CreateEditTemplate({
 
       // Buttons
       if (data.buttons && data.buttons.length > 0) {
-        components.push({
+        const buttonsConfig: any = {
           type: 'BUTTONS',
-          buttons: data.buttons.map((b) => ({
-            type: b.type,
-            text: b.text,
-            url: b.type === 'URL' ? b.url : undefined,
-            phone_number: b.type === 'PHONE_NUMBER' ? b.phoneNumber : undefined,
-          })),
-        });
+          buttons: data.buttons.map((b) => {
+            const button: any = {
+              type: b.type,
+              text: b.text,
+            };
+            if (b.type === 'URL') button.url = b.url;
+            if (b.type === 'PHONE_NUMBER') button.phone_number = b.phoneNumber;
+            return button;
+          }),
+        };
+        components.push(buttonsConfig);
       }
 
       const templateData = {
@@ -387,23 +616,27 @@ export default function CreateEditTemplate({
         components,
       };
 
+      console.log('Sending template data:', JSON.stringify(templateData, null, 2));
+
       const response = template
         ? await templatesApi.update(template.id, { ...templateData })
-        : await templatesApi.create(templateData);
+        : await templatesApi.create(templateData, selectedFile || undefined);
 
       if (response.success) {
-        toast.success(
-          template
-            ? 'Template updated successfully!'
-            : 'Template created successfully!'
-        );
+        const successMessage = template
+          ? (isEditingWithMediaHeader 
+              ? 'Template berhasil diupdate! (Header media dipertahankan, hanya body/footer/buttons yang diupdate)' 
+              : 'Template berhasil diupdate!')
+          : 'Template berhasil dibuat!';
+        toast.success(successMessage, { duration: 4000 });
         router.push(routes.templates.dashboard);
       } else {
-        toast.error(response.message || 'Failed to save template');
+        toast.error(response.message || 'Gagal menyimpan template');
       }
     } catch (error: any) {
       console.error('Save template error:', error);
-      toast.error(error.response?.data?.message || 'Failed to save template');
+      const errorMessage = error.response?.data?.message || error.message || 'Gagal menyimpan template';
+      toast.error(errorMessage, { duration: 5000 });
     } finally {
       setIsLoading(false);
     }
@@ -603,6 +836,9 @@ export default function CreateEditTemplate({
                 />
               )}
             />
+            {errors.phoneNumberId && (
+               <Text className="mt-1 text-xs text-red-500">{errors.phoneNumberId.message}</Text>
+            )}
           </div>
 
           {/* Template Name and Language Section */}
@@ -624,10 +860,15 @@ export default function CreateEditTemplate({
                         {...field}
                         type="text"
                         label="Nama template pesan"
-                        placeholder="Masukkan nama template"
+                        placeholder="masukkan_nama_template"
                         error={errors.name?.message}
                         disabled={!!template}
                         maxLength={512}
+                        onChange={(e) => {
+                          // Force snake_case
+                          const val = e.target.value.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+                          field.onChange(val);
+                        }}
                       />
                       <span className="absolute bottom-2 right-3 text-xs text-gray-400">
                         {field.value?.length || 0}/512
@@ -726,10 +967,114 @@ export default function CreateEditTemplate({
                           (option) => option.value === selected
                         )?.label ?? ''
                       }
+                      error={errors.headerType?.message}
                     />
                   )}
                 />
               </div>
+
+              {/* Media Upload (if IMAGE/VIDEO/DOCUMENT type selected) */}
+              {!template && ['IMAGE', 'VIDEO', 'DOCUMENT'].includes(watchHeaderType) && (
+                <div className="rounded-lg border border-gray-200 p-4">
+                  <div className="mb-3 flex items-center gap-2">
+                    <Text className="text-sm font-medium text-gray-700">
+                      Sample Media File *
+                    </Text>
+                    <Text className="text-xs text-gray-500">
+                      ({watchHeaderType === 'IMAGE' ? 'JPG/PNG, max 5MB' : 
+                        watchHeaderType === 'VIDEO' ? 'MP4/3GP, max 16MB' : 
+                        'PDF/DOC/XLS/PPT, max 100MB'})
+                    </Text>
+                  </div>
+
+                  {!selectedFile ? (
+                    <label className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 p-6 transition-colors hover:border-gray-400 hover:bg-gray-100">
+                      <svg className="mb-3 h-10 w-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                      </svg>
+                      <Text className="mb-2 text-sm font-medium text-gray-700">
+                        Klik untuk upload file
+                      </Text>
+                      <Text className="text-xs text-gray-500">
+                        atau drag and drop file di sini
+                      </Text>
+                      <input
+                        type="file"
+                        className="hidden"
+                        accept={
+                          watchHeaderType === 'IMAGE' ? 'image/jpeg,image/png' :
+                          watchHeaderType === 'VIDEO' ? 'video/mp4,video/3gpp' :
+                          'application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx'
+                        }
+                        onChange={handleFileUpload}
+                        disabled={uploadingMedia}
+                      />
+                    </label>
+                  ) : (
+                    <div className="rounded-lg bg-gray-50 p-4">
+                      {/* Preview for images */}
+                      {mediaPreviewUrl && watchHeaderType === 'IMAGE' && (
+                        <div className="mb-3">
+                          <img 
+                            src={mediaPreviewUrl} 
+                            alt="Preview" 
+                            className="h-32 w-auto rounded-lg object-cover"
+                          />
+                        </div>
+                      )}
+                      
+                      {/* File info */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100">
+                            <svg className="h-5 w-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                          </div>
+                          <div>
+                            <Text className="text-sm font-medium text-gray-900">
+                              {selectedFile.name}
+                            </Text>
+                            <Text className="text-xs text-gray-500">
+                              {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                              {uploadedMediaHandle && ' • ✓ Uploaded'}
+                            </Text>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleClearFile}
+                          className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-200 hover:text-gray-600"
+                          disabled={uploadingMedia}
+                        >
+                          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+
+                      {/* Upload status */}
+                      {uploadingMedia && (
+                        <div className="mt-3 flex items-center gap-2 text-sm text-blue-600">
+                          <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          <span>Uploading...</span>
+                        </div>
+                      )}
+                      {uploadedMediaHandle && !uploadingMedia && (
+                        <div className="mt-3 flex items-center gap-2 text-sm text-green-600">
+                          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          <span>File uploaded successfully</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Header Text (if TEXT type selected) */}
               {watchHeaderType === 'TEXT' && (
@@ -1168,18 +1513,17 @@ export default function CreateEditTemplate({
 
       {/* Right Sidebar - Preview */}
       <div className="lg:col-span-1">
-        <div className="sticky top-6 space-y-4">
-          <div className="rounded-xl border border-gray-200 bg-gray-50 p-6 shadow-sm">
-            <Title as="h4" className="mb-4 text-base font-semibold">
-              Pratinjau
-            </Title>
-            <div className="flex justify-center">
-              <div className="w-[280px] overflow-hidden rounded-2xl border border-gray-300 bg-[#e5ddd5] shadow-md dark:border-gray-700 dark:bg-[#0b141a]">
-                <div className="bg-[#008069] p-3 text-white">
-                  <div className="text-sm font-medium">WhatsApp Business</div>
-                </div>
-                <div className="min-h-[300px] bg-[url('https://static.whatsapp.net/rsrc.php/v3/yO/r/FSaypKp-ljf.png')] bg-repeat p-4">
-                  <div className="relative flex max-w-[90%] flex-col rounded-lg bg-white shadow-sm dark:bg-[#202c33] dark:text-gray-100">
+        <div className="sticky top-6">
+          <Title as="h4" className="mb-4 text-base font-semibold">
+            Pratinjau
+          </Title>
+          <div className="flex justify-center w-full">
+            <div className="w-full overflow-hidden rounded-2xl border border-gray-300 bg-[#e5ddd5] shadow-md dark:bg-[#0b141a] dark:border-gray-700">
+              <div className="bg-[#008069] p-3 text-white">
+                <div className="text-sm font-medium">WhatsApp Business</div>
+              </div>
+              <div className="p-4 min-h-[300px] bg-[url('https://static.whatsapp.net/rsrc.php/v3/yO/r/FSaypKp-ljf.png')] bg-repeat">
+                <div className="bg-white rounded-lg shadow-sm max-w-full relative dark:bg-[#202c33] dark:text-gray-100 flex flex-col">
                     {/* Header Preview */}
                     {watchHeaderType !== 'NONE' && (
                       <div className="p-1 pb-0">
@@ -1247,15 +1591,6 @@ export default function CreateEditTemplate({
               </div>
             </div>
           </div>
-
-          <div className="rounded-lg bg-blue-50 p-4">
-            <Text className="text-sm text-blue-800">
-              <strong>Catatan: </strong> Template harus disetujui oleh WhatsApp
-              sebelum dapat digunakan. Proses ini mungkin memakan waktu hingga
-              24 jam.
-            </Text>
-          </div>
-        </div>
       </div>
     </div>
   );

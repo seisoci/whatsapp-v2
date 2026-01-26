@@ -211,36 +211,21 @@ function TemplatesTableContent({
   return (
     <>
       <TemplatesFilters phoneNumbers={phoneNumbers} onFilter={onFilter} />
-      
-      <Flex
-        direction="col"
-        justify="between"
-        className="mb-4 gap-3 xs:flex-row xs:items-center"
-      >
-        <Title as="h3" className="text-base font-semibold sm:text-lg">
-          Message Templates ({totalRecords} total)
-        </Title>
-        <Button onClick={onCreateTemplate} className="w-full @lg:w-auto">
-          <PiPlusBold className="me-1.5 h-[17px] w-[17px]" />
-          Create Template
-        </Button>
-      </Flex>
 
-        < div className = "relative overflow-hidden" >
-          <div
+      <div className="relative overflow-hidden">
+        <div
           className="transition-opacity duration-300 ease-in-out"
-  style = {{ opacity: isRefreshing ? 0.4 : 1 }
-}
+          style={{ opacity: isRefreshing ? 0.4 : 1 }}
         >
-  <Table
-            table={ table }
-variant = "minimal"
-classNames = {{
-  rowClassName: 'last:!border-b-0 hover:bg-gray-50',
-    cellClassName: 'py-3',
+          <Table
+            table={table}
+            variant="minimal"
+            classNames={{
+              rowClassName: 'last:!border-b-0 hover:bg-gray-50',
+              cellClassName: 'py-3',
             }}
           />
-  </div>
+        </div>
 
 {
   isRefreshing && (

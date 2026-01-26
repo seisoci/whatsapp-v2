@@ -11,7 +11,23 @@ export const templatesApi = {
   getById: (id: string, phoneNumberId: string) =>
     apiClient.get<ApiResponse>(`/templates/${id}`, { params: { phoneNumberId } }),
 
-  create: (data: any) => apiClient.post<ApiResponse>('/templates', data),
+  create: (data: any, mediaFile?: File) => {
+    // If media file is provided, send as multipart/form-data
+    if (mediaFile) {
+      const formData = new FormData();
+      formData.append('phoneNumberId', data.phoneNumberId);
+      formData.append('name', data.name);
+      formData.append('language', data.language);
+      formData.append('category', data.category);
+      formData.append('components', JSON.stringify(data.components));
+      formData.append('mediaFile', mediaFile);
+      
+      return apiClient.post<ApiResponse>('/templates', formData);
+    }
+    
+    // Otherwise send as JSON
+    return apiClient.post<ApiResponse>('/templates', data);
+  },
 
   update: (id: string, data: any) => apiClient.put<ApiResponse>(`/templates/${id}`, data),
 
