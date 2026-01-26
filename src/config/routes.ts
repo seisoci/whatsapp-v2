@@ -102,5 +102,9 @@ export const routes = {
 
 
 
-  templates: "/templates",
+  templates: {
+    dashboard: "/templates",
+    create: "/templates/create",
+    edit: (id: string) => `/templates/${id}/edit`,
+  },
 };

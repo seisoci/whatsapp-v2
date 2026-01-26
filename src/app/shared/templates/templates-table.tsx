@@ -6,8 +6,10 @@ import { useTanStackTable } from '@core/components/table/custom/use-TanStack-Tab
 import { Template } from '.';
 import { createTemplatesColumns } from './columns';
 import { Flex, Title, Loader } from 'rizzui';
-import { useModal } from '@/app/shared/modal-views/use-modal';
-import CreateEditTemplate from '@/app/shared/templates/create-edit-template';
+import { routes } from '@/config/routes';
+import { useRouter } from 'next/navigation';
+import { Button } from 'rizzui';
+import { PiPlusBold } from 'react-icons/pi';
 import TemplatesFilters from '@/app/shared/templates/templates-filters';
 import { templatesApi } from '@/lib/api/templates';
 import toast from 'react-hot-toast';
@@ -21,7 +23,7 @@ export default function TemplatesTable() {
   const [totalRecords, setTotalRecords] = useState(0);
 
   const tableContainerRef = useRef<HTMLDivElement>(null);
-  const { openModal, closeModal } = useModal();
+  const router = useRouter();
 
   const fetchTemplateData = async (isInitialLoad = false) => {
     try {
@@ -87,18 +89,16 @@ export default function TemplatesTable() {
   }, []);
 
   const handleEditTemplate = (template: Template) => {
-    openModal({
-      view: <CreateEditTemplate template={ template } onSuccess = {() => fetchTemplateData(false)
-} onClose = { closeModal } />,
-  customSize: 800,
-    });
+    console.log('Editing template:', template);
+    if (!template.phoneNumberId) {
+      toast.error('Cannot edit template: Missing Phone Number ID');
+      return;
+    }
+    router.push(`${routes.templates.edit(template.id)}?phoneNumberId=${template.phoneNumberId}`);
   };
 
-const handleCreateTemplate = () => {
-  openModal({
-    view: <CreateEditTemplate onSuccess={() => fetchTemplateData(false)} onClose = { closeModal } />,
-      customSize: 800,
-    });
+  const handleCreateTemplate = () => {
+    router.push(routes.templates.create);
   };
 
 const handleDeleteTemplate = async (id: string, phoneNumberId: string, templateName: string) => {
@@ -220,6 +220,10 @@ function TemplatesTableContent({
         <Title as="h3" className="text-base font-semibold sm:text-lg">
           Message Templates ({totalRecords} total)
         </Title>
+        <Button onClick={onCreateTemplate} className="w-full @lg:w-auto">
+          <PiPlusBold className="me-1.5 h-[17px] w-[17px]" />
+          Create Template
+        </Button>
       </Flex>
 
         < div className = "relative overflow-hidden" >
