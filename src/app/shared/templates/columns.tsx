@@ -4,6 +4,7 @@ import { createColumnHelper } from '@tanstack/react-table';
 import { Template } from '.';
 import { ActionIcon, Tooltip, Badge } from 'rizzui';
 import PencilIcon from '@core/components/icons/pencil';
+import { PiCodeBold } from 'react-icons/pi';
 import DeletePopover from '@/components/delete-popover';
 
 const columnHelper = createColumnHelper<Template>();
@@ -11,9 +12,11 @@ const columnHelper = createColumnHelper<Template>();
 export const createTemplatesColumns = ({
   onEditTemplate,
   onDeleteTemplate,
+  onViewWebhook,
 }: {
   onEditTemplate: (template: Template) => void;
   onDeleteTemplate: (id: string, phoneNumberId: string, templateName: string) => void;
+  onViewWebhook: (template: Template) => void;
 }) => [
     columnHelper.accessor('name', {
       id: 'name',
@@ -85,6 +88,21 @@ columnHelper.accessor('phoneNumberName', {
     header: () => <div className="text-center"> Actions </div>,
     cell: ({ row }) => (
       <div className= "flex items-center justify-center gap-2" >
+      <Tooltip
+          size="sm"
+          content = "Example Payload Template"
+          placement="top"
+          color="invert"
+      >
+        <ActionIcon
+            size="sm"
+            variant="outline"
+            aria-label="Example Payload Template"
+            onClick={() => onViewWebhook(row.original)}
+        >
+            <PiCodeBold className="h-4 w-4" />
+        </ActionIcon>
+      </Tooltip>
       <Tooltip
           size="sm"
           content = "Edit Template"

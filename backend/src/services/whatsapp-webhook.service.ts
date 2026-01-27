@@ -9,6 +9,7 @@ import { Message } from '../models/Message';
 import { WebhookLog } from '../models/WebhookLog';
 import { MessageStatusUpdate } from '../models/MessageStatusUpdate';
 import { PhoneNumber } from '../models/PhoneNumber';
+import { ApiEndpoint } from '../models/ApiEndpoint';
 import { WhatsAppMessagingService } from './whatsapp-messaging.service';
 import { WhatsAppMediaService } from './whatsapp-media.service';
 import { chatWebSocketManager } from './chat-websocket.service';
@@ -500,6 +501,46 @@ export class WhatsAppWebhookService {
         statusEventType: webhookLog.statusEventType,
         statusTimestamp: webhookLog.statusTimestamp,
       });
+    }
+
+    // 📢 WEBHOOK FORWARDING: If message sent via API (has userId), forward status to user's webhook
+    if (message.userId) {
+      try {
+        const apiEndpointRepo = AppDataSource.getRepository(ApiEndpoint);
+        const userEndpoints = await apiEndpointRepo.find({
+          where: {
+            createdBy: message.userId,
+            isActive: true,
+          }
+        });
+
+        // Filter for endpoints that have a webhookUrl
+        const validEndpoints = userEndpoints.filter(ep => ep.webhookUrl);
+
+        if (validEndpoints.length > 0) {
+           console.log(`[Webhook Forwarding] Found ${validEndpoints.length} endpoints for user ${message.userId}`);
+           
+           for (const endpoint of validEndpoints) {
+             const endpointPayload = {
+               webhook_id: endpoint.id,
+               status: statusData.status
+             };
+
+             // Fire and forget fetch
+             fetch(endpoint.webhookUrl, {
+               method: 'POST',
+               headers: { 'Content-Type': 'application/json' },
+               body: JSON.stringify(endpointPayload)
+             })
+             .then(res => {
+                if (!res.ok) console.warn(`[Webhook Forwarding] ${endpoint.webhookUrl} returned ${res.status}`);
+             })
+             .catch(err => console.error(`[Webhook Forwarding] Failed to send to ${endpoint.webhookUrl}:`, err));
+           }
+        }
+      } catch (error) {
+        console.error('[Webhook Forwarding] Error processing forwarding:', error);
+      }
     }
 
     // 📢 WEBSOCKET: Broadcast status change to all clients subscribed to this phone number

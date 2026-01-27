@@ -80,7 +80,7 @@ export class Message {
   // Message Status (for outgoing messages)
   @Column({ type: 'varchar', length: 20, nullable: true })
   @Index()
-  status: 'sent' | 'delivered' | 'read' | 'failed' | 'deleted' | 'pending' | null;
+  status: 'sent' | 'delivered' | 'read' | 'failed' | 'deleted' | 'pending' | 'played' | null;
 
   // Sender/Recipient Information
   @Column({ name: 'from_number', type: 'varchar', length: 20 })

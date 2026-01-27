@@ -13,6 +13,7 @@ import { PiPlusBold } from 'react-icons/pi';
 import TemplatesFilters from '@/app/shared/templates/templates-filters';
 import { templatesApi } from '@/lib/api/templates';
 import toast from 'react-hot-toast';
+import WebhookExampleModal from '@/app/shared/templates/webhook-example-modal';
 
 export default function TemplatesTable() {
   const [templateData, setTemplateData] = useState<Template[]>([]);
@@ -21,6 +22,10 @@ export default function TemplatesTable() {
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [totalRecords, setTotalRecords] = useState(0);
+
+  // Modal State
+  const [webhookModalOpen, setWebhookModalOpen] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
 
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
@@ -101,6 +106,11 @@ export default function TemplatesTable() {
     router.push(routes.templates.create);
   };
 
+  const handleViewWebhook = (template: Template) => {
+      setSelectedTemplate(template);
+      setWebhookModalOpen(true);
+  };
+
 const handleDeleteTemplate = async (id: string, phoneNumberId: string, templateName: string) => {
   try {
     const response = await templatesApi.delete(id, phoneNumberId, templateName);
@@ -149,9 +159,16 @@ return (
       totalRecords={totalRecords}
       onEditTemplate={handleEditTemplate}
       onDeleteTemplate={handleDeleteTemplate}
+      onViewWebhook={handleViewWebhook}
       onCreateTemplate={handleCreateTemplate}
       phoneNumbers={phoneNumbers}
       onFilter={handleFilter}
+    />
+
+    <WebhookExampleModal 
+         isOpen={webhookModalOpen}
+         onClose={() => setWebhookModalOpen(false)}
+         template={selectedTemplate}
     />
   </div>
   );
@@ -165,6 +182,7 @@ function TemplatesTableContent({
   totalRecords,
   onEditTemplate,
   onDeleteTemplate,
+  onViewWebhook,
   onCreateTemplate,
   phoneNumbers,
   onFilter,
@@ -176,6 +194,7 @@ function TemplatesTableContent({
   totalRecords: number;
   onEditTemplate: (template: Template) => void;
   onDeleteTemplate: (id: string, phoneNumberId: string, templateName: string) => void;
+  onViewWebhook: (template: Template) => void;
   onCreateTemplate: () => void;
   phoneNumbers: { value: string; label: string }[];
   onFilter: (filters: { category: string; status: string; phoneNumberId: string }) => void;
@@ -185,6 +204,7 @@ function TemplatesTableContent({
     columnConfig: createTemplatesColumns({
       onEditTemplate,
       onDeleteTemplate,
+      onViewWebhook,
     }),
     options: {
       enableColumnResizing: false,

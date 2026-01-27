@@ -167,6 +167,8 @@ export class WhatsAppMessagingService {
     templateLanguage: string;
     components?: any[];
     contactId?: string;
+    internalPhoneNumberId?: string; // Add internalPhoneNumberId for DB storage
+    userId?: string; // Add userId
   }): Promise<any> {
     const response = await fetch(`${WHATSAPP_API_BASE_URL}/${params.phoneNumberId}/messages`, {
       method: 'POST',
@@ -199,7 +201,7 @@ export class WhatsAppMessagingService {
     if (params.contactId) {
       await this.storeOutgoingMessage({
         contactId: params.contactId,
-        phoneNumberId: params.phoneNumberId,
+        phoneNumberId: params.internalPhoneNumberId || params.phoneNumberId,
         wamid: result.messages[0].id,
         toNumber: params.to,
         fromNumber: params.phoneNumberId,
@@ -208,6 +210,7 @@ export class WhatsAppMessagingService {
         templateLanguage: params.templateLanguage,
         templateComponents: params.components,
         status: 'sent',
+        userId: params.userId, // Pass userId
       });
     }
 
@@ -384,7 +387,7 @@ export class WhatsAppMessagingService {
    */
   static async updateMessageStatus(params: {
     wamid: string;
-    status: 'sent' | 'delivered' | 'read' | 'failed';
+    status: 'sent' | 'delivered' | 'read' | 'failed' | 'played';
     timestamp: Date;
     errorCode?: number;
     errorMessage?: string;
