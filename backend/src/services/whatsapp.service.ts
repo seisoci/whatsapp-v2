@@ -567,7 +567,7 @@ export class WhatsAppService {
   static async getMessageTemplates(
     wabaId: string,
     accessToken: string,
-    params?: { limit?: number; after?: string }
+    params?: { limit?: number; after?: string; name?: string }
   ): Promise<any> {
     try {
       let url = `${WHATSAPP_API_BASE_URL}/${wabaId}/message_templates`;
@@ -576,6 +576,7 @@ export class WhatsAppService {
         const queryParams = new URLSearchParams();
         if (params.limit) queryParams.append('limit', params.limit.toString());
         if (params.after) queryParams.append('after', params.after);
+        if (params.name) queryParams.append('name', params.name);
 
         if (queryParams.toString()) {
           url += `?${queryParams.toString()}`;

@@ -48,6 +48,10 @@ export interface Message {
   readAt: string | null;
   reactionEmoji?: string | null;
   reactionMessageId?: string | null;
+  // Template fields
+  templateName?: string | null;
+  templateLanguage?: string | null;
+  templateComponents?: TemplateComponent[] | null;
   // User info (for outgoing messages)
   userId?: string | null;
   user?: {
@@ -58,6 +62,25 @@ export interface Message {
     emailVerified: boolean;
     roleId: string;
   } | null;
+}
+
+export interface TemplateComponent {
+  type: 'HEADER' | 'BODY' | 'FOOTER' | 'BUTTONS' | 'header' | 'body' | 'footer' | 'buttons';
+  parameters?: TemplateParameter[];
+  sub_type?: string;
+  index?: number;
+  text?: string; // For rendered text
+}
+
+export interface TemplateParameter {
+  type: 'text' | 'image' | 'video' | 'document' | 'currency' | 'date_time' | 'payload';
+  text?: string;
+  image?: { link?: string; id?: string };
+  video?: { link?: string; id?: string };
+  document?: { link?: string; id?: string; filename?: string };
+  currency?: { code: string; amount_1000: number; fallback_value: string };
+  date_time?: { fallback_value: string };
+  payload?: string;
 }
 
 export interface SendMessageRequest {

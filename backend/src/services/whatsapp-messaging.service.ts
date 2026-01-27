@@ -7,7 +7,8 @@ import { AppDataSource } from '../config/database';
 import { Contact } from '../models/Contact';
 import { Message } from '../models/Message';
 import { PhoneNumber } from '../models/PhoneNumber';
-import {WhatsAppService } from './whatsapp.service';
+import { WhatsAppService } from './whatsapp.service';
+import { templateCacheService } from './template-cache.service';
 
 const WHATSAPP_API_BASE_URL = process.env.WHATSAPP_API_VERSION 
   ? `https://graph.facebook.com/${process.env.WHATSAPP_API_VERSION}`
@@ -199,6 +200,34 @@ export class WhatsAppMessagingService {
 
     // Store message in database
     if (params.contactId) {
+      // Fetch template definition and render body text with variables
+      let renderedTextBody: string | undefined;
+      try {
+        const internalId = params.internalPhoneNumberId || params.phoneNumberId;
+        const templateDef = await templateCacheService.getTemplateByPhoneNumber(
+          internalId,
+          params.templateName,
+          params.templateLanguage
+        );
+
+        if (templateDef) {
+          const rendered = templateCacheService.renderTemplateBody(
+            templateDef,
+            params.components || []
+          );
+          // Combine header, body, and footer into a single text for display
+          const parts: string[] = [];
+          if (rendered.header) parts.push(rendered.header);
+          if (rendered.body) parts.push(rendered.body);
+          if (rendered.footer) parts.push(rendered.footer);
+          renderedTextBody = parts.join('\n\n');
+          console.log(`[TemplateMessage] Rendered template body: ${renderedTextBody}`);
+        }
+      } catch (error) {
+        console.error('[TemplateMessage] Failed to render template body:', error);
+        // Continue without rendered text - the template components will still be saved
+      }
+
       await this.storeOutgoingMessage({
         contactId: params.contactId,
         phoneNumberId: params.internalPhoneNumberId || params.phoneNumberId,
@@ -206,6 +235,7 @@ export class WhatsAppMessagingService {
         toNumber: params.to,
         fromNumber: params.phoneNumberId,
         messageType: 'template',
+        textBody: renderedTextBody, // Store rendered template text
         templateName: params.templateName,
         templateLanguage: params.templateLanguage,
         templateComponents: params.components,

@@ -12,6 +12,7 @@ import { WhatsAppMessagingService } from '../services/whatsapp-messaging.service
 import { chatWebSocketManager } from '../services/chat-websocket.service';
 import { getMessagesSchema, sendMessageSchema } from '../validators/chat.validator';
 import { withPermissions } from '../utils/controller.decorator';
+import { templateCacheService } from '../services/template-cache.service';
 
 export class MessageController {
   /**
@@ -61,9 +62,40 @@ export class MessageController {
         .take(limit)
         .getMany();
 
+      // Render template bodies for template messages that don't have textBody
+      const processedMessages = await Promise.all(
+        messages.map(async (msg) => {
+          if (msg.messageType === 'template' && !msg.textBody && msg.templateName && msg.templateLanguage) {
+            try {
+              const templateDef = await templateCacheService.getTemplateByPhoneNumber(
+                msg.phoneNumberId,
+                msg.templateName,
+                msg.templateLanguage
+              );
+
+              if (templateDef) {
+                const rendered = templateCacheService.renderTemplateBody(
+                  templateDef,
+                  msg.templateComponents || []
+                );
+                // Combine header, body, and footer into a single text
+                const parts: string[] = [];
+                if (rendered.header) parts.push(rendered.header);
+                if (rendered.body) parts.push(rendered.body);
+                if (rendered.footer) parts.push(rendered.footer);
+                msg.textBody = parts.join('\n\n');
+              }
+            } catch (error) {
+              console.error(`[MessageController] Failed to render template for message ${msg.id}:`, error);
+            }
+          }
+          return msg;
+        })
+      );
+
       return c.json({
         success: true,
-        data: messages.reverse(), // Reverse to show oldest first in UI
+        data: processedMessages.reverse(), // Reverse to show oldest first in UI
         pagination: {
           page,
           limit,

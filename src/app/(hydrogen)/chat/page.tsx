@@ -1703,6 +1703,112 @@ export default function ChatPage() {
                                     </span>
                                   </div>
                                 </div>
+                              ) : msg.messageType === 'template' ? (
+                                // Template message - render from templateComponents
+                                (() => {
+                                  const components = msg.templateComponents || [];
+                                  const headerComp = components.find((c: any) => c.type?.toUpperCase() === 'HEADER');
+                                  const bodyComp = components.find((c: any) => c.type?.toUpperCase() === 'BODY');
+                                  const footerComp = components.find((c: any) => c.type?.toUpperCase() === 'FOOTER');
+                                  const buttonsComp = components.find((c: any) => c.type?.toUpperCase() === 'BUTTONS');
+
+                                  // Get header media from parameters
+                                  const headerParam = headerComp?.parameters?.[0];
+                                  const headerMediaUrl = headerParam?.image?.link || headerParam?.video?.link || headerParam?.document?.link || msg.mediaUrl;
+                                  const headerMediaType = headerParam?.type || (msg.mediaMimeType?.startsWith('image/') ? 'image' : msg.mediaMimeType?.startsWith('video/') ? 'video' : 'document');
+
+                                  // Get body text - either from component text or textBody
+                                  const bodyText = bodyComp?.text || msg.textBody;
+
+                                  // Get footer text
+                                  const footerText = footerComp?.text;
+
+                                  return (
+                                    <div className="flex flex-col">
+                                      {/* Template Header - Media or Text */}
+                                      {headerMediaUrl && (
+                                        <div className="mb-2">
+                                          {headerMediaType === 'image' ? (
+                                            <img
+                                              src={headerMediaUrl}
+                                              alt="Template header"
+                                              className="w-full max-w-[280px] sm:max-w-sm rounded cursor-pointer hover:opacity-90 transition-opacity"
+                                              onClick={() => {
+                                                setLightboxSlides([{ src: headerMediaUrl, alt: 'Template header' }]);
+                                                setLightboxOpen(true);
+                                              }}
+                                            />
+                                          ) : headerMediaType === 'video' ? (
+                                            <video src={headerMediaUrl} controls className="w-full max-w-[280px] sm:max-w-sm rounded" />
+                                          ) : (
+                                            <a
+                                              href={headerMediaUrl}
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                              className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${isOwn ? 'bg-blue-400/30 hover:bg-blue-400/40' : 'bg-gray-200/80 hover:bg-gray-300/80'}`}
+                                            >
+                                              <div className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center ${isOwn ? 'bg-blue-300/50' : 'bg-gray-300'}`}>
+                                                <PiFileText className="w-5 h-5 text-gray-700" />
+                                              </div>
+                                              <div className="flex-1 min-w-0">
+                                                <p className={`text-sm font-medium truncate ${isOwn ? 'text-white' : 'text-gray-800'}`}>
+                                                  {headerParam?.document?.filename || msg.mediaFilename || 'Document'}
+                                                </p>
+                                              </div>
+                                              <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${isOwn ? 'bg-blue-300/50' : 'bg-gray-300'}`}>
+                                                <PiDownload className="w-4 h-4 text-gray-700" />
+                                              </div>
+                                            </a>
+                                          )}
+                                        </div>
+                                      )}
+                                      {/* Text Header */}
+                                      {headerComp?.text && !headerMediaUrl && (
+                                        <p className={`text-sm font-semibold mb-1 ${isOwn ? 'text-white' : 'text-gray-900'}`}>{headerComp.text}</p>
+                                      )}
+
+                                      {/* Template Body */}
+                                      {bodyText && (
+                                        <p className="text-sm whitespace-pre-wrap leading-relaxed mb-1">{bodyText}</p>
+                                      )}
+
+                                      {/* Template Footer */}
+                                      {footerText && (
+                                        <p className={`text-xs mt-1 ${isOwn ? 'text-blue-200' : 'text-gray-500'}`}>{footerText}</p>
+                                      )}
+
+                                      {/* Template Buttons */}
+                                      {buttonsComp?.parameters && buttonsComp.parameters.length > 0 && (
+                                        <div className="mt-2 flex flex-wrap gap-1">
+                                          {buttonsComp.parameters.map((btn: any, idx: number) => (
+                                            <span key={idx} className={`text-xs px-2 py-1 rounded ${isOwn ? 'bg-blue-400/30 text-blue-100' : 'bg-gray-200 text-gray-700'}`}>
+                                              {btn.text || btn.payload || `Button ${idx + 1}`}
+                                            </span>
+                                          ))}
+                                        </div>
+                                      )}
+
+                                      {/* Template indicator and timestamp */}
+                                      <div className="flex items-center justify-between gap-2 mt-2">
+                                        <span className={`text-[10px] px-1.5 py-0.5 rounded ${isOwn ? 'bg-blue-400/30 text-blue-100' : 'bg-gray-200 text-gray-600'}`}>
+                                          {msg.templateName || 'Template'}
+                                        </span>
+                                        <div className="flex items-center gap-1.5">
+                                          <span className={`text-[10px] ${isOwn ? 'text-blue-100' : 'text-gray-500'}`}>
+                                            {(() => {
+                                              const date = new Date(msg.timestamp);
+                                              const now = new Date();
+                                              const diff = differenceInCalendarDays(now, date);
+                                              if (diff >= 1) return format(date, 'dd/MM/yyyy HH:mm');
+                                              return format(date, 'HH:mm');
+                                            })()}
+                                          </span>
+                                          {isOwn && <span className={isOwn ? 'text-white' : ''}>{getStatusIcon(msg.status)}</span>}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                })()
                               ) : msg.mediaUrl ? (
                                 <div className="flex flex-col">
                                   {msg.messageType === 'image' && (
