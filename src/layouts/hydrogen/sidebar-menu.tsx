@@ -81,14 +81,27 @@ export function SidebarMenu() {
                           )}
                         >
                           <div className="flex items-center truncate">
-                            <span
-                              className={cn(
-                                'me-[18px] ms-1 inline-flex h-1 w-1 rounded-full bg-current transition-all duration-200',
-                                isChildActive
-                                  ? 'bg-primary ring-[1px] ring-primary'
-                                  : 'opacity-40'
-                              )}
-                            />{' '}
+                            {dropdownItem?.icon ? (
+                              <span
+                                className={cn(
+                                  'me-2 inline-flex h-5 w-5 items-center justify-center rounded-md [&>svg]:h-[20px] [&>svg]:w-[20px]',
+                                  isChildActive
+                                    ? 'text-primary'
+                                    : 'text-gray-500 dark:text-gray-500 dark:group-hover:text-gray-700'
+                                )}
+                              >
+                                {dropdownItem?.icon}
+                              </span>
+                            ) : (
+                              <span
+                                className={cn(
+                                  'me-[18px] ms-1 inline-flex h-1 w-1 rounded-full bg-current transition-all duration-200',
+                                  isChildActive
+                                    ? 'bg-primary ring-[1px] ring-primary'
+                                    : 'opacity-40'
+                                )}
+                              />
+                            )}
                             <span className="truncate">
                               {dropdownItem?.name}
                             </span>

@@ -9,14 +9,14 @@ import CreateEditApiEndpoint from '@/app/shared/api-management/create-edit-api-e
 import ApiManagementTable from '@/app/shared/api-management/api-management-table';
 
 const pageHeader = {
-  title: 'API Management',
+  title: 'Webhook',
   breadcrumb: [
     {
       href: '/',
       name: 'Home',
     },
     {
-      name: 'API Management',
+      name: 'Webhook',
     },
   ],
 };

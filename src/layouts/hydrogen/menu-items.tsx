@@ -10,7 +10,6 @@ import {
   PiShieldCheckDuotone,
   PiLockKeyDuotone,
   PiFileTextDuotone,
-  PiPlugDuotone,
 } from 'react-icons/pi';
 
 export const menuItems = [
@@ -62,7 +61,7 @@ export const menuItems = [
         href: routes.permissions,
       },
       {
-        name: 'API Management',
+        name: 'Webhook',
         href: routes.apiManagement,
       },
     ],
