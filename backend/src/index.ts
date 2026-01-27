@@ -19,6 +19,7 @@ import quickReplyRouter from './routes/quick-reply.routes';
 import tagRouter from './routes/tag.routes';
 import whatsappMediaRouter from './routes/whatsapp-media.routes';
 import mediaRouter from './routes/media.routes';
+import apiEndpointRouter from './routes/api-endpoint.routes';
 import { handleWebSocketUpgrade } from './routes/websocket.routes';
 import { chatWebSocketManager } from './services/chat-websocket.service';
 import {
@@ -65,6 +66,7 @@ app.route(`${env.API_PREFIX}/quick-replies`, quickReplyRouter);
 app.route(`${env.API_PREFIX}/tags`, tagRouter);
 app.route(`${env.API_PREFIX}/whatsapp-media`, whatsappMediaRouter);
 app.route(`${env.API_PREFIX}/media`, mediaRouter);
+app.route(`${env.API_PREFIX}/api-endpoints`, apiEndpointRouter);
 
 
 // 404 handler

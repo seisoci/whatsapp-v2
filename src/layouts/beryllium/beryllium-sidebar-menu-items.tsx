@@ -10,6 +10,7 @@ import {
   PiShieldCheckDuotone,
   PiLockKeyDuotone,
   PiFileTextDuotone,
+  PiPlugDuotone,
 } from 'react-icons/pi';
 
 export const berylliumSidebarMenuItems = [
@@ -65,6 +66,11 @@ export const berylliumSidebarMenuItems = [
         name: 'Permissions',
         href: routes.permissions,
         icon: <PiLockKeyDuotone />,
+      },
+      {
+        name: 'API Management',
+        href: routes.apiManagement,
+        icon: <PiPlugDuotone />,
       },
     ],
   },

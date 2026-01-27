@@ -10,6 +10,7 @@ import {
   PiShieldCheckDuotone,
   PiLockKeyDuotone,
   PiFileTextDuotone,
+  PiPlugDuotone,
 } from 'react-icons/pi';
 
 export type SubMenuItemType = {
@@ -142,6 +143,11 @@ export const lithiumMenuItems: LithiumMenuItem = {
         href: routes.permissions,
         icon: PiLockKeyDuotone,
       },
+      {
+        name: 'API Management',
+        href: routes.apiManagement,
+        icon: PiPlugDuotone,
+      },
     ],
   },
   management: {
@@ -162,6 +168,11 @@ export const lithiumMenuItems: LithiumMenuItem = {
         name: 'Permissions',
         href: routes.permissions,
         icon: PiLockKeyDuotone,
+      },
+      {
+        name: 'API Management',
+        href: routes.apiManagement,
+        icon: PiPlugDuotone,
       },
     ],
   },
