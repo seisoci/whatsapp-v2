@@ -12,6 +12,7 @@ import {
   PiShieldCheckDuotone,
   PiLockKeyDuotone,
   PiFileTextDuotone,
+  PiAddressBookDuotone,
 } from 'react-icons/pi';
 
 export interface SubMenuItemType {
@@ -63,6 +64,10 @@ export const berylliumMenuItems: MenuItemsType[] = [
           {
             name: 'Phone Numbers',
             href: routes.phoneNumbers,
+          },
+          {
+            name: 'Contacts',
+            href: routes.contacts,
           },
 
           {

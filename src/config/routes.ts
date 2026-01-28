@@ -60,6 +60,7 @@ export const routes = {
   roles: "/roles",
   permissions: "/permissions",
   phoneNumbers: "/phone-numbers",
+  contacts: "/contacts",
   apiManagement: "/api-management",
 
   users: "/users",

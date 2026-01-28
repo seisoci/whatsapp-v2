@@ -11,6 +11,7 @@ import {
   PiLockKeyDuotone,
   PiFileTextDuotone,
   PiCodeDuotone,
+  PiAddressBookDuotone,
 } from 'react-icons/pi';
 
 export const menuItems = [
@@ -33,6 +34,11 @@ export const menuItems = [
         name: 'Phone Numbers',
         href: routes.phoneNumbers,
         icon: <PiDeviceMobileDuotone />,
+      },
+      {
+        name: 'Contacts',
+        href: routes.contacts,
+        icon: <PiAddressBookDuotone />,
       },
 
       {

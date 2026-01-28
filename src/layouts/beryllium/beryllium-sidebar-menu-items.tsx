@@ -11,6 +11,7 @@ import {
   PiLockKeyDuotone,
   PiFileTextDuotone,
   PiCodeDuotone,
+  PiAddressBookDuotone,
 } from 'react-icons/pi';
 
 export const berylliumSidebarMenuItems = [
@@ -33,6 +34,11 @@ export const berylliumSidebarMenuItems = [
         name: 'Phone Numbers',
         href: routes.phoneNumbers,
         icon: <PiDeviceMobileDuotone />,
+      },
+      {
+        name: 'Contacts',
+        href: routes.contacts,
+        icon: <PiAddressBookDuotone />,
       },
 
       {

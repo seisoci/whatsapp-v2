@@ -12,7 +12,8 @@ import {
   PiFileTextDuotone,
   PiPlugDuotone,
   PiGlobeDuotone,
-  PiWebhooksLogoDuotone
+  PiWebhooksLogoDuotone,
+  PiAddressBookDuotone
 } from 'react-icons/pi';
 
 export type SubMenuItemType = {
@@ -91,6 +92,11 @@ export const lithiumMenuItems: LithiumMenuItem = {
         href: routes.phoneNumbers,
         icon: PiDeviceMobileDuotone,
       },
+      {
+        name: 'Contacts',
+        href: routes.contacts,
+        icon: PiAddressBookDuotone,
+      },
 
       {
         name: 'Quick Replies',
@@ -112,6 +118,11 @@ export const lithiumMenuItems: LithiumMenuItem = {
         name: 'Phone Numbers',
         href: routes.phoneNumbers,
         icon: PiDeviceMobileDuotone,
+      },
+      {
+        name: 'Contacts',
+        href: routes.contacts,
+        icon: PiAddressBookDuotone,
       },
 
       {
