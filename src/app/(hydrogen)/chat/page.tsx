@@ -187,6 +187,47 @@ export default function ChatPage() {
     connectWebSocket();
   }, []);
 
+  // Sync missed data on page visibility change (tab switch, device wake) and WebSocket reconnect
+  useEffect(() => {
+    const syncMissedData = () => {
+      if (!selectedPhoneNumberId) return;
+      // Reload contacts list and stats to catch any missed messages
+      loadContacts(1, false);
+      loadContactsStats();
+      // If a chat is open, reload its messages
+      if (selectedContact) {
+        loadMessages(selectedContact);
+      }
+    };
+
+    // Visibility change: user returned to tab or device woke up
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        // Reconnect WebSocket if disconnected
+        if (!chatWebSocket.isConnected()) {
+          chatWebSocket.connect().catch(err =>
+            console.error('WebSocket reconnect on visibility failed:', err)
+          );
+        }
+        syncMissedData();
+      }
+    };
+
+    // WebSocket reconnected after a drop
+    const handleReconnected = () => {
+      syncMissedData();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    chatWebSocket.on('connection:reconnected', handleReconnected);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      chatWebSocket.off('connection:reconnected', handleReconnected);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedPhoneNumberId, selectedContact?.id]);
+
   // Trigger search when debounced query changes
   useEffect(() => {
     if (selectedPhoneNumberId) {

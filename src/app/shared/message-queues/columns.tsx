@@ -29,7 +29,7 @@ export const createMessageQueueColumns = ({
   columnHelper.accessor('template_category', {
     id: 'template_category',
     size: 120,
-    header: 'Category',
+    header: () => <span className="flex justify-center w-full">Category</span>,
     enableSorting: false,
     cell: ({ row }) => {
       const category = row.original.template_category;
@@ -40,9 +40,11 @@ export const createMessageQueueColumns = ({
         AUTHENTICATION: 'success',
       };
       return (
-        <Badge variant="flat" color={colorMap[category] || 'secondary'} className="capitalize text-xs">
-          {category.toLowerCase()}
-        </Badge>
+        <div className="text-center">
+          <Badge variant="flat" color={colorMap[category] || 'secondary'} className="capitalize text-xs">
+            {category.toLowerCase()}
+          </Badge>
+        </div>
       );
     },
   }),
@@ -126,27 +128,29 @@ export const createMessageQueueColumns = ({
   columnHelper.accessor('is_billable', {
     id: 'is_billable',
     size: 100,
-    header: 'Billable',
+    header: () => <span className="flex justify-center w-full">Billable</span>,
     enableSorting: false,
     cell: ({ row }) => (
-      <Badge
-        variant="flat"
-        color={row.original.is_billable ? 'success' : 'secondary'}
-        className="capitalize"
-      >
-        {row.original.is_billable ? 'Yes' : 'No'}
-      </Badge>
+      <div className="text-center">
+        <Badge
+          variant="flat"
+          color={row.original.is_billable ? 'success' : 'secondary'}
+          className="capitalize"
+        >
+          {row.original.is_billable ? 'Yes' : 'No'}
+        </Badge>
+      </div>
     ),
   }),
   columnHelper.accessor('attempts', {
     id: 'attempts',
     size: 90,
-    header: 'Attempts',
+    header: () => <span className="flex justify-center w-full">Attempts</span>,
     enableSorting: false,
     cell: ({ row }) => (
-      <span className="text-sm">
+      <div className="text-center text-sm">
         {row.original.attempts}/{row.original.max_attempts}
-      </span>
+      </div>
     ),
   }),
   columnHelper.accessor('created_at', {

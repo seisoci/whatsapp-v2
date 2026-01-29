@@ -191,7 +191,7 @@ export default function MessageQueueTable() {
   const handleViewDetail = (item: MessageQueueItem) => {
     openModal({
       view: <MessageQueueDetail item={item} />,
-      customSize: 550,
+      customSize: 1100,
     });
   };
 

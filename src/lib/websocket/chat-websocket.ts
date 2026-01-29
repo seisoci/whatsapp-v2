@@ -5,8 +5,9 @@
 
 import { getAccessToken, refreshAccessToken } from '@/lib/api-client';
 
-export type ChatEvent = 
+export type ChatEvent =
   | { type: 'connection:success'; data: { userId: string } }
+  | { type: 'connection:reconnected'; data: {} }
   | { type: 'subscribe:success'; data: { phoneNumberId: string } }
   | { type: 'unsubscribe:success'; data: { phoneNumberId: string } }
   | { type: 'message:new'; phoneNumberId: string; data: { contactId: string; message: any } }
@@ -27,6 +28,7 @@ export class ChatWebSocketClient {
   private isIntentionalClose = false;
   private subscribedRooms: Set<string> = new Set();
   private pingInterval: NodeJS.Timeout | null = null;
+  private hasConnectedBefore = false;
 
   /**
    * Connect to WebSocket server
@@ -49,8 +51,10 @@ export class ChatWebSocketClient {
         this.ws = new WebSocket(wsUrl);
 
         this.ws.onopen = () => {
+          const isReconnect = this.hasConnectedBefore;
           this.reconnectAttempts = 0;
           this.isIntentionalClose = false;
+          this.hasConnectedBefore = true;
 
           // Resubscribe to previously subscribed rooms
           this.subscribedRooms.forEach(phoneNumberId => {
@@ -59,6 +63,11 @@ export class ChatWebSocketClient {
 
           // Start ping/pong heartbeat
           this.startHeartbeat();
+
+          // Emit reconnected event so UI can sync missed data
+          if (isReconnect) {
+            this.emit('connection:reconnected', { type: 'connection:reconnected', data: {} });
+          }
 
           resolve();
         };
