@@ -22,7 +22,8 @@ export const AppDataSource = new DataSource({
   password: process.env.DB_PASSWORD,
   database: process.env.DB_DATABASE || 'auth_db',
   synchronize: false, // Disable auto-sync, use migrations instead
-  logging: process.env.NODE_ENV === 'development',
+    // logging: process.env.NODE_ENV === 'development',
+  logging: false,
   entities: [User, RefreshToken, Role, Permission, MenuManager, PhoneNumber, Contact, Message, MessageStatusUpdate, WebhookLog, QuickReply, Tag, ApiEndpoint, MessageQueue],
   migrations: [__dirname + '/../migrations/**/*.ts'],
   migrationsRun: false, // Run migrations manually in index.ts
