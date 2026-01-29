@@ -12,7 +12,6 @@ export const ALLOWED_IMAGE_TYPES = [
   'image/png',
   'image/gif',
   'image/webp',
-  'image/svg+xml',
 ] as const;
 
 export const ALLOWED_DOCUMENT_TYPES = [
@@ -60,7 +59,7 @@ export const fileValidationSchema = z.object({
 // Image file validation
 export const imageFileSchema = fileValidationSchema.extend({
   type: z.enum(ALLOWED_IMAGE_TYPES, {
-    errorMap: () => ({ message: 'Tipe file harus berupa gambar (JPEG, PNG, GIF, WebP, SVG)' }),
+    errorMap: () => ({ message: 'Tipe file harus berupa gambar (JPEG, PNG, GIF, WebP)' }),
   }),
   size: z.number().max(MAX_IMAGE_SIZE, `Ukuran gambar maksimal ${MAX_IMAGE_SIZE / 1024 / 1024}MB`),
 });
@@ -162,7 +161,7 @@ export const allowedExtensions = (extensions: string[]) =>
   );
 
 // Common file extensions
-export const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'];
+export const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
 export const DOCUMENT_EXTENSIONS = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'csv'];
 export const VIDEO_EXTENSIONS = ['mp4', 'mpeg', 'mov', 'avi', 'webm'];
 export const AUDIO_EXTENSIONS = ['mp3', 'wav', 'ogg', 'webm'];
