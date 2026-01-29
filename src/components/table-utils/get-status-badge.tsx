@@ -23,12 +23,18 @@ const allStatus = {
   approved: statusColors.success,
   rejected: statusColors.danger,
   active: statusColors.success,
+  inactive: statusColors.default,
   deactivated: statusColors.danger,
   on_going: statusColors.warning,
   at_risk: statusColors.danger,
   delayed: statusColors.default,
   draft: statusColors.default,
   refunded: statusColors.default,
+  processing: statusColors.warning,
+  failed: statusColors.danger,
+  sent: statusColors.success,
+  delivered: statusColors.success,
+  read: statusColors.success,
 };
 
 export type StatusTypes = keyof typeof allStatus;

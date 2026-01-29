@@ -97,6 +97,14 @@ export const berylliumMenuItems: MenuItemsType[] = [
             name: 'Permissions',
             href: routes.permissions,
           },
+          {
+            name: 'Webhook',
+            href: routes.apiManagement,
+          },
+          {
+            name: 'Message Queue',
+            href: routes.messageQueues,
+          },
         ],
       },
     ],

@@ -13,7 +13,8 @@ import {
   PiPlugDuotone,
   PiGlobeDuotone,
   PiWebhooksLogoDuotone,
-  PiAddressBookDuotone
+  PiAddressBookDuotone,
+  PiListChecksDuotone,
 } from 'react-icons/pi';
 
 export type SubMenuItemType = {
@@ -161,6 +162,11 @@ export const lithiumMenuItems: LithiumMenuItem = {
         href: routes.apiManagement,
         icon: PiWebhooksLogoDuotone,
       },
+      {
+        name: 'Message Queue',
+        href: routes.messageQueues,
+        icon: PiListChecksDuotone,
+      },
     ],
   },
   management: {
@@ -186,6 +192,11 @@ export const lithiumMenuItems: LithiumMenuItem = {
         name: 'Webhook',
         href: routes.apiManagement,
         icon: PiWebhooksLogoDuotone,
+      },
+      {
+        name: 'Message Queue',
+        href: routes.messageQueues,
+        icon: PiListChecksDuotone,
       },
     ],
   },

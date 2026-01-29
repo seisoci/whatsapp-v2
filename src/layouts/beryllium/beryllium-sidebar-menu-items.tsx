@@ -12,6 +12,7 @@ import {
   PiFileTextDuotone,
   PiCodeDuotone,
   PiAddressBookDuotone,
+  PiListChecksDuotone,
 } from 'react-icons/pi';
 
 export const berylliumSidebarMenuItems = [
@@ -77,6 +78,11 @@ export const berylliumSidebarMenuItems = [
         name: 'Webhook',
         href: routes.apiManagement,
         icon: <PiCodeDuotone />,
+      },
+      {
+        name: 'Message Queue',
+        href: routes.messageQueues,
+        icon: <PiListChecksDuotone />,
       },
     ],
   },

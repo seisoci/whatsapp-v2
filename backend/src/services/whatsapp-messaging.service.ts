@@ -198,6 +198,8 @@ export class WhatsAppMessagingService {
 
     const result: any = await response.json();
 
+    let savedMessage = null; // Declare outside if block
+
     // Store message in database
     if (params.contactId) {
       // Fetch template definition and render body text with variables
@@ -228,7 +230,7 @@ export class WhatsAppMessagingService {
         // Continue without rendered text - the template components will still be saved
       }
 
-      await this.storeOutgoingMessage({
+      savedMessage = await this.storeOutgoingMessage({
         contactId: params.contactId,
         phoneNumberId: params.internalPhoneNumberId || params.phoneNumberId,
         wamid: result.messages[0].id,
@@ -244,7 +246,10 @@ export class WhatsAppMessagingService {
       });
     }
 
-    return result;
+    return {
+      ...result,
+      savedMessage,
+    };
   }
 
   /**
