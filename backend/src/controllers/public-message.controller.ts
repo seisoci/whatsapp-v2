@@ -1,65 +1,14 @@
 import { Context } from 'hono';
 import { AppDataSource } from '../config/database';
 import { PhoneNumber } from '../models/PhoneNumber';
-import { z } from 'zod';
 import { ApiEndpoint } from '../models/ApiEndpoint';
 import { Contact } from '../models/Contact';
 import { MessageQueue } from '../models/MessageQueue';
 import { templateCacheService } from '../services/template-cache.service';
 import { getClientIP } from '../middlewares/ipFilter.middleware';
 import { whatsappTemplateQueue } from '../config/queue';
-
-// Schema Validation
-const sendTemplateSchema = z.object({
-  phone_number: z.string().min(10, 'Phone number required'),
-  template_name: z.string().min(1, 'Template name required'),
-  template: z.array(z.any()).optional().default([]),
-});
-
-/**
- * Parse User-Agent string into a human-readable device info string.
- */
-function parseDeviceInfo(ua: string): string {
-  if (!ua) return 'Unknown';
-
-  // Postman
-  if (ua.includes('PostmanRuntime')) return 'Postman';
-  // curl
-  if (ua.startsWith('curl/')) return 'cURL';
-  // Insomnia
-  if (ua.includes('insomnia')) return 'Insomnia';
-  // HTTPie
-  if (ua.includes('HTTPie')) return 'HTTPie';
-
-  // Browser detection
-  let browser = 'Unknown Browser';
-  let os = 'Unknown OS';
-
-  // OS
-  if (ua.includes('Windows NT 10')) os = 'Windows 10';
-  else if (ua.includes('Windows NT 11') || (ua.includes('Windows NT 10') && ua.includes('Win64'))) os = 'Windows';
-  else if (ua.includes('Macintosh')) os = 'macOS';
-  else if (ua.includes('Linux')) os = 'Linux';
-  else if (ua.includes('Android')) os = 'Android';
-  else if (ua.includes('iPhone') || ua.includes('iPad')) os = 'iOS';
-
-  // Browser
-  if (ua.includes('Edg/')) browser = 'Edge';
-  else if (ua.includes('Chrome/') && !ua.includes('Edg/')) browser = 'Chrome';
-  else if (ua.includes('Firefox/')) browser = 'Firefox';
-  else if (ua.includes('Safari/') && !ua.includes('Chrome/')) browser = 'Safari';
-
-  return `${browser} / ${os}`;
-}
-
-/**
- * Mask an API key for safe storage: "sk-abc...xyz" → "sk-****xyz"
- */
-function maskApiKey(key: string): string {
-  if (!key) return '****';
-  if (key.length <= 8) return '****' + key.slice(-2);
-  return key.slice(0, 3) + '****' + key.slice(-4);
-}
+import { sendTemplateSchema } from '../validators/public-message.validator';
+import { UAParser } from 'ua-parser-js';
 
 export class PublicMessageController {
 
@@ -69,10 +18,17 @@ export class PublicMessageController {
     const ipAddress = clientIP !== 'unknown' ? clientIP : null;
 
     const rawApiKey = c.req.header('X-API-Key') || '';
-    const apiKeyMasked = maskApiKey(rawApiKey);
+    const apiKeyMasked = rawApiKey.length <= 8
+      ? '****' + rawApiKey.slice(-2)
+      : rawApiKey.slice(0, 3) + '****' + rawApiKey.slice(-4);
 
     const userAgent = c.req.header('user-agent') || '';
-    const deviceInfo = parseDeviceInfo(userAgent);
+    const ua = UAParser(userAgent);
+    const deviceInfo = [
+      ua.browser.name && (ua.browser.version ? `${ua.browser.name} ${ua.browser.version}` : ua.browser.name),
+      ua.os.name && (ua.os.version ? `${ua.os.name} ${ua.os.version}` : ua.os.name),
+      ua.device.model,
+    ].filter(Boolean).join(' / ') || 'Unknown';
 
     const requestHeaders: Record<string, string | null> = {
       'content-type': c.req.header('content-type') || null,
@@ -120,18 +76,18 @@ export class PublicMessageController {
       // 4. Resolve/Create Contact
       const contactRepo = AppDataSource.getRepository(Contact);
       let contact = await contactRepo.findOne({
-          where: { waId: phone_number }
+        where: { waId: phone_number }
       });
 
       if (!contact) {
-          contact = contactRepo.create({
-              waId: phone_number,
-              phoneNumber: phone_number,
-              profileName: phone_number,
-              isSessionActive: false,
-              phoneNumberId: phoneNumber.id
-          });
-          await contactRepo.save(contact);
+        contact = contactRepo.create({
+          waId: phone_number,
+          phoneNumber: phone_number,
+          profileName: phone_number,
+          isSessionActive: false,
+          phoneNumberId: phoneNumber.id
+        });
+        await contactRepo.save(contact);
       }
 
       // 5. Lookup template category from Redis/WhatsApp API

@@ -17,3 +17,6 @@ export * from './user.validator';
 
 // RBAC validators
 export * from './rbac.validator';
+
+// Public Message validators
+export * from './public-message.validator';
