@@ -15,7 +15,9 @@ interface TemplateJobData {
  *
  * Consumes BullMQ jobs and sends WhatsApp template messages.
  * Loads all data from PostgreSQL (source of truth) before processing.
- * Enforces idempotency — skips already completed/processing records.
+ *
+ * Uses atomic UPDATE ... WHERE to claim a record, preventing
+ * double-send when multiple jobs reference the same queueId.
  */
 export class QueueWorkerService {
   private static worker: Worker | null = null;
@@ -64,36 +66,46 @@ export class QueueWorkerService {
   }
 
   /**
-   * Process a single job: load from DB → validate → send → update status.
+   * Process a single job: claim atomically → load → send → update status.
    */
   private static async processJob(job: Job<TemplateJobData>): Promise<void> {
     const { queueId } = job.data;
     const mqRepo = AppDataSource.getRepository(MessageQueue);
 
-    // 1. Load record from PostgreSQL
+    // 1. Atomic claim: UPDATE only if status is still queued/pending/retrying.
+    //    Returns number of affected rows. If 0, another worker already claimed it.
+    const claimResult = await mqRepo
+      .createQueryBuilder()
+      .update(MessageQueue)
+      .set({
+        queueStatus: 'processing',
+        processedAt: new Date(),
+      })
+      .where('id = :id', { id: queueId })
+      .andWhere('queue_status IN (:...claimable)', {
+        claimable: ['queued', 'pending', 'retrying'],
+      })
+      .execute();
+
+    if (claimResult.affected === 0) {
+      // Already processing, completed, or failed — skip to prevent double send
+      console.log(`[QueueWorker] Skipping mq=${queueId} (already claimed or finished)`);
+      return;
+    }
+
+    // 2. Load full record with relations
     const record = await mqRepo.findOne({
       where: { id: queueId },
       relations: ['phoneNumber', 'contact', 'apiEndpoint'],
     });
 
     if (!record) {
-      console.warn(`[QueueWorker] Record not found: ${queueId}`);
+      console.warn(`[QueueWorker] Record not found after claim: ${queueId}`);
       return;
     }
-
-    // 2. Idempotency check — skip if already completed or currently processing
-    if (record.queueStatus === 'completed' || record.queueStatus === 'processing') {
-      console.log(`[QueueWorker] Skipping mq=${queueId} (status: ${record.queueStatus})`);
-      return;
-    }
-
-    // 3. Mark as processing
-    record.queueStatus = 'processing';
-    record.processedAt = new Date();
-    await mqRepo.save(record);
 
     try {
-      // 4. Send WhatsApp template message
+      // 3. Send WhatsApp template message
       const result = await WhatsAppMessagingService.sendTemplateMessage({
         phoneNumberId: record.phoneNumber.phoneNumberId,
         accessToken: record.phoneNumber.accessToken,
@@ -106,7 +118,7 @@ export class QueueWorkerService {
         userId: record.userId || undefined,
       });
 
-      // 5. Success — update record
+      // 4. Success — update record
       const wamid = result.messages?.[0]?.id || null;
       const savedMessage = result.savedMessage;
 
@@ -122,7 +134,7 @@ export class QueueWorkerService {
 
       await mqRepo.save(record);
     } catch (sendError: any) {
-      // 6. Failure — increment attempts, decide retry or fail
+      // 5. Failure — increment attempts, decide retry or fail
       record.attempts = record.attempts + 1;
       record.errorMessage = sendError.message || 'Unknown send error';
       record.errorCode = sendError.code || sendError.error_code || null;

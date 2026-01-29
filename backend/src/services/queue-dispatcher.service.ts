@@ -5,7 +5,7 @@ import { whatsappTemplateQueue } from '../config/queue';
 const WATCHDOG_INTERVAL_MS = 60_000; // 60 seconds
 const BATCH_SIZE = 100;
 // Records stuck longer than this threshold are considered missed/stuck
-const STUCK_THRESHOLD_MS = 2 * 60_000; // 2 minutes
+const STUCK_THRESHOLD_MS = 5 * 60_000; // 5 minutes
 
 /**
  * Queue Dispatcher Service (Watchdog / Recovery)
@@ -18,6 +18,7 @@ const STUCK_THRESHOLD_MS = 2 * 60_000; // 2 minutes
  *   (e.g. Redis was down when the API tried to enqueue)
  * - Re-dispatches `retrying` records after a worker failure
  * - Recovers from Redis restarts (all Redis jobs lost)
+ *   by verifying the job still exists before re-dispatching
  *
  * PostgreSQL is the source of truth. Redis is disposable.
  */
@@ -47,6 +48,22 @@ export class QueueDispatcherService {
   }
 
   /**
+   * Check if a BullMQ job still exists in Redis.
+   */
+  private static async isJobAlive(jobId: string | null): Promise<boolean> {
+    if (!jobId) return false;
+    try {
+      const job = await whatsappTemplateQueue.getJob(jobId);
+      if (!job) return false;
+      const state = await job.getState();
+      // Job is alive if it's waiting, active, or delayed
+      return ['waiting', 'active', 'delayed'].includes(state);
+    } catch {
+      return false;
+    }
+  }
+
+  /**
    * Single watchdog cycle: find stuck/missed records → re-dispatch to BullMQ.
    */
   private static async dispatch(): Promise<void> {
@@ -57,10 +74,10 @@ export class QueueDispatcherService {
       const mqRepo = AppDataSource.getRepository(MessageQueue);
       const stuckBefore = new Date(Date.now() - STUCK_THRESHOLD_MS);
 
-      // Find records that should have been dispatched but weren't, or need retry:
-      // 1. pending + created > 2min ago (API dispatch failed, e.g. Redis was down)
+      // Find records that may need recovery:
+      // 1. pending + created > 5min ago (API dispatch failed, e.g. Redis was down)
       // 2. retrying (worker failed, needs re-dispatch)
-      // 3. queued + last_dispatched > 2min ago (Redis job lost, e.g. Redis restarted)
+      // 3. queued + last_dispatched > 5min ago (possibly lost Redis job)
       const records = await mqRepo
         .createQueryBuilder('mq')
         .where(
@@ -82,12 +99,23 @@ export class QueueDispatcherService {
         return;
       }
 
-      console.log(`[QueueDispatcher] Watchdog found ${records.length} stuck/retrying message(s)`);
+      console.log(`[QueueDispatcher] Watchdog found ${records.length} candidate(s) to check`);
 
       let dispatched = 0;
+      let skipped = 0;
 
       for (const record of records) {
         try {
+          // For 'queued' records, verify the Redis job is actually gone before re-dispatching.
+          // This prevents double-dispatch when the queue is just busy (high volume).
+          if (record.queueStatus === 'queued') {
+            const alive = await this.isJobAlive(record.redisJobId);
+            if (alive) {
+              skipped++;
+              continue; // Job still in Redis, skip — it will be processed eventually
+            }
+          }
+
           const job = await whatsappTemplateQueue.add(
             'send-template',
             { queueId: record.id },
@@ -108,8 +136,8 @@ export class QueueDispatcherService {
         }
       }
 
-      if (dispatched > 0) {
-        console.log(`[QueueDispatcher] Watchdog re-dispatched ${dispatched}/${records.length} job(s)`);
+      if (dispatched > 0 || skipped > 0) {
+        console.log(`[QueueDispatcher] Watchdog: dispatched=${dispatched}, skipped=${skipped} (job still alive)`);
       }
     } catch (error: any) {
       console.error('[QueueDispatcher] Watchdog cycle error:', error.message);
