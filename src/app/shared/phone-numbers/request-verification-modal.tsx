@@ -50,7 +50,7 @@ export default function RequestVerificationModal({
     resolver: zodResolver(requestVerificationSchema),
     defaultValues: {
       codeMethod: 'SMS',
-      language: 'en_US',
+      language: 'id_ID',
     },
   });
 
@@ -59,7 +59,7 @@ export default function RequestVerificationModal({
     try {
       const response = await phoneNumbersApi.requestVerificationCode(phoneNumber.id, {
         codeMethod: data.codeMethod,
-        language: data.language || 'en_US',
+        language: data.language || 'id_ID',
       });
 
       if (response.success) {
@@ -110,6 +110,7 @@ export default function RequestVerificationModal({
               displayValue={(selected) =>
                 codeMethodOptions.find((option) => option.value === selected)?.label ?? ''
               }
+              dropdownClassName="!z-[9999]"
             />
           )}
         />
@@ -129,6 +130,7 @@ export default function RequestVerificationModal({
               displayValue={(selected) =>
                 languageOptions.find((option) => option.value === selected)?.label ?? ''
               }
+              dropdownClassName="!z-[9999]"
             />
           )}
         />
