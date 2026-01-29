@@ -2,9 +2,10 @@
 
 import { createColumnHelper } from '@tanstack/react-table';
 import { MessageQueueItem } from '.';
-import { Badge, Tooltip, Text, Flex } from 'rizzui';
+import { Badge, Tooltip, Text, Flex, ActionIcon } from 'rizzui';
 import { getStatusBadge } from '@core/components/table-utils/get-status-badge';
 import { format } from 'date-fns';
+import { PiEyeBold } from 'react-icons/pi';
 
 const columnHelper = createColumnHelper<MessageQueueItem>();
 
@@ -171,12 +172,16 @@ export const createMessageQueueColumns = ({
     header: () => <div className="text-center">Detail</div>,
     cell: ({ row }) => (
       <div className="flex items-center justify-center">
-        <button
-          onClick={() => onViewDetail(row.original)}
-          className="text-xs text-primary underline hover:no-underline"
-        >
-          View
-        </button>
+        <Tooltip size="sm" content="View Detail" placement="top" color="invert">
+          <ActionIcon
+            size="sm"
+            variant="outline"
+            aria-label="View Detail"
+            onClick={() => onViewDetail(row.original)}
+          >
+            <PiEyeBold className="h-4 w-4" />
+          </ActionIcon>
+        </Tooltip>
       </div>
     ),
     enableSorting: false,

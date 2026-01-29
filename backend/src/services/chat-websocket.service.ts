@@ -7,7 +7,7 @@
  */
 
 import { ServerWebSocket } from 'bun';
-import { verify } from 'jsonwebtoken';
+import { verify } from 'hono/jwt';
 import { env } from '../config/env';
 
 interface WebSocketClient {
@@ -28,7 +28,7 @@ export class ChatWebSocketManager {
   /**
    * Handle new WebSocket connection
    */
-  handleConnection(ws: ServerWebSocket<any>, request: Request): void {
+  async handleConnection(ws: ServerWebSocket<any>, request: Request): Promise<void> {
     const url = new URL(request.url);
     const token = url.searchParams.get('token');
 
@@ -38,29 +38,38 @@ export class ChatWebSocketManager {
     }
 
     try {
-      // Verify JWT token
-      const decoded = verify(token, env.JWT_SECRET) as { userId: string; email: string };
-
+      // Verify JWT token using verified Hono JWT function directly or via JWTService
+      // Since JWTService is available and configured, let's use it for consistency if imported, 
+      // but verify was imported directly from jsonwebtoken in the original file. 
+      // I should update it to use hono/jwt's verify or JWTService.verifyAccessToken.
+      // Given JWTService.verifyAccessToken returns the decoded payload, that's cleaner.
+      // But I need to make sure I import it first. 
+      // The original file imported { verify } from 'jsonwebtoken'.
+      // I will replace that with JWTService usage to be consistent with the rest of the app.
+      
+      const decoded = await verify(token, env.JWT_SECRET, 'HS256');
+      
       // Initialize client
-      const clientId = `${decoded.userId}-${Date.now()}`;
+      const payload = decoded as unknown as { userId: string; email: string };
+      const clientId = `${payload.userId}-${Date.now()}`;
       ws.data = {
-        userId: decoded.userId,
+        userId: payload.userId,
         rooms: new Set(),
         clientId,
       };
 
       this.clients.set(clientId, {
         ws,
-        userId: decoded.userId,
+        userId: payload.userId,
         rooms: new Set(),
       });
 
-      console.log(`✅ WebSocket client connected: ${clientId} (user: ${decoded.userId})`);
+      console.log(`✅ WebSocket client connected: ${clientId} (user: ${payload.userId})`);
 
       // Send connection success
       ws.send(JSON.stringify({
         type: 'connection:success',
-        data: { userId: decoded.userId },
+        data: { userId: payload.userId },
       }));
 
       // Note: Event listeners are handled by Bun's WebSocket handler in index.ts

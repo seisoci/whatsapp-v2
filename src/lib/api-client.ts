@@ -84,7 +84,7 @@ let refreshPromise: Promise<string | null> | null = null;
 /**
  * Refresh access token
  */
-async function refreshAccessToken(): Promise<string | null> {
+export async function refreshAccessToken(): Promise<string | null> {
   if (isRefreshing && refreshPromise) {
     return refreshPromise;
   }

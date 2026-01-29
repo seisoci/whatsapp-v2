@@ -3,7 +3,7 @@
  * Real-time communication for chat updates
  */
 
-import { getAccessToken } from '@/lib/api-client';
+import { getAccessToken, refreshAccessToken } from '@/lib/api-client';
 
 export type ChatEvent = 
   | { type: 'connection:success'; data: { userId: string } }
@@ -65,7 +65,7 @@ export class ChatWebSocketClient {
 
         this.ws.onmessage = (event) => {
           try {
-            const data: ChatEvent = JSON.parse(event.data);
+            const data = JSON.parse(event.data) as ChatEvent;
             this.emit(data.type, data);
           } catch (error) {
             console.error('Failed to parse WebSocket message:', error);
@@ -77,8 +77,27 @@ export class ChatWebSocketClient {
           reject(error);
         };
 
-        this.ws.onclose = () => {
+        this.ws.onclose = async (event) => {
           this.stopHeartbeat();
+
+           // Check for auth failure (4001: Missing token, 4002: Invalid/Expired token)
+           if (event.code === 4001 || event.code === 4002) {
+            console.log('🔄 WebSocket auth failed, attempting to refresh token...');
+            try {
+               const newToken = await refreshAccessToken();
+               if (newToken) {
+                  console.log('✅ Token refreshed, reconnecting WebSocket...');
+                  this.reconnectAttempts = 0; // Reset attempts
+                  this.connect(); // Immediate reconnect
+                  return; // prevent standard scheduleReconnect
+               } else {
+                  console.error('❌ Failed to refresh token for WebSocket');
+                  this.emit('session:expired', { type: 'session:expired', phoneNumberId: 'system', data: { contactId: 'system' } });
+               }
+            } catch (e) {
+               console.error('❌ Error refreshing token:', e);
+            }
+         }
 
           // Auto-reconnect unless intentionally closed
           if (!this.isIntentionalClose && this.reconnectAttempts < this.maxReconnectAttempts) {

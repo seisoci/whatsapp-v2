@@ -29,7 +29,7 @@ export const authMiddleware = async (c: Context, next: Next) => {
       );
     }
 
-    const decoded = JWTService.verifyAccessToken(token);
+    const decoded = await JWTService.verifyAccessToken(token);
 
     const userRepository = AppDataSource.getRepository(User);
     const user = await userRepository.findOne({

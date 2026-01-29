@@ -33,14 +33,18 @@ export const createPhoneNumbersColumns = ({
 }) => [
   columnHelper.accessor('displayPhoneNumber', {
     id: 'displayPhoneNumber',
-    size: 150,
+    size: 200,
     header: 'Phone Number',
     enableSorting: false,
-    cell: ({ row }) => row.original.displayPhoneNumber || row.original.phoneNumberId,
+    cell: ({ row }) => (
+      <div className="min-w-[300px]">
+        {row.original.displayPhoneNumber || row.original.phoneNumberId}
+      </div>
+    ),
   }),
   columnHelper.accessor('verifiedName', {
     id: 'verifiedName',
-    size: 180,
+    size: 200,
     header: 'Verified Name',
     enableSorting: false,
     cell: ({ row }) => row.original.verifiedName || '-',

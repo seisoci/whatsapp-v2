@@ -95,13 +95,13 @@ export class AuthController {
       await userRepository.save(user);
 
       // Generate tokens
-      const accessToken = JWTService.generateAccessToken({
+      const accessToken = await JWTService.generateAccessToken({
         userId: user.id,
         email: user.email,
       });
 
       const tokenId = randomBytes(32).toString('hex');
-      const refreshTokenString = JWTService.generateRefreshToken({
+      const refreshTokenString = await JWTService.generateRefreshToken({
         userId: user.id,
         tokenId,
       });
@@ -170,7 +170,7 @@ export class AuthController {
       const validatedData = refreshTokenSchema.parse(body);
 
       // Verifikasi refresh token
-      const decoded = JWTService.verifyRefreshToken(validatedData.refreshToken);
+      const decoded = await JWTService.verifyRefreshToken(validatedData.refreshToken);
 
       const refreshTokenRepository = AppDataSource.getRepository(RefreshToken);
 
@@ -202,7 +202,7 @@ export class AuthController {
       }
 
       // Generate access token baru
-      const accessToken = JWTService.generateAccessToken({
+      const accessToken = await JWTService.generateAccessToken({
         userId: refreshToken.user.id,
         email: refreshToken.user.email,
       });
