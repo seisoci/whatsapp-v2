@@ -1,13 +1,13 @@
 import { Context } from 'hono';
 import { AppDataSource } from '../config/database';
 import { PhoneNumber } from '../models/PhoneNumber';
-import { WhatsAppMessagingService } from '../services/whatsapp-messaging.service';
 import { z } from 'zod';
 import { ApiEndpoint } from '../models/ApiEndpoint';
 import { Contact } from '../models/Contact';
 import { MessageQueue } from '../models/MessageQueue';
 import { templateCacheService } from '../services/template-cache.service';
 import { getClientIP } from '../middlewares/ipFilter.middleware';
+import { whatsappTemplateQueue } from '../config/queue';
 
 // Schema Validation
 const sendTemplateSchema = z.object({
@@ -149,7 +149,7 @@ export class PublicMessageController {
         console.warn('[PublicMessage] Failed to lookup template category:', err);
       }
 
-      // 6. Create queue record (status: processing)
+      // 6. Create queue record (status: pending)
       const queueRecord = mqRepo.create({
         apiEndpointId: apiEndpoint?.id || null,
         phoneNumberId: phoneNumber.id,
@@ -165,63 +165,37 @@ export class PublicMessageController {
         deviceInfo: deviceInfo,
         requestHeaders: requestHeaders,
         templateCategory: templateCategory,
-        queueStatus: 'processing',
+        queueStatus: 'pending',
         isBillable: true,
-        attempts: 1,
-        processedAt: new Date(),
+        attempts: 0,
       });
       await mqRepo.save(queueRecord);
 
-      // 7. Send Message
+      // 7. Immediately dispatch to BullMQ (non-blocking)
+      //    If Redis fails, record stays pending — cron watchdog will pick it up
       try {
-        const result = await WhatsAppMessagingService.sendTemplateMessage({
-          phoneNumberId: phoneNumber.phoneNumberId,
-          accessToken: phoneNumber.accessToken,
-          to: phone_number,
-          templateName: template_name,
-          templateLanguage: 'id',
-          components: template,
-          contactId: contact.id,
-          internalPhoneNumberId: phoneNumber.id,
-          userId: apiEndpoint.creator?.id,
-        });
-
-        const wamid = result.messages?.[0]?.id || null;
-        const savedMessage = result.savedMessage;
-
-        // Update queue: completed
-        queueRecord.queueStatus = 'completed';
-        queueRecord.messageStatus = 'sent';
-        queueRecord.wamid = wamid;
-        
-        if (savedMessage) {
-          queueRecord.messageId = savedMessage.id;
-        }
-
-        queueRecord.completedAt = new Date();
+        const job = await whatsappTemplateQueue.add(
+          'send-template',
+          { queueId: queueRecord.id },
+          { jobId: `mq-${queueRecord.id}`, attempts: 1 }
+        );
+        queueRecord.queueStatus = 'queued';
+        queueRecord.redisJobId = job.id || null;
+        queueRecord.lastDispatchedAt = new Date();
         await mqRepo.save(queueRecord);
-
-        return c.json({
-          success: true,
-          message: 'Message sent successfully',
-          data: {
-            wamid: wamid,
-            queue_id: queueRecord.id,
-          }
-        });
-
-      } catch (sendError: any) {
-        // Update queue: failed
-        queueRecord.queueStatus = 'failed';
-        queueRecord.messageStatus = 'failed';
-        queueRecord.errorMessage = sendError.message || 'Unknown send error';
-        queueRecord.errorCode = sendError.code || sendError.error_code || null;
-        queueRecord.completedAt = new Date();
-        queueRecord.isBillable = false; // Failed before reaching WhatsApp = not billable
-        await mqRepo.save(queueRecord);
-
-        throw sendError; // Re-throw for outer catch
+      } catch (dispatchError: any) {
+        // Redis unavailable — record stays pending, cron will recover
+        console.warn('[PublicMessage] BullMQ dispatch failed, cron will recover:', dispatchError.message);
       }
+
+      return c.json({
+        success: true,
+        message: 'Message queued successfully',
+        data: {
+          queue_id: queueRecord.id,
+          status: queueRecord.queueStatus,
+        }
+      });
 
     } catch (error: any) {
       console.error('Public Send Template Error:', error);

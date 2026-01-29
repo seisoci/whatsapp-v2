@@ -25,6 +25,8 @@ import publicApiRouter from './routes/public-api.routes';
 import messageQueueRouter from './routes/message-queue.routes';
 import { handleWebSocketUpgrade } from './routes/websocket.routes';
 import { chatWebSocketManager } from './services/chat-websocket.service';
+import { QueueDispatcherService } from './services/queue-dispatcher.service';
+import { QueueWorkerService } from './services/queue-worker.service';
 import {
   securityHeaders,
   corsMiddleware,
@@ -118,6 +120,10 @@ const startServer = async () => {
       .then(() => console.log('✅ Storage service initialized'))
       .catch((error) => console.warn('⚠️  Storage service initialization failed (optional service):', error));
 
+    // Start BullMQ queue dispatcher & worker
+    QueueDispatcherService.start();
+    QueueWorkerService.start();
+
     // Start server with WebSocket support
     const port = parseInt(env.PORT);
 
@@ -181,3 +187,14 @@ const startServer = async () => {
 };
 
 startServer();
+
+// Graceful shutdown
+const gracefulShutdown = async (signal: string) => {
+  console.log(`\n${signal} received. Shutting down gracefully...`);
+  QueueDispatcherService.stop();
+  await QueueWorkerService.stop();
+  process.exit(0);
+};
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));

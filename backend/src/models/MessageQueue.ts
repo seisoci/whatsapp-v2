@@ -93,7 +93,7 @@ export class MessageQueue {
 
   @Column({ name: 'queue_status', type: 'varchar', length: 20, default: 'pending' })
   @Index('IDX_mq_queue_status')
-  queueStatus: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';
+  queueStatus: 'pending' | 'queued' | 'processing' | 'completed' | 'failed' | 'cancelled' | 'retrying';
 
   @Column({ name: 'message_status', type: 'varchar', length: 20, nullable: true })
   messageStatus: 'sent' | 'delivered' | 'read' | 'failed' | null;
@@ -130,6 +130,14 @@ export class MessageQueue {
 
   @Column({ name: 'next_retry_at', type: 'timestamp', nullable: true })
   nextRetryAt: Date | null;
+
+  // === Dispatch (BullMQ) ===
+
+  @Column({ name: 'redis_job_id', type: 'varchar', length: 255, nullable: true })
+  redisJobId: string | null;
+
+  @Column({ name: 'last_dispatched_at', type: 'timestamp', nullable: true })
+  lastDispatchedAt: Date | null;
 
   // === Timestamps ===
 
