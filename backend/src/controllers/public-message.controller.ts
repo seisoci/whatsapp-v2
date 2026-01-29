@@ -7,6 +7,7 @@ import { ApiEndpoint } from '../models/ApiEndpoint';
 import { Contact } from '../models/Contact';
 import { MessageQueue } from '../models/MessageQueue';
 import { templateCacheService } from '../services/template-cache.service';
+import { getClientIP } from '../middlewares/ipFilter.middleware';
 
 // Schema Validation
 const sendTemplateSchema = z.object({
@@ -64,9 +65,8 @@ export class PublicMessageController {
 
   static async sendTemplate(c: Context) {
     // Capture request metadata early
-    const ipAddress = c.req.header('x-forwarded-for')?.split(',')[0]?.trim()
-      || c.req.header('x-real-ip')
-      || null;
+    const clientIP = getClientIP(c);
+    const ipAddress = clientIP !== 'unknown' ? clientIP : null;
 
     const rawApiKey = c.req.header('X-API-Key') || '';
     const apiKeyMasked = maskApiKey(rawApiKey);
@@ -167,7 +167,6 @@ export class PublicMessageController {
         templateCategory: templateCategory,
         queueStatus: 'processing',
         isBillable: true,
-        billableCategory: templateCategory?.toLowerCase() || null,
         attempts: 1,
         processedAt: new Date(),
       });

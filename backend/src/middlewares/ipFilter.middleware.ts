@@ -51,6 +51,17 @@ export const getClientIP = (c: Context): string => {
     return cfConnectingIP.trim();
   }
 
+  // Fallback: get IP from Bun server socket
+  try {
+    const server = c.env?.server;
+    if (server?.requestIP) {
+      const addr = server.requestIP(c.req.raw);
+      if (addr?.address) {
+        return addr.address;
+      }
+    }
+  } catch {}
+
   return 'unknown';
 };
 

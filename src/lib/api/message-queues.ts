@@ -28,7 +28,6 @@ export interface MessageQueueItem {
   message_status: 'sent' | 'delivered' | 'read' | 'failed' | null;
   wamid: string | null;
   is_billable: boolean;
-  billable_category: string | null;
   error_message: string | null;
   error_code: string | null;
   attempts: number;

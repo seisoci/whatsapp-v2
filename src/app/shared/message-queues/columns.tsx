@@ -137,17 +137,6 @@ export const createMessageQueueColumns = ({
       </Badge>
     ),
   }),
-  columnHelper.accessor('billable_category', {
-    id: 'billable_category',
-    size: 120,
-    header: 'Category',
-    enableSorting: false,
-    cell: ({ row }) => (
-      <span className="text-sm capitalize">
-        {row.original.billable_category || '-'}
-      </span>
-    ),
-  }),
   columnHelper.accessor('attempts', {
     id: 'attempts',
     size: 90,

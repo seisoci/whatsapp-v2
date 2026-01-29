@@ -42,7 +42,6 @@ export class CreateMessageQueuesTable1704000000030 implements MigrationInterface
 
         -- Billing
         "is_billable"           BOOLEAN NOT NULL DEFAULT true,
-        "billable_category"     VARCHAR(50),
 
         -- Error
         "error_message"         TEXT,

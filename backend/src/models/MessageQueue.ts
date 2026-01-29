@@ -112,9 +112,6 @@ export class MessageQueue {
   @Index('IDX_mq_is_billable')
   isBillable: boolean;
 
-  @Column({ name: 'billable_category', type: 'varchar', length: 50, nullable: true })
-  billableCategory: string | null;
-
   // === Error ===
 
   @Column({ name: 'error_message', type: 'text', nullable: true })

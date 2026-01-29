@@ -98,7 +98,17 @@ export default function MessageQueueDetail({ item }: { item: MessageQueueItem })
             {item.is_billable ? 'Yes' : 'No'}
           </Badge>
         </DetailRow>
-        <DetailRow label="Category">{item.billable_category || '-'}</DetailRow>
+        <DetailRow label="Category">
+          {item.template_category ? (
+            <Badge variant="flat" color={
+              item.template_category === 'MARKETING' ? 'warning' :
+              item.template_category === 'UTILITY' ? 'info' :
+              item.template_category === 'AUTHENTICATION' ? 'success' : 'secondary'
+            } className="capitalize">
+              {item.template_category.toLowerCase()}
+            </Badge>
+          ) : '-'}
+        </DetailRow>
       </div>
 
       {/* Error */}
