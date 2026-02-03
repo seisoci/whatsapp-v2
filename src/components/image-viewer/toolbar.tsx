@@ -25,14 +25,14 @@ export default function ToolBar({ onClick }: { onClick?: () => void }) {
     <div className="fixed sm:absolute bottom-2 p-2 rounded-full start-1/2 w-[180px] -translate-x-1/2 bg-gray-300 backdrop-blur-sm flex items-center justify-center gap-2">
       <div className="max-w-[110px] w-full">
         <FileInput
-          rounded="pill"
+         
           onChange={handleFileSelect}
           accept="image/*"
         />
       </div>
       <ActionIcon
         size="sm"
-        rounded="full"
+       
         variant="solid"
         className="hover:enabled:bg-gray-800"
         onClick={onClick}

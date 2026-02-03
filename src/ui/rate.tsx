@@ -4,7 +4,7 @@ import React, { forwardRef } from 'react';
 import RcRate from 'rc-rate';
 import type { RateProps as RcRateProps } from 'rc-rate/lib/Rate';
 import type { StarProps as RcStarProps } from 'rc-rate/lib/Star';
-import { FieldError, FieldHelperText, Tooltip } from 'rizzui';
+import { FieldErrorText, FieldHelperText, Tooltip } from 'rizzui';
 import cn from '../utils/class-names';
 
 const labelClasses = {
@@ -147,12 +147,12 @@ const Rate = forwardRef<any, RateProps>(
           {...props}
         />
         {!error && helperText && (
-          <FieldHelperText size={size} className={helperClassName}>
+          <FieldHelperText size={size === 'xl' ? 'lg' : size} className={helperClassName}>
             {helperText}
           </FieldHelperText>
         )}
         {error && (
-          <FieldError size={size} error={error} className={errorClassName} />
+          <FieldErrorText size={size === 'xl' ? 'lg' : size} error={error} className={errorClassName} />
         )}
       </div>
     );

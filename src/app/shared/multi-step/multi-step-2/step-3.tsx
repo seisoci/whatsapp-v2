@@ -13,7 +13,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useAtom } from 'jotai';
 import dynamic from 'next/dynamic';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
-import { FieldError, Input, Radio, RadioGroup, Select, Text } from 'rizzui';
+import { FieldErrorText, Input, Radio, RadioGroup, Select, Text } from 'rizzui';
 
 const QuillEditor = dynamic(() => import('@core/ui/quill-editor'), {
   ssr: false,
@@ -105,7 +105,7 @@ export default function StepTwo() {
                 }}
               />
               {errors.propertyFor && (
-                <FieldError
+                <FieldErrorText
                   className="text-[13px]"
                   error={errors.propertyFor?.message}
                 />

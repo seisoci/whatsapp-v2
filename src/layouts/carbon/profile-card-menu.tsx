@@ -93,7 +93,6 @@ export default function ProfileCardMenu({
         <Popover
           isOpen={isOpen}
           setIsOpen={setIsOpen}
-          shadow="sm"
           placement={placement}
         >
           <Popover.Trigger>

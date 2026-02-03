@@ -60,7 +60,7 @@ export default function Footer({ isLoading, className }: FooterProps) {
       )}
     >
       {step > 0 && step < 6 && (
-        <Button size="lg" rounded="lg" variant="outline" onClick={gotoPrevStep}>
+        <Button size="lg" variant="outline" onClick={gotoPrevStep}>
           Back
         </Button>
       )}
@@ -68,7 +68,7 @@ export default function Footer({ isLoading, className }: FooterProps) {
         isLoading={isLoading}
         disabled={isLoading}
         size="lg"
-        rounded="lg"
+       
         variant="solid"
         {...buttonAttr()}
         type={'submit'}

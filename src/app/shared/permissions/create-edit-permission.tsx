@@ -177,7 +177,7 @@ error = { errors.icon?.message }
   />
 
   <div className="rounded-md bg-blue-50 p-4" >
-    <Text className="text-sm text-blue-900" >
+    <div className="text-sm text-blue-900" >
       <strong>Note: </strong> Creating this menu will automatically generate 4 CRUD permissions:
         < ul className = "mt-2 list-inside list-disc space-y-1" >
           <li>{ watch('slug') || 'slug'}-index(List) </li>
@@ -185,7 +185,7 @@ error = { errors.icon?.message }
               < li > { watch('slug') || 'slug'}-update(Edit) </li>
                 < li > { watch('slug') || 'slug'}-destroy(Delete) </li>
                   </ul>
-                  </Text>
+                  </div>
                   </div>
 
                   < div className = "flex items-center justify-end gap-4" >

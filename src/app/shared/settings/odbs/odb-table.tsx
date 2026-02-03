@@ -43,7 +43,7 @@ export default function OdbTable() {
   if (loading) {
     return (
       <div className="flex min-h-[400px] items-center justify-center">
-        <Loader variant="spinner" size="xl" />
+        <Loader variant="spinner" size="lg" />
       </div>
     );
   }
@@ -57,7 +57,7 @@ function OdbTableContent({ data, onRefresh }: { data: Odb[]; onRefresh: () => vo
   const handleCreateClick = () => {
     openModal({
       view: <CreateOdb onSuccess={onRefresh} />,
-      size: 'xl',
+      size: 'lg',
     });
   };
 

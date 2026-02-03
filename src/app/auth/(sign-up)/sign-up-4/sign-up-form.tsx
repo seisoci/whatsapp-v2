@@ -37,7 +37,7 @@ export default function SignUpForm() {
           <div className="space-y-5 lg:space-y-6">
             <Input
               type="email"
-              size={isMedium ? 'lg' : 'xl'}
+              size="lg"
               label="Email"
               placeholder="Enter your email"
               className="[&>label>span]:font-medium"
@@ -47,7 +47,7 @@ export default function SignUpForm() {
             <Password
               label="Password"
               placeholder="Enter your password"
-              size={isMedium ? 'lg' : 'xl'}
+              size="lg"
               {...register('password')}
               className="[&>label>span]:font-medium"
               error={errors.password?.message}
@@ -79,7 +79,7 @@ export default function SignUpForm() {
             <Button
               className="w-full"
               type="submit"
-              size={isMedium ? 'lg' : 'xl'}
+              size="lg"
             >
               Create Account
             </Button>

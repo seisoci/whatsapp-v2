@@ -1,9 +1,165 @@
+@import "tailwindcss";
 @import './react-big-calendar.css';
 @import 'react-calendar/dist/Calendar.css';
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@plugin "@tailwindcss/forms";
+@plugin "@tailwindcss/container-queries";
+
+@source "../../node_modules/rizzui/dist";
+
+@variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+@theme {
+  /* Screens */
+  --breakpoint-xs: 480px;
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+  --breakpoint-2xl: 1536px;
+  --breakpoint-3xl: 1920px;
+  --breakpoint-4xl: 2560px;
+
+  /* Fonts */
+  --font-inter: var(--font-inter);
+  --font-lexend: var(--font-lexend);
+
+  /* Colors */
+  --color-gray-0: rgb(var(--gray-0));
+  --color-gray-50: rgb(var(--gray-50));
+  --color-gray-100: rgb(var(--gray-100));
+  --color-gray-200: rgb(var(--gray-200));
+  --color-gray-300: rgb(var(--gray-300));
+  --color-gray-400: rgb(var(--gray-400));
+  --color-gray-500: rgb(var(--gray-500));
+  --color-gray-600: rgb(var(--gray-600));
+  --color-gray-700: rgb(var(--gray-700));
+  --color-gray-800: rgb(var(--gray-800));
+  --color-gray-900: rgb(var(--gray-900));
+  --color-gray-1000: rgb(var(--gray-1000));
+
+  --color-background: rgb(var(--background));
+  --color-foreground: rgb(var(--foreground));
+  --color-muted: rgb(var(--muted));
+  --color-muted-foreground: rgb(var(--muted-foreground));
+
+  --color-border: rgb(var(--border));
+  --color-input: rgb(var(--input));
+  --color-ring: rgb(var(--ring));
+
+  --color-primary-lighter: rgb(var(--primary-lighter));
+  --color-primary: rgb(var(--primary-default));
+  --color-primary-dark: rgb(var(--primary-dark));
+  --color-primary-foreground: rgb(var(--primary-foreground));
+
+  --color-secondary-lighter: rgb(var(--secondary-lighter));
+  --color-secondary: rgb(var(--secondary-default));
+  --color-secondary-dark: rgb(var(--secondary-dark));
+  --color-secondary-foreground: rgb(var(--secondary-foreground));
+
+  --color-red-lighter: rgb(var(--red-lighter));
+  --color-red: rgb(var(--red-default));
+  --color-red-dark: rgb(var(--red-dark));
+
+  --color-orange-lighter: rgb(var(--orange-lighter));
+  --color-orange: rgb(var(--orange-default));
+  --color-orange-dark: rgb(var(--orange-dark));
+
+  --color-blue-lighter: rgb(var(--blue-lighter));
+  --color-blue: rgb(var(--blue-default));
+  --color-blue-dark: rgb(var(--blue-dark));
+
+  --color-green-lighter: rgb(var(--green-lighter));
+  --color-green: rgb(var(--green-default));
+  --color-green-dark: rgb(var(--green-dark));
+
+  /* Animations */
+  --animate-blink: blink 1.4s infinite both;
+  --animate-scale-up: scaleUp 500ms infinite alternate;
+  --animate-spin-slow: spin 4s linear infinite;
+  --animate-popup: popup 500ms var(--popup-delay, 0ms) linear 1;
+  --animate-skeleton: skeletonWave 1.6s linear 0.5s infinite;
+  --animate-spinner-ease-spin: spinnerSpin 0.8s ease infinite;
+  --animate-spinner-linear-spin: spinnerSpin 0.8s linear infinite;
+
+  @keyframes blink {
+    0% {
+      opacity: 0.2;
+    }
+
+    20% {
+      opacity: 1;
+    }
+
+    100% {
+      opacity: 0.2;
+    }
+  }
+
+  @keyframes scaleUp {
+    0% {
+      transform: scale(0);
+    }
+
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  @keyframes popup {
+    0% {
+      transform: scale(0);
+    }
+
+    50% {
+      transform: scale(1.3);
+    }
+
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  @keyframes skeletonWave {
+    0% {
+      transform: translateX(-100%);
+    }
+
+    50% {
+      transform: translateX(100%);
+    }
+
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
+  @keyframes spinnerSpin {
+    0% {
+      transform: rotate(0deg);
+    }
+
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+
+  /* Background Images */
+  --background-image-skeleton: linear-gradient(90deg, transparent, #ecebeb, transparent);
+  --background-image-skeleton-dark:linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+
+  /* Content */
+  --content-underline: url("/public/underline.svg");
+
+  /* Shadows */
+  --shadow-profilePic: 0px 2px 4px -2px rgba(0, 0, 0, 0.10),
+  0px 4px 6px -1px rgba(0, 0, 0, 0.10);
+  --shadow-roundedCard: 0px 4px 6px -4px rgba(0, 0, 0, 0.1),
+  0px 10px 15px -3px rgba(0, 0, 0, 0.1);
+
+  /* Grid */
+  --grid-template-columns-18: repeat(18, minmax(0, 1fr));
+}
 
 @layer base {
 
@@ -47,6 +203,16 @@
     /* #e3e3e3 */
     --muted-foreground: 146 146 146;
     /* #929292 */
+
+    --border: 227 227 227;
+    --input: 227 227 227;
+    --ring: 17 17 17;
+
+    /* ----------------------------------- */
+    /* RizzUI Variables */
+    /* ----------------------------------- */
+    --border-radius: 0.375rem;
+    --border-width: 1px;
 
     /* ----------------------------------- */
     /* primary/brand colors */
@@ -153,6 +319,10 @@
     --muted-foreground: 102 102 102;
     /* #666666 */
 
+    --border: 51 51 51;
+    --input: 51 51 51;
+    --ring: 223 223 223;
+
     /* ----------------------------------- */
     /* primary/brand colors */
     /* ----------------------------------- */
@@ -223,11 +393,18 @@
   }
 
   #player {
-    @apply dark:bg-gray-50;
+
+    &:where([data-theme="dark"], [data-theme="dark"] *) {
+      @apply bg-gray-50;
+    }
   }
 
   body {
-    @apply flex min-h-full flex-col overflow-x-hidden text-sm text-gray-600 dark:bg-gray-50;
+    @apply flex min-h-full flex-col overflow-x-hidden text-sm text-gray-600;
+
+    &:where([data-theme="dark"], [data-theme="dark"] *) {
+      @apply bg-gray-50;
+    }
   }
 
   input::-ms-clear,
@@ -255,31 +432,81 @@
   h4,
   h5,
   h6 {
-    @apply font-lexend font-bold text-gray-900 dark:text-gray-700;
+    @apply font-lexend font-bold text-gray-900;
+
+    &:where([data-theme="dark"], [data-theme="dark"] *) {
+      @apply text-gray-700;
+    }
   }
 
   h1 {
-    @apply text-3xl dark:text-gray-800 2xl:text-[32px] 4xl:text-4xl;
+    @apply text-3xl;
+
+    @media (min-width: 1536px) {
+      @apply text-[32px];
+    }
+
+    @media (min-width: 2560px) {
+      @apply text-4xl;
+    }
+
+    &:where([data-theme="dark"], [data-theme="dark"] *) {
+      @apply text-gray-800;
+    }
   }
 
   h2 {
-    @apply text-2xl dark:text-gray-800 2xl:text-[26px] 4xl:text-3xl;
+    @apply text-2xl;
+
+    @media (min-width: 1536px) {
+      @apply text-[26px];
+    }
+
+    @media (min-width: 2560px) {
+      @apply text-3xl;
+    }
+
+    &:where([data-theme="dark"], [data-theme="dark"] *) {
+      @apply text-gray-800;
+    }
   }
 
   h3 {
-    @apply text-xl 2xl:text-[22px] 4xl:text-2xl;
+    @apply text-xl;
+
+    @media (min-width: 1536px) {
+      @apply text-[22px];
+    }
+
+    @media (min-width: 2560px) {
+      @apply text-2xl;
+    }
   }
 
   h4 {
-    @apply text-lg 2xl:xl:text-xl;
+    @apply text-lg;
+
+    @media (min-width: 1536px) {
+      @media (min-width: 1280px) {
+        @apply text-xl;
+      }
+    }
   }
 
   h5 {
-    @apply text-base 2xl:text-lg;
+    @apply text-base;
+
+    @media (min-width: 1536px) {
+      @apply text-lg;
+    }
   }
 
   h6 {
-    @apply text-sm 2xl:text-base;
+    @apply text-sm;
+
+    @media (min-width: 1536px) {
+      @apply text-base;
+    }
   }
 
   q {
@@ -336,7 +563,9 @@
 /* scrollbar design starts from here */
 /* ................................................... */
 .simplebar-scrollbar:before {
-  @apply !bg-gray-400 dark:!bg-gray-300;
+  @apply !bg-gray-400 !bg-gray-300;
+
+  &:where([data-theme="dark"], [data-theme="dark"] *) {}
 }
 
 .simplebar-track.simplebar-horizontal {
@@ -363,7 +592,11 @@
 
 .rc-table-content:hover::-webkit-scrollbar-thumb,
 .rc-table-fixed-header .rc-table-body:hover::-webkit-scrollbar-thumb {
-  @apply bg-gray-300 dark:bg-gray-300;
+  @apply bg-gray-300;
+
+  &:where([data-theme="dark"], [data-theme="dark"] *) {
+    @apply bg-gray-300;
+  }
 }
 
 .custom-scrollbar-x::-webkit-scrollbar,
@@ -405,7 +638,11 @@ select:-webkit-autofill:focus {
 /* ?React Datepicker Styling */
 /* ................................................... */
 .react-datepicker-popper .react-datepicker {
-  @apply bg-gray-0 font-inter text-gray-600 dark:border-gray-300 dark:bg-gray-100;
+  @apply bg-gray-0 font-inter text-gray-600;
+
+  &:where([data-theme="dark"], [data-theme="dark"] *) {
+    @apply border-gray-300 bg-gray-100;
+  }
 }
 
 /* month container */
@@ -419,25 +656,41 @@ select:-webkit-autofill:focus {
 }
 
 .react-datepicker-popper .react-datepicker__time-container .react-datepicker__time {
-  @apply bg-gray-50 dark:bg-gray-200;
+  @apply bg-gray-50;
+
+  &:where([data-theme="dark"], [data-theme="dark"] *) {
+    @apply bg-gray-200;
+  }
 }
 
 .react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box ul.react-datepicker__time-list li.react-datepicker__time-list-item:hover {
-  @apply dark:bg-gray-300;
+  &:where([data-theme="dark"], [data-theme="dark"] *) {
+    @apply bg-gray-300;
+  }
 }
 
 /* header */
 .react-datepicker .react-datepicker__header {
-  @apply border-b-gray-0 bg-gray-0 font-lexend dark:border-transparent dark:bg-gray-100;
+  @apply border-b-gray-0 bg-gray-0 font-lexend;
+
+  &:where([data-theme="dark"], [data-theme="dark"] *) {
+    @apply border-transparent bg-gray-100;
+  }
 }
 
 /* current month name in header */
 .react-datepicker .react-datepicker-year-header {
-  @apply dark:text-gray-700;
+  &:where([data-theme="dark"], [data-theme="dark"] *) {
+    @apply text-gray-700;
+  }
 }
 
 .react-datepicker .react-datepicker__current-month {
-  @apply mb-3 text-base font-medium dark:text-gray-700;
+  @apply mb-3 text-base font-medium;
+
+  &:where([data-theme="dark"], [data-theme="dark"] *) {
+    @apply text-gray-700;
+  }
 }
 
 /* sun-sat day names in header */
@@ -447,12 +700,20 @@ select:-webkit-autofill:focus {
 
 /* previous month button */
 .react-datepicker .react-datepicker__navigation--previous {
-  @apply ml-6 rtl:mr-6;
+  @apply ml-6;
+
+  &:where([dir="rtl"], [dir="rtl"] *) {
+    @apply mr-6;
+  }
 }
 
 /* next month button */
 .react-datepicker .react-datepicker__navigation--next {
-  @apply mr-6 rtl:ml-6;
+  @apply mr-6;
+
+  &:where([dir="rtl"], [dir="rtl"] *) {
+    @apply ml-6;
+  }
 }
 
 /* icon in previous month button */
@@ -468,7 +729,10 @@ select:-webkit-autofill:focus {
 /* each day */
 .react-datepicker .react-datepicker__day {
   @apply m-1.5 text-sm leading-7 text-gray-700;
-  @apply hover:rounded-full hover:bg-gray-100 hover:text-gray-900;
+
+  &:hover {
+    @apply rounded-full bg-gray-100 text-gray-900;
+  }
 }
 
 .react-datepicker .react-datepicker__day:not([aria-disabled=true]):hover {
@@ -481,9 +745,6 @@ select:-webkit-autofill:focus {
 }
 
 /* keyboard selected */
-/* .react-datepicker .react-datepicker__day--keyboard-selected,
-.react-datepicker
-  .react-datepicker__day--keyboard-selected:not([aria-disabled='true']):hover { */
 .react-datepicker .react-datepicker__day--keyboard-selected {
   @apply bg-gray-0;
 }
@@ -491,7 +752,10 @@ select:-webkit-autofill:focus {
 /* today */
 .react-datepicker .react-datepicker__day--today {
   @apply rounded-full border border-gray-300 bg-gray-0 leading-[26px] text-gray-900;
-  @apply hover:border-gray-600 hover:bg-gray-0;
+
+  &:hover {
+    @apply border-gray-600 bg-gray-0;
+  }
 }
 
 /* while selecting */
@@ -521,7 +785,10 @@ select:-webkit-autofill:focus {
 .react-datepicker .react-datepicker__day--range-end,
 .react-datepicker .react-datepicker__day--selected {
   @apply rounded-full border-none bg-gray-900 font-normal leading-7 text-gray-0;
-  @apply hover:bg-gray-900/80 hover:text-gray-0;
+
+  &:hover {
+    @apply bg-gray-900/80 text-gray-0;
+  }
 }
 
 .react-datepicker .react-datepicker__month-text:not([aria-disabled=true]):hover {
@@ -529,7 +796,11 @@ select:-webkit-autofill:focus {
 }
 
 .react-datepicker .react-datepicker__year-text--range-end {
-  @apply border-none bg-gray-900 font-normal text-gray-0 hover:bg-gray-900/80 hover:text-gray-0;
+  @apply border-none bg-gray-900 font-normal text-gray-0;
+
+  &:hover {
+    @apply bg-gray-900/80 text-gray-0;
+  }
 }
 
 /* time list */
@@ -540,7 +811,10 @@ select:-webkit-autofill:focus {
 /* time item */
 .react-datepicker .react-datepicker__time-list-item {
   @apply my-2 rounded text-sm text-gray-500;
-  @apply hover:bg-gray-100 hover:text-gray-900;
+
+  &:hover {
+    @apply bg-gray-100 text-gray-900;
+  }
 }
 
 /* selected time item */
@@ -607,7 +881,13 @@ select:-webkit-autofill:focus {
 
 /* year text in year picker */
 .react-datepicker .react-datepicker__year-text {
-  @apply w-auto px-5 py-1.5 text-gray-600 dark:hover:text-gray-100;
+  @apply w-auto px-5 py-1.5 text-gray-600;
+
+  &:where([data-theme="dark"], [data-theme="dark"] *) {
+    &:hover {
+      @apply text-gray-100;
+    }
+  }
 }
 
 .react-datepicker .react-datepicker__year-text--range-end {
@@ -617,14 +897,20 @@ select:-webkit-autofill:focus {
 /* keyboard selected year in year picker */
 .react-datepicker .react-datepicker__year-text--keyboard-selected {
   @apply bg-gray-200 text-gray-900;
-  @apply hover:bg-gray-300 hover:text-gray-900;
+
+  &:hover {
+    @apply bg-gray-300 text-gray-900;
+  }
 }
 
 /* selected year & month in year picker */
 .react-datepicker .react-datepicker__year-text.react-datepicker__year-text--selected,
 .react-datepicker .react-datepicker__month-text.react-datepicker__month-text--selected {
   @apply bg-gray-900 text-gray-0;
-  @apply hover:bg-gray-900/80 hover:text-gray-0;
+
+  &:hover {
+    @apply bg-gray-900/80 text-gray-0;
+  }
 }
 
 /* year and month dropdown arrow */
@@ -664,7 +950,10 @@ select:-webkit-autofill:focus {
 .react-datepicker .react-datepicker__month-option,
 .react-datepicker .react-datepicker__year-option {
   @apply my-1 py-1 text-sm text-gray-600;
-  @apply hover:bg-gray-100 hover:text-gray-900;
+
+  &:hover {
+    @apply bg-gray-100 text-gray-900;
+  }
 }
 
 /* first and last type of month and year option */
@@ -679,7 +968,10 @@ select:-webkit-autofill:focus {
 .react-datepicker .react-datepicker__month-option--selected_month,
 .react-datepicker .react-datepicker__year-option--selected_year {
   @apply bg-gray-200 text-gray-900;
-  @apply [&>span]:hidden;
+
+  &>span {
+    @apply hidden;
+  }
 }
 
 .react-datepicker .react-datepicker__day:hover,
@@ -691,78 +983,132 @@ select:-webkit-autofill:focus {
 
 /* disabled item */
 .react-datepicker .react-datepicker__day--disabled {
-  @apply cursor-not-allowed text-gray-300 hover:bg-transparent hover:text-gray-300 dark:hover:text-gray-300;
+  @apply cursor-not-allowed text-gray-300;
+
+  &:hover {
+    @apply bg-transparent text-gray-300;
+  }
+
+  &:where([data-theme="dark"], [data-theme="dark"] *) {
+    &:hover {
+      @apply text-gray-300;
+    }
+  }
 }
 
 .react-datepicker .react-datepicker__year-text--disabled {
-  @apply cursor-not-allowed text-gray-300 hover:bg-transparent dark:hover:text-gray-300;
+  @apply cursor-not-allowed text-gray-300;
+
+  &:hover {
+    @apply bg-transparent;
+  }
+
+  &:where([data-theme="dark"], [data-theme="dark"] *) {
+    &:hover {
+      @apply text-gray-300;
+    }
+  }
 }
 
 /*  Event Calendar Date Picker Styles */
 
 .date-picker-event-calendar .react-datepicker {
-  @apply dark:bg-gray-200;
+  &:where([data-theme="dark"], [data-theme="dark"] *) {
+    @apply bg-gray-200;
+  }
 }
 
 .date-picker-event-calendar .react-datepicker__day-names {
-  @apply max-sm:flex;
+  @media (max-width: 639px) {
+    @apply flex;
+  }
 }
 
 .date-picker-event-calendar .react-datepicker__day-names .react-datepicker__day-name {
-  @apply max-sm:m-0.5 max-sm:w-[calc(100%_/_7)] max-sm:text-xs;
+  @media (max-width: 639px) {
+    @apply m-0.5 w-[calc(100%_/_7)] text-xs;
+  }
 }
 
 .date-picker-event-calendar .react-datepicker__navigation,
 .date-picker-event-calendar .react-datepicker__navigation span::before {
-  @apply dark:!border-gray-500;
+  @apply !border-gray-500;
+
+  &:where([data-theme="dark"], [data-theme="dark"] *) {}
 }
 
 .date-picker-event-calendar .react-datepicker__navigation.react-datepicker__navigation--next.react-datepicker__navigation--next--with-time {
-  @apply max-sm:!-me-4 sm:!me-11;
+  @apply !-me-4 !me-11;
+
+  @media (max-width: 639px) {}
+
+  @media (min-width: 640px) {}
 }
 
 .date-picker-event-calendar .react-datepicker__navigation.react-datepicker__navigation--previous {
-  @apply max-sm:ms-1;
+  @media (max-width: 639px) {
+    @apply ms-1;
+  }
 }
 
 .date-picker-event-calendar .react-datepicker__tab-loop .react-datepicker-popper .react-datepicker {
-  @apply max-sm:flex;
+  @media (max-width: 639px) {
+    @apply flex;
+  }
 }
 
 .date-picker-event-calendar .react-datepicker__tab-loop .react-datepicker-popper .react-datepicker .react-datepicker__month-container {
-  @apply max-sm:px-0;
+  @media (max-width: 639px) {
+    @apply px-0;
+  }
 }
 
 .date-picker-event-calendar .react-datepicker__tab-loop .react-datepicker-popper .react-datepicker .react-datepicker__month-container .react-datepicker__month {
-  @apply max-sm:mx-0;
+  @media (max-width: 639px) {
+    @apply mx-0;
+  }
 }
 
 .date-picker-event-calendar .react-datepicker__tab-loop .react-datepicker-popper .react-datepicker .react-datepicker__month-container .react-datepicker__header {
-  @apply dark:bg-[unset];
+  &:where([data-theme="dark"], [data-theme="dark"] *) {
+    @apply bg-[unset];
+  }
 }
 
 .date-picker-event-calendar .react-datepicker__tab-loop .react-datepicker-popper .react-datepicker .react-datepicker__month-container .react-datepicker__month .react-datepicker__week .react-datepicker__day {
-  @apply max-sm:m-1 max-sm:flex max-sm:aspect-square max-sm:w-[23.3px] max-sm:items-center max-sm:justify-center max-sm:text-xs;
+  @media (max-width: 639px) {
+    @apply m-1 flex aspect-square w-[23.3px] items-center justify-center text-xs;
+  }
 }
 
 .date-picker-event-calendar .react-datepicker__tab-loop .react-datepicker-popper .react-datepicker .react-datepicker__month .react-datepicker__week {
-  @apply max-sm:mx-0.5 max-sm:flex;
+  @media (max-width: 639px) {
+    @apply mx-0.5 flex;
+  }
 }
 
 .date-picker-event-calendar .react-datepicker__time-container .react-datepicker__header {
-  @apply dark:bg-[unset];
+  &:where([data-theme="dark"], [data-theme="dark"] *) {
+    @apply bg-[unset];
+  }
 }
 
 .date-picker-event-calendar .react-datepicker__time-container {
-  @apply max-sm:p-1 max-sm:ps-0;
+  @media (max-width: 639px) {
+    @apply p-1 ps-0;
+  }
 }
 
 .date-picker-event-calendar .react-datepicker__time-container .react-datepicker__time {
-  @apply dark:bg-gray-300/30;
+  &:where([data-theme="dark"], [data-theme="dark"] *) {
+    @apply bg-gray-300/30;
+  }
 }
 
 .date-picker-event-calendar .react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box {
-  @apply max-sm:!w-[unset];
+  @apply !w-[unset];
+
+  @media (max-width: 639px) {}
 }
 
 .date-picker-event-calendar .react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box .react-datepicker__time-list::-webkit-scrollbar {
@@ -778,7 +1124,9 @@ select:-webkit-autofill:focus {
 }
 
 .date-picker-event-calendar .react-datepicker__time-container {
-  @apply max-sm:!pb-1;
+  @apply !pb-1;
+
+  @media (max-width: 639px) {}
 }
 
 .date-picker-event-calendar .react-datepicker__time-container .react-datepicker-time__header {
@@ -786,7 +1134,11 @@ select:-webkit-autofill:focus {
 }
 
 .date-picker-event-calendar .react-datepicker__week .react-datepicker__day {
-  @apply dark:hover:bg-gray-400;
+  &:where([data-theme="dark"], [data-theme="dark"] *) {
+    &:hover {
+      @apply bg-gray-400;
+    }
+  }
 }
 
 .date-picker-event-calendar .react-datepicker__week .react-datepicker__day {
@@ -794,11 +1146,25 @@ select:-webkit-autofill:focus {
 }
 
 .date-picker-event-calendar .react-datepicker__week .react-datepicker__day.react-datepicker__day--selected {
-  /* @apply dark:hover:bg-gray-400; */
+  &:where([data-theme="dark"], [data-theme="dark"] *) {
+    &:hover {
+      @apply bg-gray-400;
+    }
+  }
 }
 
 .date-picker-event-calendar .react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box .react-datepicker__time-list .react-datepicker__time-list-item {
-  @apply dark:hover:bg-gray-100 max-sm:my-1 max-sm:!h-[unset] max-sm:!px-1 max-sm:!py-0 max-sm:text-[10px];
+  @apply !h-[unset] !px-1 !py-0;
+
+  @media (max-width: 639px) {
+    @apply my-1 text-[10px];
+  }
+
+  &:where([data-theme="dark"], [data-theme="dark"] *) {
+    &:hover {
+      @apply bg-gray-100;
+    }
+  }
 }
 
 /* ................................................... */
@@ -874,11 +1240,23 @@ td.rc-table-cell-fix-right {
 }
 
 .text_editor .rdw-editor-wrapper .rdw-editor-toolbar>div {
-  @apply m-1.5 rounded border border-gray-100 @lg:m-1;
+  @apply m-1.5 rounded border border-gray-100 m-1;
+
+  @container (min-width: 32rem) {}
 }
 
 .text_editor .rdw-editor-wrapper .rdw-editor-toolbar>div>.rdw-option-wrapper {
-  @apply h-9 w-9 border-0 border-r border-gray-100 last:border-r-0 hover:bg-gray-50 hover:shadow-none @lg:m-0;
+  @apply h-9 w-9 border-0 border-r border-gray-100 m-0;
+
+  &:last-child {
+    @apply border-r-0;
+  }
+
+  &:hover {
+    @apply bg-gray-50 shadow-none;
+  }
+
+  @container (min-width: 32rem) {}
 }
 
 .text_editor .rdw-editor-wrapper .rdw-editor-toolbar>div>.rdw-option-wrapper.rdw-option-active {
@@ -1023,14 +1401,6 @@ td.rc-table-cell-fix-right {
   content: 'Font Family';
 }
 
-/* react-quill responsive styles */
-/* .react-quill .ql-toolbar {
-  @apply flex 3xl:block 3xl:max-w-none;
-}
-.react-quill .ql-snow .ql-formats {
-  @apply flex lg:inline-flex lg:items-center;
-} */
-
 /* social btn shadow  */
 .social-btn-shadow {
   filter: drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.1)) drop-shadow(0px 1px 3px rgba(0, 0, 0, 0.1));
@@ -1080,25 +1450,28 @@ td.rc-table-cell-fix-right {
 }
 
 .recharts-wrapper .recharts-tooltip-cursor {
-  @apply dark:opacity-10;
+  &:where([data-theme="dark"], [data-theme="dark"] *) {
+    @apply opacity-10;
+  }
 }
 
 .recharts-wrapper .recharts-brush rect:first-child {
-  @apply dark:fill-gray-400/50;
+  &:where([data-theme="dark"], [data-theme="dark"] *) {
+    @apply fill-gray-400/50;
+  }
 }
 
 input::placeholder,
 textarea::placeholder {
-  @apply dark:!text-gray-300;
+  @apply !text-gray-300;
+
+  &:where([data-theme="dark"], [data-theme="dark"] *) {}
 }
 
 /* ................................................... */
 /* Google Map Styles */
 /* ................................................... */
 
-/* .gmnoprint {
-  @apply hidden;
-} */
 div[style='z-index: 1000001;'],
 .gm-style-cc {
   @apply hidden;
@@ -1115,20 +1488,6 @@ div[style='z-index: 1000001;'],
 .pac-item {
   @apply px-3 py-1.5 font-inter;
 }
-
-/* google location search auto complete  */
-/* .pac-container {
-  @apply w-full rounded-lg border border-gray-100 shadow after:hidden;
-}
-.pac-item {
-  @apply cursor-pointer py-3 pl-3 text-sm font-normal text-gray-300;
-}
-.pac-matched {
-  @apply text-sm text-gray-900;
-}
-.pac-icon {
-  @apply mt-0;
-} */
 
 /* checkout page payment card gradient  */
 .card-gradient {
@@ -1147,7 +1506,11 @@ div[style='z-index: 1000001;'],
 }
 
 .rbc-header {
-  @apply h-12 border-muted py-3.5 text-[13px] font-semibold uppercase text-gray-400 lg:px-7;
+  @apply h-12 border-muted py-3.5 text-[13px] font-semibold uppercase text-gray-400;
+
+  @media (min-width: 1024px) {
+    @apply px-7;
+  }
 }
 
 :is(.rbc-header + .rbc-header,
@@ -1158,11 +1521,17 @@ div[style='z-index: 1000001;'],
 }
 
 .rbc-day-bg {
-  @apply sm:px-5;
+  @media (min-width: 640px) {
+    @apply px-5;
+  }
 }
 
 .rbc-date-cell {
-  @apply p-2.5 text-left text-sm font-medium text-gray-700 md:p-5 md:text-lg;
+  @apply p-2.5 text-left text-sm font-medium text-gray-700;
+
+  @media (min-width: 768px) {
+    @apply p-5 text-lg;
+  }
 }
 
 .rbc-day-bg.rbc-off-range-bg {
@@ -1186,7 +1555,9 @@ div[style='z-index: 1000001;'],
 
 .rbc-day-slot .rbc-time-slot,
 .rbc-timeslot-group {
-  @apply border-muted dark:!border-gray-400;
+  @apply border-muted !border-gray-400;
+
+  &:where([data-theme="dark"], [data-theme="dark"] *) {}
 }
 
 .rbc-day-slot .rbc-time-slot {
@@ -1215,7 +1586,11 @@ div[style='z-index: 1000001;'],
 }
 
 .rbc-time-header.rbc-overflowing {
-  @apply !mr-0 border-r border-transparent lg:mr-3.5;
+  @apply !mr-0 border-r border-transparent;
+
+  @media (min-width: 1024px) {
+    @apply mr-3.5;
+  }
 }
 
 .rbc-day-slot .rbc-event,
@@ -1260,7 +1635,33 @@ div[style='z-index: 1000001;'],
 }
 
 .rbc-btn-group button {
-  @apply !m-0 !rounded-md border-0 text-sm font-medium text-gray-500 shadow-none hover:bg-white hover:text-gray-800 focus:bg-white active:bg-white active:shadow-none dark:hover:bg-gray-100 dark:focus:bg-gray-100 dark:focus:text-white dark:active:bg-gray-100 dark:active:text-white;
+  @apply !m-0 !rounded-md border-0 text-sm font-medium text-gray-500 shadow-none;
+
+  &:hover {
+    @apply bg-white text-gray-800;
+  }
+
+  &:focus {
+    @apply bg-white;
+  }
+
+  &:active {
+    @apply bg-white shadow-none;
+  }
+
+  &:where([data-theme="dark"], [data-theme="dark"] *) {
+    &:hover {
+      @apply bg-gray-100;
+    }
+
+    &:focus {
+      @apply bg-gray-100 text-white;
+    }
+
+    &:active {
+      @apply bg-gray-100 text-white;
+    }
+  }
 }
 
 .rbc-toolbar button.rbc-active {
@@ -1268,7 +1669,11 @@ div[style='z-index: 1000001;'],
 }
 
 .rbc-toolbar-label {
-  @apply font-lexend text-xl font-medium text-gray-900 dark:text-white;
+  @apply font-lexend text-xl font-medium text-gray-900;
+
+  &:where([data-theme="dark"], [data-theme="dark"] *) {
+    @apply text-white;
+  }
 }
 
 .rbc-agenda-view {
@@ -1347,11 +1752,19 @@ div[style='z-index: 1000001;'],
 
 .react-calendar__navigation__prev-button,
 .react-calendar__navigation__next-button {
-  @apply h-7 w-7 !min-w-[28px] rounded-md !border !border-solid !border-gray-200 !bg-transparent hover:!border-gray-700 hover:!text-gray-700;
+  @apply h-7 w-7 !min-w-[28px] rounded-md !border !border-solid !border-gray-200 !bg-transparent !border-gray-700 !text-gray-700;
+
+  &:hover {}
 }
 
 .react-calendar__navigation__label {
-  @apply text-sm font-semibold text-gray-800 disabled:!bg-transparent lg:text-base;
+  @apply text-sm font-semibold text-gray-800 !bg-transparent;
+
+  &:disabled {}
+
+  @media (min-width: 1024px) {
+    @apply text-base;
+  }
 }
 
 .react-calendar__month-view__days {
@@ -1394,11 +1807,19 @@ div[style='z-index: 1000001;'],
 
 /* job dashboard calender style  */
 .job-schedule-calendar {
-  @apply !w-full !border-none dark:bg-transparent;
+  @apply !w-full !border-none;
+
+  &:where([data-theme="dark"], [data-theme="dark"] *) {
+    @apply bg-transparent;
+  }
 }
 
 .job-schedule-calendar .react-calendar__navigation {
-  @apply justify-between px-5 lg:px-7;
+  @apply justify-between px-5;
+
+  @media (min-width: 1024px) {
+    @apply px-7;
+  }
 }
 
 .job-schedule-calendar .react-calendar__navigation__arrow {
@@ -1415,7 +1836,15 @@ div[style='z-index: 1000001;'],
 }
 
 .job-schedule-calendar .react-calendar__month-view__weekdays>div {
-  @apply mb-0 border border-r-0 border-gray-200 bg-gray-50 py-4 font-inter first:border-l-0 dark:bg-gray-100/50;
+  @apply mb-0 border border-r-0 border-gray-200 bg-gray-50 py-4 font-inter;
+
+  &:first-child {
+    @apply border-l-0;
+  }
+
+  &:where([data-theme="dark"], [data-theme="dark"] *) {
+    @apply bg-gray-100/50;
+  }
 }
 
 .job-schedule-calendar .react-calendar__month-view__days {
@@ -1423,13 +1852,29 @@ div[style='z-index: 1000001;'],
 }
 
 .job-schedule-calendar .react-calendar__month-view__days>button {
-  @apply h-full !w-full rounded-none border border-s-0 border-t-0 border-solid border-gray-200 px-0 py-4 font-inter dark:hover:!bg-gray-100 dark:focus:!bg-gray-100 [&:nth-child(7n)]:border-r-0;
+  @apply h-full !w-full rounded-none border border-s-0 border-t-0 border-solid border-gray-200 px-0 py-4 font-inter !bg-gray-100 !bg-gray-100;
+
+  &:nth-child(7n) {
+    @apply border-r-0;
+  }
+
+  &:where([data-theme="dark"], [data-theme="dark"] *) {
+    &:hover {}
+
+    &:focus {}
+  }
 }
 
 .job-schedule-calendar button.react-calendar__tile--active,
 .job-schedule-calendar button.react-calendar__tile--hasActive,
 .job-schedule-calendar button.react-calendar__tile--now {
-  @apply !bg-transparent !text-gray-600 hover:!bg-[#e6e6e6] dark:hover:!bg-gray-100;
+  @apply !bg-transparent !text-gray-600 !bg-[#e6e6e6] !bg-gray-100;
+
+  &:hover {}
+
+  &:where([data-theme="dark"], [data-theme="dark"] *) {
+    &:hover {}
+  }
 }
 
 .job-schedule-calendar button.react-calendar__month-view__days__day {
@@ -1442,7 +1887,21 @@ div[style='z-index: 1000001;'],
 }
 
 .job-schedule-calendar .react-calendar__year-view__months>button {
-  @apply border border-s-0 border-t-0 border-solid border-gray-200 dark:hover:bg-gray-100 dark:focus:bg-gray-100 [&:nth-child(4n)]:border-r-0;
+  @apply border border-s-0 border-t-0 border-solid border-gray-200;
+
+  &:nth-child(4n) {
+    @apply border-r-0;
+  }
+
+  &:where([data-theme="dark"], [data-theme="dark"] *) {
+    &:hover {
+      @apply bg-gray-100;
+    }
+
+    &:focus {
+      @apply bg-gray-100;
+    }
+  }
 }
 
 /* job schedule calendar decades view */
@@ -1451,7 +1910,25 @@ div[style='z-index: 1000001;'],
 }
 
 .job-schedule-calendar .react-calendar__decade-view__years>button {
-  @apply border border-s-0 border-t-0 border-solid border-gray-200 dark:hover:bg-gray-100 dark:focus:bg-gray-100 dark:disabled:bg-gray-100 [&:nth-child(5n)]:border-r-0;
+  @apply border border-s-0 border-t-0 border-solid border-gray-200;
+
+  &:nth-child(5n) {
+    @apply border-r-0;
+  }
+
+  &:where([data-theme="dark"], [data-theme="dark"] *) {
+    &:hover {
+      @apply bg-gray-100;
+    }
+
+    &:focus {
+      @apply bg-gray-100;
+    }
+
+    &:disabled {
+      @apply bg-gray-100;
+    }
+  }
 }
 
 /* job schedule calendar century view */
@@ -1460,12 +1937,34 @@ div[style='z-index: 1000001;'],
 }
 
 .job-schedule-calendar .react-calendar__century-view__decades>button {
-  @apply border border-s-0 border-t-0 border-solid border-gray-200 dark:hover:bg-gray-100 dark:focus:bg-gray-100 dark:disabled:bg-gray-100 [&:nth-child(4n)]:border-r-0;
+  @apply border border-s-0 border-t-0 border-solid border-gray-200;
+
+  &:nth-child(4n) {
+    @apply border-r-0;
+  }
+
+  &:where([data-theme="dark"], [data-theme="dark"] *) {
+    &:hover {
+      @apply bg-gray-100;
+    }
+
+    &:focus {
+      @apply bg-gray-100;
+    }
+
+    &:disabled {
+      @apply bg-gray-100;
+    }
+  }
 }
 
 /* project dashboard calendar style  */
 .task-list-calendar .react-calendar__navigation {
-  @apply px-0 lg:px-0;
+  @apply px-0;
+
+  @media (min-width: 1024px) {
+    @apply px-0;
+  }
 }
 
 .task-list-calendar .react-calendar__viewContainer {
@@ -1525,9 +2024,10 @@ div[style='z-index: 1000001;'],
 }
 
 /* Smooth progress bar transition for system info widget */
-.smooth-progress [role="progressbar"] > div {
+.smooth-progress [role="progressbar"]>div {
   transition: width 1000ms cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
+
 /* --------------------------------------------------- */
 /* Chat Page Animations & Scrollbars */
 /* --------------------------------------------------- */

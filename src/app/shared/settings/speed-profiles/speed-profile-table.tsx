@@ -43,7 +43,7 @@ export default function SpeedProfileTable() {
   if (loading) {
     return (
       <div className="flex min-h-[400px] items-center justify-center">
-        <Loader variant="spinner" size="xl" />
+        <Loader variant="spinner" size="lg" />
       </div>
     );
   }
@@ -57,7 +57,7 @@ function SpeedProfileTableContent({ data, onRefresh }: { data: SpeedProfile[]; o
   const handleCreateClick = () => {
     openModal({
       view: <CreateSpeedProfile onSuccess={onRefresh} />,
-      size: 'xl',
+      size: 'lg',
     });
   };
 

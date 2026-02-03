@@ -69,7 +69,7 @@ export default function Footer({ isLoading, className }: FooterProps) {
     >
       {step > 0 && step < 7 && (
         <Button
-          rounded="pill"
+         
           variant="outline"
           onClick={gotoPrevStep}
           className="gap-1 border-white text-white backdrop-blur-lg hover:border-white hover:bg-white hover:text-black"
@@ -81,7 +81,7 @@ export default function Footer({ isLoading, className }: FooterProps) {
       <Button
         isLoading={isLoading}
         disabled={isLoading}
-        rounded="pill"
+       
         {...buttonAttr()}
         type={'submit'}
         className="ml-auto gap-1 bg-gray-900/[.35] backdrop-blur-lg dark:bg-gray-0/[.35] dark:text-white dark:active:enabled:bg-gray-0/75"

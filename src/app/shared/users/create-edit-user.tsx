@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { PiXBold } from 'react-icons/pi';
 import { SubmitHandler } from 'react-hook-form';
 import { Form } from '@core/ui/form';
-import { Input, Button, ActionIcon, Title } from 'rizzui';
+import { Input, Password, Button, ActionIcon, Title } from 'rizzui';
 import { CreateUserInput, UpdateUserInput, createUserSchema, updateUserSchema } from '@/validators/user.schema';
 import { useModal } from '@/app/shared/modal-views/use-modal';
 import { usersApi } from '@/lib/api/users';
@@ -118,19 +118,17 @@ export default function CreateEditUser({ user, onSuccess }: CreateEditUserProps)
               error={errors.email?.message}
             />
 
-            <Input
+            <Password
               label={isEdit ? 'Password (leave blank to keep current)' : 'Password'}
               placeholder="Enter password (min. 8 characters)"
-              type="password"
               className="col-span-full"
               {...register('password')}
               error={errors.password?.message}
             />
 
-            <Input
+            <Password
               label={isEdit ? 'Confirm Password' : 'Confirm Password'}
               placeholder="Re-enter password"
-              type="password"
               className="col-span-full"
               {...register('password_confirmation')}
               error={errors.password_confirmation?.message}

@@ -26,17 +26,17 @@ export default function OtpForm() {
           <Button
             className="w-full text-base font-medium"
             type="submit"
-            size="xl"
+            size="lg"
             variant="outline"
-            rounded="lg"
+           
           >
             Resend OTP
           </Button>
           <Button
             className="w-full text-base font-medium"
             type="submit"
-            size="xl"
-            rounded="lg"
+            size="lg"
+           
           >
             Verify OTP
           </Button>

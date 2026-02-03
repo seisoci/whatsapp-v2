@@ -121,7 +121,7 @@ function AccordionContent({ flight }: ContentProps) {
           </div>
           <div className="flex items-center gap-3">
             <Badge
-              rounded="md"
+             
               variant="flat"
               color={badgeStyle[flight.class].color}
               className={cn(

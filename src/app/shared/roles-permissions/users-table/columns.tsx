@@ -70,7 +70,7 @@ export const usersColumns = [
       <Flex align="center" gap="2">
         {row.original.permissions.map((permission) => (
           <Badge
-            rounded="lg"
+           
             key={permission}
             variant="outline"
             className="border-muted font-normal text-gray-500"

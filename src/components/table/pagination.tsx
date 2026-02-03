@@ -48,12 +48,12 @@ export default function TablePagination<TData extends Record<string, any>>({
         </Text>
         <Select
           size="sm"
-          variant="flat"
+          variant="outline"
           options={options}
           className="w-16"
           value={table.getState().pagination.pageSize}
-          onChange={(v: SelectOption) => {
-            table.setPageSize(Number(v.value));
+          onChange={(v: any) => {
+            table.setPageSize(Number(typeof v === 'object' ? v.value : v));
           }}
           suffixClassName="[&>svg]:size-3"
           selectClassName="font-semibold text-xs ring-0 shadow-sm h-7"
@@ -76,7 +76,7 @@ export default function TablePagination<TData extends Record<string, any>>({
         <Grid gap="2" columns="4">
           <ActionIcon
             size="sm"
-            rounded="lg"
+           
             variant="outline"
             aria-label="Go to first page"
             onClick={() => table.firstPage()}
@@ -87,7 +87,7 @@ export default function TablePagination<TData extends Record<string, any>>({
           </ActionIcon>
           <ActionIcon
             size="sm"
-            rounded="lg"
+           
             variant="outline"
             aria-label="Go to previous page"
             onClick={() => table.previousPage()}
@@ -98,7 +98,7 @@ export default function TablePagination<TData extends Record<string, any>>({
           </ActionIcon>
           <ActionIcon
             size="sm"
-            rounded="lg"
+           
             variant="outline"
             aria-label="Go to next page"
             onClick={() => table.nextPage()}
@@ -109,7 +109,7 @@ export default function TablePagination<TData extends Record<string, any>>({
           </ActionIcon>
           <ActionIcon
             size="sm"
-            rounded="lg"
+           
             variant="outline"
             aria-label="Go to last page"
             onClick={() => table.lastPage()}

@@ -68,7 +68,7 @@ export const createContactsColumns = ({ onEdit, onDelete }: Columns) => [
       <Flex gap="3" justify="end">
         <Tooltip content="Edit Contact">
           <ActionIcon
-            tag="span"
+            as="span"
             size="sm"
             variant="text"
             className="hover:text-gray-700"
@@ -79,7 +79,7 @@ export const createContactsColumns = ({ onEdit, onDelete }: Columns) => [
         </Tooltip>
         <Tooltip content="Delete Contact">
           <ActionIcon
-            tag="span"
+            as="span"
             size="sm"
             variant="text"
             className="hover:text-red-600"

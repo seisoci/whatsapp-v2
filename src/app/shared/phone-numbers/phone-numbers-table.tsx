@@ -260,7 +260,7 @@ function PhoneNumbersTableContent({
   if (loading) {
     return (
       <div className= "flex min-h-[400px] items-center justify-center" >
-      <Loader variant="spinner" size = "xl" />
+      <Loader variant="spinner" size="lg" />
         </div>
     );
   }

@@ -38,7 +38,7 @@ export default function ControlledTable({
       <div className="grid h-full min-h-[128px] flex-grow place-content-center items-center justify-center">
         <Loader
           variant="spinner"
-          size="xl"
+          size="lg"
         />
         {showLoadingText ? (
           <Title

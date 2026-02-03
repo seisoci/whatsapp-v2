@@ -26,14 +26,14 @@ export default function OtpForm() {
             <Button
               className="mt-4 w-full lg:mt-2"
               type="submit"
-              size="xl"
-              rounded="pill"
+              size="lg"
+             
               variant="outline"
             >
               Resend OTP
             </Button>
           </div>
-          <Button className="w-full" type="submit" size="xl" rounded="pill">
+          <Button className="w-full" type="submit" size="lg">
             Verify OTP
           </Button>
         </div>

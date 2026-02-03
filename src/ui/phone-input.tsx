@@ -1,7 +1,7 @@
 'use client';
 
 import PhoneInput, { type PhoneInputProps } from 'react-phone-input-2';
-import { cn, FieldError, FieldHelperText, FieldClearButton } from 'rizzui';
+import { cn, FieldErrorText, FieldHelperText, FieldClearButton } from 'rizzui';
 import 'react-phone-input-2/lib/style.css';
 
 const labelClasses = {
@@ -178,7 +178,7 @@ export const PhoneNumber = ({
 
       {clearable ? (
         <FieldClearButton
-          size={size}
+          size={size === 'xl' ? 'lg' : size}
           onClick={onClear}
           className={cn(clearIconClasses.base, clearIconClasses.position[size])}
         />
@@ -186,13 +186,13 @@ export const PhoneNumber = ({
     </div>
 
     {!error && helperText ? (
-      <FieldHelperText size={size} className={helperClassName}>
+      <FieldHelperText size={size === 'xl' ? 'lg' : size} className={helperClassName}>
         {helperText}
       </FieldHelperText>
     ) : null}
 
     {error ? (
-      <FieldError size={size} error={error} className={errorClassName} />
+      <FieldErrorText size={size === 'xl' ? 'lg' : size} error={error} className={errorClassName} />
     ) : null}
   </div>
 );

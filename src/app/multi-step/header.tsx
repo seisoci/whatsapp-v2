@@ -34,7 +34,7 @@ export default function Header({ className }: FooterProps) {
           Questions?
         </Button>
         <Button
-          rounded="pill"
+         
           variant="outline"
           className="gap-2 whitespace-nowrap border-white text-white hover:border-white hover:bg-white hover:text-black"
         >

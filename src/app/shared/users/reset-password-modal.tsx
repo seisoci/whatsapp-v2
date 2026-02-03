@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { PiXBold } from 'react-icons/pi';
 import { SubmitHandler } from 'react-hook-form';
 import { Form } from '@core/ui/form';
-import { Input, Button, ActionIcon, Title, Text } from 'rizzui';
+import { Input, Password, Button, ActionIcon, Title, Text } from 'rizzui';
 import { z } from 'zod';
 import { useModal } from '@/app/shared/modal-views/use-modal';
 import { usersApi } from '@/lib/api/users';
@@ -82,19 +82,17 @@ export default function ResetPasswordModal({ user, onSuccess }: ResetPasswordMod
               </ActionIcon>
             </div>
 
-            <Input
+            <Password
               label="New Password"
               placeholder="Enter new password (min. 8 characters)"
-              type="password"
               className="col-span-full"
               {...register('newPassword')}
               error={errors.newPassword?.message}
             />
 
-            <Input
+            <Password
               label="Confirm New Password"
               placeholder="Re-enter new password"
-              type="password"
               className="col-span-full"
               {...register('confirmPassword')}
               error={errors.confirmPassword?.message}

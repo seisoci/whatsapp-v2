@@ -3,7 +3,7 @@
 import { useAtom } from 'jotai';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
-import { AdvancedRadio, RadioGroup, FieldError, Radio, Text } from 'rizzui';
+import { AdvancedRadio, RadioGroup, FieldErrorText, Radio, Text } from 'rizzui';
 import {
   formDataAtom,
   useStepperOne,
@@ -140,7 +140,7 @@ export default function StepFive() {
                 }}
               />
               {errors.bedroomLock && (
-                <FieldError error={errors.bedroomLock?.message} />
+                <FieldErrorText error={errors.bedroomLock?.message} />
               )}
             </div>
             <div className="grid gap-4">
@@ -171,7 +171,7 @@ export default function StepFive() {
                 )}
               />
               {errors.guestType && (
-                <FieldError error={errors.guestType?.message} />
+                <FieldErrorText error={errors.guestType?.message} />
               )}
             </div>
           </>

@@ -31,7 +31,7 @@ export default function NotFoundPage() {
         </Text>
         <Button
           color="primary"
-          size="xl"
+          size="lg"
           className="mt-8 h-12 px-4 xl:h-14 xl:px-6"
           onClick={() => push('/')}
         >

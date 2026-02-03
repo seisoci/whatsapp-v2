@@ -42,9 +42,9 @@ export default function TablePagination({
           Rows per page:{" "}
           <Select
             options={paginationLimitOptions}
-            onChange={setPageSize}
+            onChange={(v: any) => setPageSize(typeof v === 'object' ? v.value : v)}
             size="sm"
-            variant="flat"
+            variant="outline"
             value={pageSize}
             getOptionValue={({ value }) => value}
             suffix={<PiCaretDownBold />}

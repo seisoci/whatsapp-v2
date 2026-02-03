@@ -9,7 +9,7 @@ import { useDropzone } from "@uploadthing/react";
 import { PiCheckBold, PiTrashBold, PiUploadSimpleBold } from "react-icons/pi";
 import { generateClientDropzoneAccept } from "uploadthing/client";
 import { useUploadThing } from "../../utils/uploadthing";
-import { Button, Text, FieldError } from "rizzui";
+import { Button, Text, FieldErrorText } from "rizzui";
 import cn from "../../utils/class-names";
 import UploadIcon from "../../components/shape/upload";
 import { endsWith } from "lodash";
@@ -210,7 +210,7 @@ export default function UploadZone({
         </div>
       )}
 
-      {error && <FieldError error={error} />}
+      {error && <FieldErrorText error={error} />}
     </div>
   );
 }

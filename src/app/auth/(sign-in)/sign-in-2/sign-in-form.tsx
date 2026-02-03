@@ -35,10 +35,10 @@ export default function SignInForm() {
           <div className="space-y-5">
             <Input
               type="email"
-              size={isMedium ? 'lg' : 'xl'}
+              size="lg"
               label="Email"
               placeholder="Enter your email"
-              rounded="pill"
+             
               className="[&>label>span]:font-medium"
               {...register('email')}
               error={errors.email?.message}
@@ -46,8 +46,8 @@ export default function SignInForm() {
             <Password
               label="Password"
               placeholder="Enter your password"
-              size={isMedium ? 'lg' : 'xl'}
-              rounded="pill"
+              size="lg"
+             
               className="[&>label>span]:font-medium"
               {...register('password')}
               error={errors.password?.message}
@@ -69,8 +69,8 @@ export default function SignInForm() {
             <Button
               className="border-primary-light w-full border-2 text-base font-bold"
               type="submit"
-              size={isMedium ? 'lg' : 'xl'}
-              rounded="pill"
+              size="lg"
+             
             >
               Sign in
             </Button>

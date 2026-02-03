@@ -112,7 +112,7 @@ export default function WebhookExampleModal({
     <Modal isOpen={isOpen} onClose={onClose} size="lg">
       <div className="m-auto px-7 pt-6 pb-8">
         <div className="mb-6 flex items-center justify-between">
-          <Text as="h3" className="font-semibold">
+          <Text as="b" className="text-lg font-semibold">
             Example Payload Template
           </Text>
           <ActionIcon size="sm" variant="text" onClick={onClose}>

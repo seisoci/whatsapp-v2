@@ -178,7 +178,7 @@ function FilterOptionSearch({
         <Input
           type="search"
           size="sm"
-          rounded="pill"
+         
           value={searchTerm}
           onClear={() => setSearchTerm("")}
           onChange={(event) => setSearchTerm(event.target.value)}
@@ -191,7 +191,7 @@ function FilterOptionSearch({
       <ActionIcon
         size="sm"
         variant={isSearchOpen ? "text" : "flat"}
-        rounded="full"
+       
         className={cn(
           "absolute z-10 bg-opacity-95 backdrop-blur-lg transition-none",
           isSearchOpen ? "end-1.5 top-0.5" : "end-0"

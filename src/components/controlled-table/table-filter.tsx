@@ -35,7 +35,7 @@ export function FilterDrawerView({
           <Title as="h5">{drawerTitle}</Title>
           <ActionIcon
             size="sm"
-            rounded="full"
+           
             variant="text"
             title={"Close Filter"}
             onClick={() => setOpenDrawer(false)}

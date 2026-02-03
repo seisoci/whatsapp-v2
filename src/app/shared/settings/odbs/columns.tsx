@@ -29,7 +29,7 @@ export function OdbActionsCell({ row, onRefresh }: { row: any; onRefresh: () => 
   const handleEdit = () => {
     openModal({
       view: <EditOdb odb={row.original} onSuccess={onRefresh} />,
-      size: 'xl',
+      size: 'lg',
     });
   };
 

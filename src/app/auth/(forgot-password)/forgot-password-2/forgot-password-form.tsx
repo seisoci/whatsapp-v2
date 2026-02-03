@@ -47,10 +47,10 @@ export default function ForgetPasswordForm() {
           <div className="space-y-5">
             <Input
               type="email"
-              size={isMedium ? 'lg' : 'xl'}
+              size="lg"
               label="Email"
               placeholder="Enter your email"
-              rounded="pill"
+             
               className="[&>label>span]:font-medium"
               {...register('email')}
               error={errors.email?.message as string}
@@ -58,8 +58,8 @@ export default function ForgetPasswordForm() {
             <Button
               className="border-primary-light w-full border-2 text-base font-medium"
               type="submit"
-              size={isMedium ? 'lg' : 'xl'}
-              rounded="pill"
+              size="lg"
+             
             >
               Reset Password
             </Button>

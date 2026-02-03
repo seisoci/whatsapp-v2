@@ -14,7 +14,7 @@ export default function DrawerHeader({ onClose }: { onClose: () => void }) {
         variant="text"
         onClick={onClose}
         className={cn('h-7 w-7')}
-        rounded="full"
+       
       >
         <PiXBold className="h-[18px] w-[18px]" />
       </ActionIcon>

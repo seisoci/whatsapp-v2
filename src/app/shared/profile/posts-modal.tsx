@@ -29,7 +29,7 @@ export default function PostsModal({ data, onClose }: any) {
     <div className="round grid grow grid-cols-1 gap-0 overflow-hidden rounded-none bg-white dark:bg-gray-100/90 dark:backdrop-blur-xl lg:grid-cols-12 lg:rounded-xl">
       <div className="relative h-full lg:col-span-7">
         <Button
-          rounded="pill"
+         
           className="absolute right-5 top-5 z-10 h-[30px] w-[30px] p-1 lg:left-5 2xl:hidden"
           onClick={onClose}
         >
@@ -200,7 +200,7 @@ function ModalCommentBox() {
   return (
     <div className="relative mt-8">
       <Textarea
-        variant="flat"
+        variant="outline"
         size="sm"
         placeholder="Share your thoughts"
         className="w-full resize-none"

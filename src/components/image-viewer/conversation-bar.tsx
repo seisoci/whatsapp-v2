@@ -30,7 +30,7 @@ export default function ConversationBar() {
           <ActionIcon
             variant="text"
             color="danger"
-            rounded="full"
+           
             className="hover:bg-red-100 dark:hover:bg-red-50/10 dark:hover:text-red-600"
           >
             <PiHeartFill className="size-[18px]" />
@@ -38,7 +38,7 @@ export default function ConversationBar() {
 
           <ActionIcon
             variant="text"
-            rounded="full"
+           
             className="hover:bg-gray-200"
           >
             <PiShareNetwork className="size-[18px]" />

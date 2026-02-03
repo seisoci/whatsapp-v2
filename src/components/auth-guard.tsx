@@ -47,7 +47,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50">
-        <Loader variant="pulse" size="xl" />
+        <Loader variant="pulse" size="lg" />
       </div>
     );
   }
@@ -59,7 +59,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
   if (!user) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50">
-        <Loader variant="pulse" size="xl" />
+        <Loader variant="pulse" size="lg" />
       </div>
     );
   }

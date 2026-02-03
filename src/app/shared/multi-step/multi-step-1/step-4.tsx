@@ -100,10 +100,9 @@ export default function StepTwo() {
           inputProps={{
             size: 'lg',
             type: 'text',
-            rounded: 'pill',
             placeholder: 'Search for a location',
             className: 'absolute z-10 flex-grow block right-7 left-7 top-7',
-            inputClassName: 'bg-white dark:bg-gray-100 border-0',
+            inputClassName: 'rounded-full bg-white dark:bg-gray-100 border-0',
           }}
         />
       </form>

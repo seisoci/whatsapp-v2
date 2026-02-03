@@ -7,7 +7,7 @@ import { useDropzone } from "@uploadthing/react";
 import { generateClientDropzoneAccept } from "uploadthing/client";
 import { useUploadThing } from "../../utils/uploadthing";
 import UploadIcon from "../../components/shape/upload";
-import { FieldError, Loader, Text } from "rizzui";
+import { FieldErrorText, Loader, Text } from "rizzui";
 import cn from "../../utils/class-names";
 import { PiPencilSimple } from "react-icons/pi";
 import { LoadingSpinner } from "../../ui/file-upload/upload-zone";
@@ -122,7 +122,7 @@ export default function AvatarUpload({
           </div>
         )}
       </div>
-      {error && <FieldError error={error} />}
+      {error && <FieldErrorText error={error} />}
     </div>
   );
 }

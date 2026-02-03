@@ -43,7 +43,7 @@ export default function NotFound() {
           <Link href={'/'}>
             <Button
               as="span"
-              size="xl"
+              size="lg"
               color="primary"
               className="mt-8 h-12 px-4 xl:h-14 xl:px-6"
             >

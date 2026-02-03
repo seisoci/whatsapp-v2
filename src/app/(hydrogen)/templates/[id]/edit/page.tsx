@@ -77,7 +77,7 @@ export default function EditTemplatePage() {
   if (loading) {
     return (
       <div className="flex h-[calc(100vh-140px)] items-center justify-center">
-        <Loader size="xl" variant="spinner" />
+        <Loader size="lg" variant="spinner" />
       </div>
     );
   }

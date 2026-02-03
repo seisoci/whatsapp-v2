@@ -34,7 +34,7 @@ export default function SearchList({ onClose }: { onClose?: () => void }) {
     <>
       <div className="flex items-center px-5 py-4">
         <Input
-          variant="flat"
+          variant="outline"
           value={searchText}
           ref={inputRef}
           onChange={(e) => setSearchText(() => e.target.value)}

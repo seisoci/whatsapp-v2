@@ -1,7 +1,7 @@
 "use client";
 
 import ReactQuill from "react-quill-new";
-import { FieldError } from "rizzui";
+import { FieldErrorText } from "rizzui";
 import cn from "../utils/class-names";
 import "react-quill-new/dist/quill.snow.css";
 
@@ -59,7 +59,7 @@ export default function QuillEditor({
         {...props}
       />
       {error && (
-        <FieldError size="md" error={error} className={errorClassName} />
+        <FieldErrorText size="md" error={error} className={errorClassName} />
       )}
     </div>
   );

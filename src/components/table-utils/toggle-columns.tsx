@@ -10,7 +10,7 @@ export default function ToggleColumns<TData extends Record<string, any>>({
   table: ReactTableType<TData>;
 }) {
   return (
-    <Popover shadow="sm" placement="bottom-end">
+    <Popover placement="bottom-end">
       <Popover.Trigger>
         <ActionIcon
           variant="outline"

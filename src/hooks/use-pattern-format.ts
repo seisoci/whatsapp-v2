@@ -1,3 +1,4 @@
 "use client";
 
-export { usePatternFormat } from "rizzui";
+// usePatternFormat was removed in rizzui v2
+// export { usePatternFormat } from "rizzui";

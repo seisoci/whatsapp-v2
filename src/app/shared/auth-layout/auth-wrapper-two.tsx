@@ -123,11 +123,11 @@ function AuthNavBar() {
 function SocialAuth() {
   return (
     <div className="grid grid-cols-1 gap-4 pb-7 md:grid-cols-2 xl:gap-5 xl:pb-8">
-      <Button className="h-11 w-full" variant="outline" rounded="pill">
+      <Button className="h-11 w-full" variant="outline">
         <PiAppleLogoFill className="me-2 h-4 w-4 shrink-0" />
         <span className="truncate">Signin With Apple</span>
       </Button>
-      <Button variant="outline" className="h-11 w-full" rounded="pill">
+      <Button variant="outline" className="h-11 w-full">
         <FcGoogle className="me-2 h-4 w-4 shrink-0" />
         <span className="truncate">Signin With Google</span>
       </Button>

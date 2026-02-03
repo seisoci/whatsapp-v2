@@ -29,7 +29,7 @@ export default function Header({ className }: FooterProps) {
       <div className="flex items-center gap-2">
         <Button
           size="lg"
-          rounded="lg"
+         
           variant="outline"
           className="gap-2 whitespace-nowrap"
         >

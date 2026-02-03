@@ -43,7 +43,7 @@ function TagItem({ tag, onRemove }: TagItemProps) {
           {({ setOpen }) => (
             <div className="w-56 pb-2 pt-1 text-left rtl:text-right">
               <Text
-                as="h6"
+                as="span"
                 className="mb-0.5 flex items-start text-sm font-semibold text-gray-700 sm:items-center"
               >
                 Delete Tag

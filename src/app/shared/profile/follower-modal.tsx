@@ -41,7 +41,7 @@ function FollowerRow({ row }: FollowerRowProps) {
       </div>
       <Button
         size="sm"
-        rounded="pill"
+       
         variant={state ? 'solid' : 'flat'}
         onClick={() => setState(() => !state)}
         className="font-medium capitalize md:h-9 md:px-4"

@@ -91,7 +91,7 @@ export default function BerylliumLeftSidebarFixed() {
         aria-label="open sidebar"
         variant="text"
         className="rounded-full bg-transparent text-white transition-colors hover:bg-gray-300 hover:enabled:text-gray-900"
-        size="xl"
+        size="lg"
         onClick={() => setExpandedLeft(!expandedLeft)}
       >
         <PiTextIndent className="h-auto w-9" />

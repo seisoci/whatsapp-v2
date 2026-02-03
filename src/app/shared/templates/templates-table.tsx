@@ -5,7 +5,7 @@ import Table from '@core/components/table';
 import { useTanStackTable } from '@core/components/table/custom/use-TanStack-Table';
 import { Template } from '.';
 import { createTemplatesColumns } from './columns';
-import { Flex, Title, Loader } from 'rizzui';
+import { Loader } from 'rizzui';
 import { routes } from '@/config/routes';
 import { useRouter } from 'next/navigation';
 import { Button } from 'rizzui';
@@ -223,7 +223,7 @@ function TemplatesTableContent({
   if (loading) {
     return (
       <div className= "flex min-h-[400px] items-center justify-center" >
-      <Loader variant="spinner" size = "xl" />
+      <Loader variant="spinner" size="lg" />
         </div>
     );
   }

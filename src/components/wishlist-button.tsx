@@ -58,7 +58,7 @@ export function AddToWishList() {
     >
       <ActionIcon
         variant="text"
-        rounded="full"
+       
         className="h-auto w-auto border border-muted p-2 hover:border-gray-900"
         onClick={() => setFavorite(!favorite)}
       >

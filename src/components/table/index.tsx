@@ -35,7 +35,7 @@ export default function MainTable<TData extends Record<string, any>>({
   if (isLoading) {
     return (
       <div className="flex h-full min-h-[128px] flex-col items-center justify-center">
-        <Loader variant="spinner" size="xl" />
+        <Loader variant="spinner" size="lg" />
         {showLoadingText ? (
           <Title as="h6" className="-me-2 mt-4 font-medium text-gray-500">
             Loading...

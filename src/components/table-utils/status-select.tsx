@@ -20,7 +20,7 @@ export function StatusSelect({
       placeholder="Select Role"
       options={options}
       value={value}
-      onChange={setValue}
+      onChange={(v: any) => setValue(v)}
       displayValue={(option: { value: any }) =>
         renderOptionDisplayValue(option.value as string)
       }
