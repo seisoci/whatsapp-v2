@@ -68,9 +68,6 @@ export const routes = {
 
 
 
-  multiStep: "/multi-step",
-  multiStep2: "/multi-step-2",
-
   emailTemplates: "/email-templates",
   profile: "/profile",
   welcome: "/welcome",
