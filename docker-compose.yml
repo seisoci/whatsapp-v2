@@ -11,8 +11,8 @@ services:
       - '3001:3001'
     environment:
       - TZ=Asia/Jakarta
-    env_file:
-      - .env
+    # env_file:
+    #   - .env
     networks:
       - omnichat-network
 
@@ -30,8 +30,8 @@ services:
       - HOSTNAME=0.0.0.0
       - TZ=Asia/Jakarta
       - NEXT_PORT=${NEXT_PORT:-3000}
-    env_file:
-      - .env
+    # env_file:
+    #   - .env
     depends_on:
       - omnichat-api
     networks:
