@@ -8,7 +8,7 @@ services:
     container_name: omnichat-api
     restart: unless-stopped
     ports:
-      - '127.0.0.1:3001:3001'
+      - '3001:3001'
     environment:
       - TZ=Asia/Jakarta
     env_file:
@@ -25,10 +25,11 @@ services:
     container_name: omnichat-ui
     restart: unless-stopped
     ports:
-      - '127.0.0.1:3000:3000'
+      - '${NEXT_PORT:-3000}:${NEXT_PORT:-3000}'
     environment:
       - HOSTNAME=0.0.0.0
       - TZ=Asia/Jakarta
+      - NEXT_PORT=${NEXT_PORT:-3000}
     env_file:
       - .env
     depends_on:

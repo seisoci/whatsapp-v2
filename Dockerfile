@@ -64,7 +64,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/package.json ./package.json
 USER nextjs
 
 EXPOSE 3000
-ENV PORT=3000
+ENV NEXT_PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-CMD ["node_modules/.bin/next", "start"]
+CMD ["sh", "-c", "node_modules/.bin/next start -p ${NEXT_PORT}"]
