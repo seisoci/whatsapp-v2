@@ -1,17 +1,52 @@
 'use client';
 
 import { berylliumSidebarMenuItems } from '@/layouts/beryllium/beryllium-sidebar-menu-items';
+import { usePermissionMenu } from '@/hooks/use-permission-menu';
+import { canAccessMenu } from '@/config/menu-permissions';
 import StatusBadge from '@core/components/get-status-badge';
 import Logo from '@core/components/logo';
 import cn from '@core/utils/class-names';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Fragment } from 'react';
+import { Fragment, useMemo } from 'react';
 import { PiCaretDownBold } from 'react-icons/pi';
 import { Collapse, Title } from 'rizzui';
 
 export default function Sidebar({ className }: { className?: string }) {
   const pathname = usePathname();
+  const { userPermissions, isAdmin } = usePermissionMenu();
+
+  // Filter menu items based on user permissions
+  const filteredMenuItems = useMemo(() => {
+    return berylliumSidebarMenuItems
+      .map((item) => {
+        // If item has dropdown items, filter them
+        if (item.dropdownItems && item.dropdownItems.length > 0) {
+          const filteredDropdownItems = item.dropdownItems.filter((dropdownItem) =>
+            canAccessMenu(dropdownItem.href, userPermissions, isAdmin)
+          );
+
+          // If no dropdown items are accessible, hide the parent
+          if (filteredDropdownItems.length === 0) {
+            return null;
+          }
+
+          return {
+            ...item,
+            dropdownItems: filteredDropdownItems,
+          };
+        }
+
+        // For items without dropdowns, check direct access
+        if (item.href && item.href !== '#' && !canAccessMenu(item.href, userPermissions, isAdmin)) {
+          return null;
+        }
+
+        return item;
+      })
+      .filter((item) => item !== null);
+  }, [userPermissions, isAdmin]);
+
   return (
     <aside
       className={cn(
@@ -31,7 +66,7 @@ export default function Sidebar({ className }: { className?: string }) {
 
       <div className="custom-scrollbar overflow-y-auto scroll-smooth h-[calc(100%-80px)]">
         <div className="mt-4 pb-3 3xl:mt-6">
-          {berylliumSidebarMenuItems.map((item, index) => {
+          {filteredMenuItems.map((item, index) => {
             const isActive = pathname === (item?.href as string);
             const pathnameExistInDropdowns: any = item?.dropdownItems?.filter(
               (dropdownItem) => dropdownItem.href === pathname

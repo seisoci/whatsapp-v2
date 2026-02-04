@@ -1,21 +1,43 @@
 'use client';
 
 import Link from 'next/link';
-import { Fragment } from 'react';
+import { Fragment, useMemo } from 'react';
 import { usePathname } from 'next/navigation';
 import { Title } from 'rizzui/typography';
 import { Collapse } from 'rizzui/collapse';
 import cn from '@core/utils/class-names';
 import { PiCaretDownBold } from 'react-icons/pi';
 import { menuItems } from '@/layouts/helium/helium-menu-items';
+import { usePermissionMenu } from '@/hooks/use-permission-menu';
+import { canAccessMenu } from '@/config/menu-permissions';
 import StatusBadge from '@core/components/get-status-badge';
 
 export function HeliumSidebarMenu() {
   const pathname = usePathname();
+  const { userPermissions, isAdmin } = usePermissionMenu();
+
+  // Filter menu items based on user permissions
+  const filteredMenuItems = useMemo(() => {
+    return menuItems
+      .map((item) => {
+        if (item.dropdownItems && item.dropdownItems.length > 0) {
+          const filteredDropdownItems = item.dropdownItems.filter((dropdownItem) =>
+            canAccessMenu(dropdownItem.href, userPermissions, isAdmin)
+          );
+          if (filteredDropdownItems.length === 0) return null;
+          return { ...item, dropdownItems: filteredDropdownItems };
+        }
+        if (item.href && item.href !== '#' && !canAccessMenu(item.href, userPermissions, isAdmin)) {
+          return null;
+        }
+        return item;
+      })
+      .filter((item) => item !== null);
+  }, [userPermissions, isAdmin]);
 
   return (
     <div className="mt-4 pb-3 3xl:mt-6">
-      {menuItems.map((item, index) => {
+      {filteredMenuItems.map((item, index) => {
         const isActive = pathname === (item?.href as string);
         const pathnameExistInDropdowns: any = item?.dropdownItems?.filter(
           (dropdownItem) => dropdownItem.href === pathname

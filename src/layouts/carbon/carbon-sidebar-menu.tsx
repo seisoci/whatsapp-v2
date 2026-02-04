@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import React, { ElementType, Fragment, useState } from 'react';
+import React, { ElementType, Fragment, useState, useMemo, useEffect } from 'react';
 import { carbonMenuItems } from '@/layouts/carbon/carbon-menu-items';
 import { Text } from 'rizzui';
 import cn from '@core/utils/class-names';
@@ -12,10 +12,47 @@ import StatusBadge from '@core/components/get-status-badge';
 import { SortableList } from '@core/components/dnd/dnd-sortable-list';
 import { DragEndEvent } from '@dnd-kit/core';
 import { arrayMove } from '@dnd-kit/sortable';
+import { usePermissionMenu } from '@/hooks/use-permission-menu';
+import { canAccessMenu } from '@/config/menu-permissions';
 
 export function CarbonSidebarMenu() {
   const pathname = usePathname();
-  const [items, setItems] = useState(carbonMenuItems);
+  const { userPermissions, isAdmin } = usePermissionMenu();
+
+  // Filter menu items based on user permissions
+  const filteredCarbonMenuItems = useMemo(() => {
+    return carbonMenuItems
+      .map((item) => {
+        if (item.menuItems && item.menuItems.length > 0) {
+          const filteredMenuItems = item.menuItems
+            .map((menuItem: any) => {
+              if (menuItem.subMenuItems && menuItem.subMenuItems.length > 0) {
+                const filteredSubMenuItems = menuItem.subMenuItems.filter((subItem: any) =>
+                  canAccessMenu(subItem.href, userPermissions, isAdmin)
+                );
+                if (filteredSubMenuItems.length === 0) return null;
+                return { ...menuItem, subMenuItems: filteredSubMenuItems };
+              }
+              if (menuItem.href && !canAccessMenu(menuItem.href, userPermissions, isAdmin)) {
+                return null;
+              }
+              return menuItem;
+            })
+            .filter((menuItem: any) => menuItem !== null);
+          if (filteredMenuItems.length === 0) return null;
+          return { ...item, menuItems: filteredMenuItems };
+        }
+        return item;
+      })
+      .filter((item) => item !== null);
+  }, [userPermissions, isAdmin]);
+
+  const [items, setItems] = useState(filteredCarbonMenuItems);
+
+  // Update items when filtered menu items change
+  useEffect(() => {
+    setItems(filteredCarbonMenuItems);
+  }, [filteredCarbonMenuItems]);
 
   function handleChange(event: DragEndEvent) {
     const { active, over } = event;

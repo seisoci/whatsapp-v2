@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Fragment } from 'react';
+import { Fragment, useMemo } from 'react';
 import { usePathname } from 'next/navigation';
 import { Title, Collapse } from 'rizzui';
 import cn from '@core/utils/class-names';
@@ -9,18 +9,40 @@ import { PiCaretDownBold, PiCommand } from 'react-icons/pi';
 import { menuItems } from '@/layouts/boron/boron-menu-items';
 import { useBoronKbdShortcuts } from '@/layouts/boron/boron-utils';
 import { useColorPresetName } from '@/layouts/settings/use-theme-color';
+import { usePermissionMenu } from '@/hooks/use-permission-menu';
+import { canAccessMenu } from '@/config/menu-permissions';
 import { useTheme } from 'next-themes';
 
 export function BoronSidebarMenu() {
   const pathname = usePathname();
   const { theme } = useTheme();
   const { colorPresetName } = useColorPresetName();
+  const { userPermissions, isAdmin } = usePermissionMenu();
 
   useBoronKbdShortcuts();
 
+  // Filter menu items based on user permissions
+  const filteredMenuItems = useMemo(() => {
+    return menuItems
+      .map((item) => {
+        if (item.dropdownItems && item.dropdownItems.length > 0) {
+          const filteredDropdownItems = item.dropdownItems.filter((dropdownItem) =>
+            canAccessMenu(dropdownItem.href, userPermissions, isAdmin)
+          );
+          if (filteredDropdownItems.length === 0) return null;
+          return { ...item, dropdownItems: filteredDropdownItems };
+        }
+        if (item.href && item.href !== '#' && !canAccessMenu(item.href, userPermissions, isAdmin)) {
+          return null;
+        }
+        return item;
+      })
+      .filter((item) => item !== null);
+  }, [userPermissions, isAdmin]);
+
   return (
     <div className="mt-4 pb-3 2xl:pt-1.5 3xl:mt-6">
-      {menuItems.map((item, index) => {
+      {filteredMenuItems.map((item, index) => {
         const Icon = item.icon;
         const isActive = pathname === (item?.href as string);
         const pathnameExistInDropdowns: any = item?.dropdownItems?.filter(

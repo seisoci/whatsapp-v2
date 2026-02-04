@@ -30,7 +30,11 @@ interface AuthContextType {
   refetchUser: () => Promise<void>;
   isAuthenticated: boolean;
   hasPermission: (permission: string) => boolean;
+  hasAnyPermission: (permissions: string[]) => boolean;
+  hasAllPermissions: (permissions: string[]) => boolean;
   hasRole: (role: string | string[]) => boolean;
+  isSuperAdmin: () => boolean;
+  getPermissionSlugs: () => string[];
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -133,13 +137,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const hasPermission = (permission: string): boolean => {
     if (!user || !user.role) return false;
+    // Super admin has all permissions
+    if (user.role.slug === 'super-admin') return true;
     return user.role.permissions?.some((p: any) => p.slug === permission) || false;
+  };
+
+  const hasAnyPermission = (permissions: string[]): boolean => {
+    if (!user || !user.role) return false;
+    // Super admin has all permissions
+    if (user.role.slug === 'super-admin') return true;
+    return permissions.some((permission) =>
+      user.role?.permissions?.some((p: any) => p.slug === permission)
+    );
+  };
+
+  const hasAllPermissions = (permissions: string[]): boolean => {
+    if (!user || !user.role) return false;
+    // Super admin has all permissions
+    if (user.role.slug === 'super-admin') return true;
+    return permissions.every((permission) =>
+      user.role?.permissions?.some((p: any) => p.slug === permission)
+    );
   };
 
   const hasRole = (role: string | string[]): boolean => {
     if (!user || !user.role) return false;
     const roles = Array.isArray(role) ? role : [role];
     return roles.includes(user.role.slug);
+  };
+
+  const isSuperAdmin = (): boolean => {
+    if (!user || !user.role) return false;
+    return user.role.slug === 'super-admin';
+  };
+
+  const getPermissionSlugs = (): string[] => {
+    if (!user || !user.role || !user.role.permissions) return [];
+    return user.role.permissions.map((p: any) => p.slug);
   };
 
   return (
@@ -152,7 +186,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         refetchUser,
         isAuthenticated: !!user,
         hasPermission,
+        hasAnyPermission,
+        hasAllPermissions,
         hasRole,
+        isSuperAdmin,
+        getPermissionSlugs,
       }}
     >
       {children}

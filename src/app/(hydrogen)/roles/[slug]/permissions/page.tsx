@@ -29,8 +29,8 @@ export default function AssignPermissionsPage() {
           setRole(roleResponse.data);
         }
 
-        // Fetch all available permissions grouped by menu
-        const permissionsResponse = await permissionsApi.getAll({});
+        // Fetch all available permissions grouped by menu (no pagination)
+        const permissionsResponse = await permissionsApi.getAll({ pagination: 'all' });
 
         if (permissionsResponse.success) {
           setAllPermissions(permissionsResponse.data);

@@ -6,12 +6,13 @@ import {
 } from '@/layouts/beryllium/beryllium-fixed-menu-items';
 import { useBerylliumSidebars } from '@/layouts/beryllium/beryllium-utils';
 import { useColorPresetName } from '@/layouts/settings/use-theme-color';
+import { usePermissionMenu } from '@/hooks/use-permission-menu';
 import StatusBadge from '@core/components/get-status-badge';
 import cn from '@core/utils/class-names';
 import { useAtomValue } from 'jotai';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Fragment } from 'react';
+import { Fragment, useMemo } from 'react';
 import { PiCaretDownBold } from 'react-icons/pi';
 import { Collapse } from 'rizzui';
 
@@ -129,6 +130,12 @@ function CollapsibleMenuItem({ item }: { item: ItemType }) {
 export default function BerylliumLeftSidebarExpandable() {
   const { expandedLeft } = useBerylliumSidebars();
   const selectedMenu = useAtomValue(berylliumMenuItemAtom);
+  const { filterMenuItems } = usePermissionMenu();
+
+  // Filter menu items based on user permissions
+  const filteredMenuItems = useMemo(() => {
+    return filterMenuItems(selectedMenu.menuItems);
+  }, [selectedMenu.menuItems, filterMenuItems]);
 
   return (
     <div
@@ -142,7 +149,7 @@ export default function BerylliumLeftSidebarExpandable() {
           {selectedMenu.title}
         </p>
         <div className="flex flex-col gap-2">
-          {selectedMenu.menuItems.map((menu) => (
+          {filteredMenuItems.map((menu) => (
             <Fragment key={menu.name}>
               {menu.href ? (
                 <LinkMenuItem item={menu} />

@@ -153,11 +153,12 @@ export const getRolesQuerySchema = paginationSchema.extend({
 
 export type GetRolesQuery = z.infer<typeof getRolesQuerySchema>;
 
-// Get permissions with pagination
+// Get permissions with pagination (supports pagination=all to get all data)
 export const getPermissionsQuerySchema = paginationSchema.extend({
   search: z.string().max(100).optional(),
   menuId: z.string().optional(),
-  action: z.enum(['index', 'store', 'show', 'update', 'destroy']).optional(),
+  action: z.enum(['index', 'store', 'update', 'destroy']).optional(),
+  pagination: z.enum(['all']).optional(),
 });
 
 export type GetPermissionsQuery = z.infer<typeof getPermissionsQuerySchema>;
@@ -208,9 +209,9 @@ export const createCrudPermissionsSchema = z.object({
     .max(50, 'Resource name terlalu panjang')
     .regex(/^[a-z0-9-]+$/, 'Resource name hanya boleh huruf kecil, angka, dan hyphen'),
   actions: z
-    .array(z.enum(['index', 'store', 'show', 'update', 'destroy']))
+    .array(z.enum(['index', 'store', 'update', 'destroy']))
     .min(1, 'Minimal 1 action harus dipilih')
-    .default(['index', 'store', 'show', 'update', 'destroy']),
+    .default(['index', 'store', 'update', 'destroy']),
   menuManagerId: z.string().optional(), // Optional, will be created if not provided
 });
 

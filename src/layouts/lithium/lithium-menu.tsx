@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { PiCaretDownBold } from 'react-icons/pi';
 import cn from '@core/utils/class-names';
-import { ForwardedRef, forwardRef, useEffect, useState } from 'react';
+import { ForwardedRef, forwardRef, useEffect, useState, useMemo } from 'react';
 import { motion } from 'motion/react';
 import BulletIcon from '@/layouts/lithium/bullet-icon';
 import { AiFillCaretRight } from 'react-icons/ai';
@@ -17,6 +17,8 @@ import { usePathname } from 'next/navigation';
 import { useActivePathname } from './use-pathname-active';
 import { useDirection } from '@core/hooks/use-direction';
 import { NavMenuDirection } from '../nav-menu/nav-menu-types';
+import { usePermissionMenu } from '@/hooks/use-permission-menu';
+import { canAccessMenu } from '@/config/menu-permissions';
 
 function EnhancedMenuItems({
   items,
@@ -180,9 +182,21 @@ export function LinkMenu({
   className?: string;
 }) {
   const pathname = usePathname();
+  const { userPermissions, isAdmin } = usePermissionMenu();
+
+  // Filter items based on permissions
+  const filteredItems = useMemo(() => {
+    return items.filter((item) => {
+      if (item.href) {
+        return canAccessMenu(item.href, userPermissions, isAdmin);
+      }
+      return true;
+    });
+  }, [items, userPermissions, isAdmin]);
+
   return (
     <ul className={cn('w-full', className, 'bg-gray-0 dark:bg-gray-100')}>
-      {items.map((item, index) => {
+      {filteredItems.map((item, index) => {
         const Icon = item.icon;
         const isActive = item.href === pathname;
         return (
@@ -209,6 +223,27 @@ export function LinkMenu({
 
 export default function HeaderMenuLeft() {
   const { direction } = useDirection();
+  const { userPermissions, isAdmin } = usePermissionMenu();
+
+  // Check if menu group has any accessible items
+  const hasAccessibleItems = (menuKey: LithiumMenuItemsKeys) => {
+    const menuItem = lithiumMenuItems[menuKey];
+    if (!menuItem?.dropdownItems) return false;
+    return menuItem.dropdownItems.some((item) => {
+      if (item.href) {
+        return canAccessMenu(item.href, userPermissions, isAdmin);
+      }
+      return true;
+    });
+  };
+
+  // Check single link access
+  const canAccessLink = (menuKey: LithiumMenuItemsKeys) => {
+    const menuItem = lithiumMenuItems[menuKey];
+    const href = menuItem?.dropdownItems?.[0]?.href;
+    if (!href) return false;
+    return canAccessMenu(href, userPermissions, isAdmin);
+  };
 
   return (
     <div className="flex items-center gap-8">
@@ -217,42 +252,50 @@ export default function HeaderMenuLeft() {
         menuClassName="pb-5 top-3 gap-8 relative"
         menuContentClassName="mt-2 border border-gray-200 dark:border-gray-300"
       >
-        <NavMenu.Item>
-          <NavMenu.Trigger className="flex items-center gap-1 duration-200">
-            <MenuTriggerButton name="unconfigured" />
-          </NavMenu.Trigger>
-        </NavMenu.Item>
-           <NavMenu.Item>
-          <NavMenu.Trigger className="flex items-center gap-1 duration-200">
-            <MenuTriggerButton name="configured" />
-          </NavMenu.Trigger>
-        </NavMenu.Item>
-        <NavMenu.Item>
-          <NavMenu.Trigger className="flex items-center gap-1 duration-200">
-            <MenuTriggerButton name="settings" />
-          </NavMenu.Trigger>
-          <NavMenu.Content>
-            <div className="w-[180px]">
-              <LinkMenu
-                className="flex flex-col p-3 dark:bg-gray-100"
-                items={lithiumMenuItems.settings.dropdownItems ?? []}
-              />
-            </div>
-          </NavMenu.Content>
-        </NavMenu.Item>
-        <NavMenu.Item>
-          <NavMenu.Trigger className="flex items-center gap-1 duration-200">
-            <MenuTriggerButton name="users" />
-          </NavMenu.Trigger>
-          <NavMenu.Content>
-            <div className="w-[180px]">
-              <LinkMenu
-                className="flex flex-col p-3 dark:bg-gray-100"
-                items={lithiumMenuItems.users.dropdownItems ?? []}
-              />
-            </div>
-          </NavMenu.Content>
-        </NavMenu.Item>
+        {canAccessLink('unconfigured') && (
+          <NavMenu.Item>
+            <NavMenu.Trigger className="flex items-center gap-1 duration-200">
+              <MenuTriggerButton name="unconfigured" />
+            </NavMenu.Trigger>
+          </NavMenu.Item>
+        )}
+        {canAccessLink('configured') && (
+          <NavMenu.Item>
+            <NavMenu.Trigger className="flex items-center gap-1 duration-200">
+              <MenuTriggerButton name="configured" />
+            </NavMenu.Trigger>
+          </NavMenu.Item>
+        )}
+        {hasAccessibleItems('settings') && (
+          <NavMenu.Item>
+            <NavMenu.Trigger className="flex items-center gap-1 duration-200">
+              <MenuTriggerButton name="settings" />
+            </NavMenu.Trigger>
+            <NavMenu.Content>
+              <div className="w-[180px]">
+                <LinkMenu
+                  className="flex flex-col p-3 dark:bg-gray-100"
+                  items={lithiumMenuItems.settings.dropdownItems ?? []}
+                />
+              </div>
+            </NavMenu.Content>
+          </NavMenu.Item>
+        )}
+        {hasAccessibleItems('users') && (
+          <NavMenu.Item>
+            <NavMenu.Trigger className="flex items-center gap-1 duration-200">
+              <MenuTriggerButton name="users" />
+            </NavMenu.Trigger>
+            <NavMenu.Content>
+              <div className="w-[180px]">
+                <LinkMenu
+                  className="flex flex-col p-3 dark:bg-gray-100"
+                  items={lithiumMenuItems.users.dropdownItems ?? []}
+                />
+              </div>
+            </NavMenu.Content>
+          </NavMenu.Item>
+        )}
         {/* <NavMenu.Item>
           <NavMenu.Trigger className="flex items-center gap-1 duration-200">
             <MenuTriggerButton name="appsKit" />

@@ -62,14 +62,20 @@ export class PermissionController {
       // Count total menus
       const total = await queryBuilder.getCount();
 
-      // Apply pagination
-      const menus = await queryBuilder
-        .skip((validated.page - 1) * validated.limit)
-        .take(validated.limit)
-        .getMany();
+      // Check if pagination=all to skip pagination
+      let menus;
+      if (validated.pagination === 'all') {
+        menus = await queryBuilder.getMany();
+      } else {
+        // Apply pagination
+        menus = await queryBuilder
+          .skip((validated.page - 1) * validated.limit)
+          .take(validated.limit)
+          .getMany();
+      }
 
       // Define CRUD action order
-      const actionOrder = ['index', 'store', 'show', 'update', 'destroy'];
+      const actionOrder = ['index', 'store', 'update', 'destroy'];
 
       // Helper function to get action from slug
       const getActionFromSlug = (slug: string) => {
@@ -288,7 +294,6 @@ export class PermissionController {
       const actionNames: Record<string, string> = {
         index: 'List',
         store: 'Create',
-        show: 'View',
         update: 'Update',
         destroy: 'Delete',
       };
