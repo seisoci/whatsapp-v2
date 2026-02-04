@@ -2,7 +2,7 @@
 
 import { createColumnHelper } from '@tanstack/react-table';
 import { User } from '@/lib/api/types/users';
-import { Badge, Text, ActionIcon, Tooltip, Avatar } from 'rizzui';
+import { Text, ActionIcon, Tooltip, Avatar } from 'rizzui';
 import PencilIcon from '@core/components/icons/pencil';
 import { PiLockKeyOpenDuotone } from 'react-icons/pi';
 import DeletePopover from '@/components/delete-popover';
@@ -45,6 +45,15 @@ export const createUsersColumns = ({
     enableSorting: true,
     cell: ({ row }) => (
       <Text className="text-sm">{row.original.email}</Text>
+    ),
+  }),
+  columnHelper.accessor('role', {
+    id: 'role',
+    size: 150,
+    header: 'Role',
+    enableSorting: true,
+    cell: ({ row }) => (
+      <Text className="text-sm">{row.original.role?.name || '-'}</Text>
     ),
   }),
   columnHelper.accessor('createdAt', {
