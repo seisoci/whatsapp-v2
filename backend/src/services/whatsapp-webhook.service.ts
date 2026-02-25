@@ -47,14 +47,23 @@ export class WhatsAppWebhookService {
     // Check if webhook already processed
     const webhookLogRepo = AppDataSource.getRepository(WebhookLog);
     const existingLog = await webhookLogRepo.findOne({ where: { idempotencyKey } });
-    
-    if (existingLog && existingLog.processingStatus === 'success') {
-      console.log(`Webhook already processed: ${idempotencyKey}`);
-      return;
+
+    if (existingLog) {
+      if (existingLog.processingStatus === 'success') {
+        console.log(`Webhook already processed: ${idempotencyKey}`);
+        return;
+      }
+      // Bug fix: also skip if still processing to prevent duplicate INSERT lock wait
+      if (existingLog.processingStatus === 'processing') {
+        console.log(`Webhook already being processed: ${idempotencyKey}`);
+        return;
+      }
+      // If 'failed', allow retry - fall through to reprocess
     }
 
-    // Create webhook log
-    const webhookLog = webhookLogRepo.create({
+    // Create webhook log — use INSERT ... ON CONFLICT DO NOTHING to prevent
+    // race condition lock waits when concurrent requests pass the findOne check
+    const webhookLogData = {
       eventType: payload.entry[0]?.changes[0]?.field || 'unknown',
       webhookPayload: payload,
       processingStatus: 'processing',
@@ -63,9 +72,27 @@ export class WhatsAppWebhookService {
       requestUserAgent: headers['user-agent'],
       idempotencyKey,
       receivedAt: new Date(),
-    });
+    };
 
-    await webhookLogRepo.save(webhookLog);
+    const insertResult = await webhookLogRepo
+      .createQueryBuilder()
+      .insert()
+      .into(WebhookLog)
+      .values(webhookLogData)
+      .orIgnore() // ON CONFLICT (idempotency_key) DO NOTHING — prevents lock wait
+      .execute();
+
+    // If no row inserted (concurrent request already inserted), skip
+    if (!insertResult.identifiers || insertResult.identifiers.length === 0) {
+      console.log(`Webhook insert skipped due to concurrent processing: ${idempotencyKey}`);
+      return;
+    }
+
+    const webhookLog = await webhookLogRepo.findOne({ where: { idempotencyKey } });
+    if (!webhookLog) {
+      console.warn(`Webhook log not found after insert: ${idempotencyKey}`);
+      return;
+    }
 
     try {
       // Process each entry

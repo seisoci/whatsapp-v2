@@ -142,12 +142,20 @@ export class WhatsAppMediaService {
     accessToken: string
   ): Promise<{ url: string; mime_type: string; sha256: string; file_size: number } | null> {
     try {
-      const response = await fetch(`${WHATSAPP_API_BASE_URL}/${mediaId}`, {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      });
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 15_000); // 15s timeout
+      let response: Response;
+      try {
+        response = await fetch(`${WHATSAPP_API_BASE_URL}/${mediaId}`, {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+          signal: controller.signal,
+        });
+      } finally {
+        clearTimeout(timeout);
+      }
 
       if (!response.ok) {
         const error: any = await response.json();
@@ -172,12 +180,20 @@ export class WhatsAppMediaService {
     messageType: 'image' | 'video' | 'audio' | 'document' | 'sticker'
   ): Promise<Buffer> {
     try {
-      const response = await fetch(mediaUrl, {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      });
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 120_000); // 2 min timeout for large files
+      let response: Response;
+      try {
+        response = await fetch(mediaUrl, {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+          signal: controller.signal,
+        });
+      } finally {
+        clearTimeout(timeout);
+      }
 
       if (!response.ok) {
         throw new Error(`Failed to download media: ${response.status} ${response.statusText}`);
@@ -264,7 +280,14 @@ export class WhatsAppMediaService {
       }
 
       // Download profile picture from WhatsApp URL
-      const response = await fetch(params.profilePictureUrl);
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 15_000); // 15s timeout
+      let response: Response;
+      try {
+        response = await fetch(params.profilePictureUrl, { signal: controller.signal });
+      } finally {
+        clearTimeout(timeout);
+      }
       if (!response.ok) {
         console.error('Failed to download profile picture:', response.statusText);
         return null;
