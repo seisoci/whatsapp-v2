@@ -4,6 +4,7 @@
  * WITH SECURITY: URL validation, domain whitelisting, size limits
  */
 
+import { Readable } from 'stream';
 import { storageService } from './storage.service';
 
 const WHATSAPP_API_BASE_URL = process.env.WHATSAPP_API_VERSION 
@@ -97,22 +98,22 @@ export class WhatsAppMediaService {
         return null;
       }
 
-      // Step 2: Download media from WhatsApp with size validation
-      const mediaBuffer = await this.downloadMediaFromWhatsApp(
+      // Step 2: Stream media from WhatsApp directly to MinIO — no in-RAM buffer
+      const { stream, contentLength, contentType } = await this.fetchMediaAsStream(
         mediaUrlData.url,
         params.accessToken,
-        params.messageType
       );
 
-      // Step 3: Upload to S3/MinIO (upload to root bucket)
+      // Step 3: Upload stream to S3/MinIO
       const s3Path = `${params.contactWaId}/${params.messageType}`;
-      const filename = params.filename || `${params.mediaId}.${this.getFileExtension(mediaUrlData.mime_type)}`;
+      const filename = params.filename || `${params.mediaId}.${this.getFileExtension(contentType || mediaUrlData.mime_type)}`;
 
-      const uploadResult = await storageService.uploadFileToPath(
+      const uploadResult = await storageService.uploadStreamToPath(
         s3Path,
         filename,
-        mediaBuffer,
-        mediaUrlData.mime_type,
+        stream,
+        contentLength,
+        contentType || mediaUrlData.mime_type,
         {
           whatsappMediaId: params.mediaId,
           phoneNumberId: params.phoneNumberId,
@@ -171,53 +172,42 @@ export class WhatsAppMediaService {
   }
 
   /**
-   * Download media file from WhatsApp URL with size validation
-   * SECURITY: Streaming download with size limit check
+   * Fetch media from WhatsApp and return a Node.js Readable stream.
+   * The stream is piped directly into MinIO — nothing is buffered in RAM.
    */
-  private static async downloadMediaFromWhatsApp(
+  private static async fetchMediaAsStream(
     mediaUrl: string,
     accessToken: string,
-    messageType: 'image' | 'video' | 'audio' | 'document' | 'sticker'
-  ): Promise<Buffer> {
+  ): Promise<{ stream: Readable; contentLength: number | undefined; contentType: string }> {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 120_000); // 2 min for large files
+    let response: Response;
     try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 120_000); // 2 min timeout for large files
-      let response: Response;
-      try {
-        response = await fetch(mediaUrl, {
-          method: 'GET',
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-          signal: controller.signal,
-        });
-      } finally {
-        clearTimeout(timeout);
-      }
-
-      if (!response.ok) {
-        throw new Error(`Failed to download media: ${response.status} ${response.statusText}`);
-      }
-
-      // SECURITY: Check Content-Length before downloading
-      const contentLength = response.headers.get('content-length');
-      const contentType = response.headers.get('content-type') || 'application/octet-stream';
-
-      // Size validation removed - WhatsApp already enforces their own limits
-      // and we trust content from verified WhatsApp domains
-      console.log(`Downloading ${messageType} media: ${contentType}, size: ${contentLength || 'unknown'} bytes`);
-
-      // SECURITY: Stream download with size validation during download
-      const arrayBuffer = await response.arrayBuffer();
-      const buffer = Buffer.from(arrayBuffer);
-
-      // Size validation removed - trust WhatsApp domains
-      console.log(`✅ Media downloaded: ${buffer.length} bytes`);
-      return buffer;
-    } catch (error: any) {
-      console.error('Failed to download media:', error);
-      throw error;
+      response = await fetch(mediaUrl, {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${accessToken}` },
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timeout);
     }
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch media: ${response.status} ${response.statusText}`);
+    }
+    if (!response.body) {
+      throw new Error('Media response has no body');
+    }
+
+    const contentLengthHeader = response.headers.get('content-length');
+    const contentLength = contentLengthHeader ? parseInt(contentLengthHeader, 10) : undefined;
+    const contentType = response.headers.get('content-type') || 'application/octet-stream';
+
+    console.log(`Streaming media: ${contentType}, size: ${contentLength ?? 'unknown'} bytes`);
+
+    // Convert Web ReadableStream → Node.js Readable (Node 16.7+)
+    const stream = Readable.fromWeb(response.body as any);
+    return { stream, contentLength, contentType };
   }
 
   /**
@@ -279,7 +269,7 @@ export class WhatsAppMediaService {
         return null;
       }
 
-      // Download profile picture from WhatsApp URL
+      // Fetch profile picture and stream directly to MinIO
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 15_000); // 15s timeout
       let response: Response;
@@ -289,25 +279,30 @@ export class WhatsAppMediaService {
         clearTimeout(timeout);
       }
       if (!response.ok) {
-        console.error('Failed to download profile picture:', response.statusText);
+        console.error('Failed to fetch profile picture:', response.statusText);
+        return null;
+      }
+      if (!response.body) {
+        console.error('Profile picture response has no body');
         return null;
       }
 
-      const buffer = Buffer.from(await response.arrayBuffer());
-      
-      // Get content type
       const contentType = response.headers.get('content-type') || 'image/jpeg';
-      const extension = contentType.split('/')[1] || 'jpg';
-      
-      // Generate S3 path: phone_number_id/profile/{wa_id}.{ext}
+      const contentLengthHeader = response.headers.get('content-length');
+      const contentLength = contentLengthHeader ? parseInt(contentLengthHeader, 10) : undefined;
+      const extension = contentType.split('/')[1]?.split(';')[0] || 'jpg';
+
+      // Generate S3 path: phone_number_id/profile/{wa_id}-{ts}.{ext}
       const timestamp = Date.now();
       const filename = `${params.contactWaId}-${timestamp}.${extension}`;
-      const s3Path = `${params.phoneNumberId}/profile/${filename}`;
+      const s3Path = `${params.phoneNumberId}/profile`;
 
-      // Upload to S3/MinIO
-      const uploadResult = await storageService.uploadFile(
+      const stream = Readable.fromWeb(response.body as any);
+      const uploadResult = await storageService.uploadStreamToPath(
         s3Path,
-        buffer,
+        filename,
+        stream,
+        contentLength,
         contentType
       );
 

@@ -1,3 +1,4 @@
+import { Readable } from 'stream';
 import * as Minio from 'minio';
 
 /**
@@ -95,6 +96,44 @@ class StorageService {
     } catch (error) {
       console.error('Storage upload error:', error);
       throw new Error('Failed to upload file to storage');
+    }
+  }
+
+  /**
+   * Upload a Node.js Readable stream to a custom path.
+   * Avoids buffering the entire file in RAM — data flows directly
+   * from the source (e.g. fetch response) into MinIO.
+   */
+  async uploadStreamToPath(
+    path: string,
+    fileName: string,
+    stream: Readable,
+    size: number | undefined,
+    contentType: string,
+    metadata?: Record<string, string>
+  ): Promise<{ fileName: string; url: string; size: number; path: string }> {
+    try {
+      const timestamp = Date.now();
+      const fullPath = `${path}/${timestamp}-${fileName}`;
+
+      await this.client.putObject(
+        this.defaultBucket,
+        fullPath,
+        stream,
+        size,
+        { 'Content-Type': contentType, ...metadata }
+      );
+
+      const url = await this.getFileUrl(fullPath);
+      return {
+        fileName: `${timestamp}-${fileName}`,
+        url,
+        size: size ?? 0,
+        path: fullPath,
+      };
+    } catch (error) {
+      console.error('Storage stream upload error:', error);
+      throw new Error('Failed to upload stream to storage');
     }
   }
 

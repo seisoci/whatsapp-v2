@@ -34,11 +34,66 @@ interface WhatsAppWebhookPayload {
   }>;
 }
 
+/**
+ * Limits concurrent webhook processings to prevent RAM exhaustion from
+ * unbounded parallel media downloads + DB operations. WhatsApp retries
+ * any webhook that we drop, so dropping is safe.
+ */
+class ConcurrencyLimiter {
+  private active = 0;
+  private readonly waiters: Array<() => void> = [];
+
+  constructor(
+    private readonly limit: number,
+    private readonly maxQueue: number,
+  ) {}
+
+  async run<T>(task: () => Promise<T>): Promise<T | null> {
+    if (this.waiters.length >= this.maxQueue) {
+      console.warn(`[WebhookQueue] Queue full (active=${this.active}, queued=${this.waiters.length}), dropping webhook — WhatsApp will retry`);
+      return null;
+    }
+    await this.acquire();
+    console.log(`[WebhookQueue] Start (active=${this.active}, queued=${this.waiters.length})`);
+    try {
+      return await task();
+    } finally {
+      this.release();
+      console.log(`[WebhookQueue] Done  (active=${this.active}, queued=${this.waiters.length})`);
+    }
+  }
+
+  private acquire(): Promise<void> {
+    if (this.active < this.limit) {
+      this.active++;
+      return Promise.resolve();
+    }
+    return new Promise(resolve => this.waiters.push(resolve));
+  }
+
+  private release(): void {
+    if (this.waiters.length > 0) {
+      this.waiters.shift()!(); // pass slot directly to next waiter (active stays the same)
+    } else {
+      this.active--;
+    }
+  }
+}
+
+const webhookLimiter = new ConcurrencyLimiter(
+  parseInt(process.env.WEBHOOK_MAX_CONCURRENT || '5'),
+  parseInt(process.env.WEBHOOK_MAX_QUEUE    || '50'),
+);
+
 export class WhatsAppWebhookService {
   /**
-   * Process incoming webhook
+   * Process incoming webhook — enforces concurrency limit to prevent RAM exhaustion.
    */
   static async processWebhook(payload: WhatsAppWebhookPayload, headers: any, ip: string): Promise<void> {
+    await webhookLimiter.run(() => WhatsAppWebhookService.doProcessWebhook(payload, headers, ip));
+  }
+
+  private static async doProcessWebhook(payload: WhatsAppWebhookPayload, headers: any, ip: string): Promise<void> {
     const startTime = Date.now();
     
     // Generate idempotency key from payload
@@ -67,7 +122,8 @@ export class WhatsAppWebhookService {
       eventType: payload.entry[0]?.changes[0]?.field || 'unknown',
       webhookPayload: payload,
       processingStatus: 'processing',
-      requestHeaders: headers,
+      // requestHeaders intentionally omitted — requestIp + requestUserAgent
+      // already capture the essentials; storing full headers bloats every row.
       requestIp: ip,
       requestUserAgent: headers['user-agent'],
       idempotencyKey,
