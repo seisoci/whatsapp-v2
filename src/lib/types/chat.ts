@@ -48,6 +48,8 @@ export interface Message {
   readAt: string | null;
   reactionEmoji?: string | null;
   reactionMessageId?: string | null;
+  // Contacts message
+  contactsPayload?: any[] | null;
   // Template fields
   templateName?: string | null;
   templateLanguage?: string | null;

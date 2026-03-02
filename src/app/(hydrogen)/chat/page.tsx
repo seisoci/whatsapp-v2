@@ -336,6 +336,7 @@ export default function ChatPage() {
           readAt: rawMessage.readAt || null,
           reactionEmoji: rawMessage.reactionEmoji || null,
           reactionMessageId: rawMessage.reactionMessageId || null,
+          contactsPayload: rawMessage.contactsPayload || null,
           // User info (for outgoing messages)
           userId: rawMessage.userId || null,
           user: rawMessage.user || null,
@@ -1850,6 +1851,54 @@ export default function ChatPage() {
                                     </div>
                                   );
                                 })()
+                              ) : msg.messageType === 'contacts' && msg.contactsPayload?.length ? (
+                                // Contact card(s) shared via WhatsApp
+                                <div className="flex flex-col gap-2 min-w-[200px]">
+                                  {(msg.contactsPayload as any[]).map((contact: any, idx: number) => {
+                                    const name = contact.name?.formatted_name || contact.name?.first_name || 'Kontak';
+                                    const phones: string[] = (contact.phones || []).map((p: any) => p.phone || p.wa_id).filter(Boolean);
+                                    const emails: string[] = (contact.emails || []).map((e: any) => e.email).filter(Boolean);
+                                    return (
+                                      <div
+                                        key={idx}
+                                        className={`flex items-center gap-3 px-3 py-2.5 rounded-xl ${
+                                          isOwn
+                                            ? 'bg-blue-400/25'
+                                            : 'bg-gray-100 dark:bg-gray-700'
+                                        }`}
+                                      >
+                                        {/* Avatar placeholder */}
+                                        <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-base font-semibold ${
+                                          isOwn ? 'bg-blue-300/50 text-white' : 'bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-200'
+                                        }`}>
+                                          {name.charAt(0).toUpperCase()}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                          <p className={`text-sm font-semibold truncate ${isOwn ? 'text-white' : 'text-gray-900 dark:text-gray-100'}`}>{name}</p>
+                                          {phones[0] && (
+                                            <p className={`text-xs truncate ${isOwn ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'}`}>{phones[0]}</p>
+                                          )}
+                                          {!phones[0] && emails[0] && (
+                                            <p className={`text-xs truncate ${isOwn ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'}`}>{emails[0]}</p>
+                                          )}
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                  {/* Timestamp */}
+                                  <div className="flex justify-end items-center gap-1">
+                                    <span className={`text-[10px] ${isOwn ? 'text-blue-100' : 'text-gray-500'}`}>
+                                      {(() => {
+                                        const date = new Date(msg.timestamp);
+                                        const now = new Date();
+                                        const diff = differenceInCalendarDays(now, date);
+                                        if (diff >= 1) return format(date, 'dd/MM/yyyy HH:mm');
+                                        return format(date, 'HH:mm');
+                                      })()}
+                                    </span>
+                                    {isOwn && <span className={isOwn ? 'text-white' : ''}>{getStatusIcon(msg.status)}</span>}
+                                  </div>
+                                </div>
                               ) : msg.mediaUrl ? (
                                 <div className="flex flex-col">
                                   {msg.messageType === 'image' && (

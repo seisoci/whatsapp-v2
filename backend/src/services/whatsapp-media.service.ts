@@ -180,7 +180,7 @@ export class WhatsAppMediaService {
     accessToken: string,
   ): Promise<{ stream: Readable; contentLength: number | undefined; contentType: string }> {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 120_000); // 2 min for large files
+    const timeout = setTimeout(() => controller.abort(), 60_000); // 60s — stream to MinIO is faster than buffering
     let response: Response;
     try {
       response = await fetch(mediaUrl, {

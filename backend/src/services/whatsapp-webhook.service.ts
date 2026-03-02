@@ -137,27 +137,35 @@ export class WhatsAppWebhookService {
       receivedAt: new Date(),
     };
 
-    // Specify exact conflict target so PostgreSQL only locks the idempotency_key
-    // index — not all 9 indexes on the table (which causes CPU spin contention).
-    const insertResult = await webhookLogRepo
-      .createQueryBuilder()
-      .insert()
-      .into(WebhookLog)
-      .values(webhookLogData)
-      .onConflict('("idempotency_key") DO NOTHING')
-      .execute();
+    // Raw SQL INSERT with explicit conflict target — PostgreSQL only locks
+    // the idempotency_key index, not all 9 table indexes (prevents CPU spin).
+    const insertedRows: { id: string }[] = await AppDataSource.query(
+      `INSERT INTO webhook_logs
+         (id, event_type, webhook_payload, processing_status,
+          request_ip, request_user_agent, idempotency_key,
+          received_at, retry_count, created_at)
+       VALUES
+         (gen_random_uuid(), $1, $2::jsonb, $3, $4, $5, $6, $7, 0, NOW())
+       ON CONFLICT (idempotency_key) DO NOTHING
+       RETURNING id`,
+      [
+        webhookLogData.eventType,
+        JSON.stringify(webhookLogData.webhookPayload),
+        webhookLogData.processingStatus,
+        webhookLogData.requestIp ?? null,
+        webhookLogData.requestUserAgent ?? null,
+        webhookLogData.idempotencyKey,
+        webhookLogData.receivedAt,
+      ],
+    );
 
-    // If no row inserted (concurrent request already inserted), skip
-    if (!insertResult.identifiers || insertResult.identifiers.length === 0) {
+    // If no row inserted, a concurrent request beat us — skip (WhatsApp will not retry)
+    if (insertedRows.length === 0) {
       console.log(`Webhook insert skipped due to concurrent processing: ${idempotencyKey}`);
       return;
     }
 
-    const webhookLog = await webhookLogRepo.findOne({ where: { idempotencyKey } });
-    if (!webhookLog) {
-      console.warn(`Webhook log not found after insert: ${idempotencyKey}`);
-      return;
-    }
+    const webhookLogId = insertedRows[0].id;
 
     try {
       // Process each entry
@@ -170,30 +178,29 @@ export class WhatsAppWebhookService {
             if (value.messages) {
               for (const message of value.messages) {
                 // Pass contacts array to get profile info (optional)
-                await this.processIncomingMessage(message, value.metadata, value.contacts || [], webhookLog.id);
+                await this.processIncomingMessage(message, value.metadata, value.contacts || [], webhookLogId);
               }
             }
 
             // Process status updates
             if (value.statuses) {
               for (const status of value.statuses) {
-                await this.processStatusUpdate(status, webhookLog.id);
+                await this.processStatusUpdate(status, webhookLogId);
               }
             }
           }
         }
       }
 
-      // Mark as success (use update to avoid overwriting fields set in processIncomingMessage/processStatusUpdate)
-      await webhookLogRepo.update(webhookLog.id, {
+      // Mark as success
+      await webhookLogRepo.update(webhookLogId, {
         processingStatus: 'success',
         processedAt: new Date(),
         processingDurationMs: Date.now() - startTime,
       });
 
     } catch (error: any) {
-      // Mark as failed (use update to avoid overwriting fields set in processIncomingMessage/processStatusUpdate)
-      await webhookLogRepo.update(webhookLog.id, {
+      await webhookLogRepo.update(webhookLogId, {
         processingStatus: 'failed',
         processedAt: new Date(),
         processingDurationMs: Date.now() - startTime,
