@@ -65,19 +65,4 @@ export const mediaApi = {
     return response as unknown as UploadS3Response;
   },
 
-  /**
-   * Generate a fresh pre-signed URL for a stored media URL/path.
-   * Use this when displaying media from DB messages whose stored URL may have expired.
-   */
-  presign: async (url: string): Promise<string | null> => {
-    try {
-      const response = await apiClient.get<{ success: boolean; url: string }>(
-        `/media/presign?url=${encodeURIComponent(url)}`
-      );
-      const data = response as unknown as { success: boolean; url: string };
-      return data.success ? data.url : null;
-    } catch {
-      return null;
-    }
-  },
 };

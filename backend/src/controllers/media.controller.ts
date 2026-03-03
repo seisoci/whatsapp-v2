@@ -210,44 +210,4 @@ export class MediaController {
     }
   }
 
-  /**
-   * Generate a fresh pre-signed URL from a stored base URL or object path
-   * GET /media/presign?url=https://s3.itn.net.id/whatsapp/path/to/file.jpg
-   */
-  static async presign(c: Context) {
-    try {
-      const rawUrl = c.req.query('url') || c.req.query('path') || '';
-      if (!rawUrl) {
-        return c.json(
-          { success: false, message: 'url or path query param required' },
-          400
-        );
-      }
-
-      // Extract object key from full URL or use path directly
-      const bucket = process.env.MINIO_BUCKET || 'whatsapp';
-      let objectKey = rawUrl;
-      try {
-        const parsed = new URL(rawUrl);
-        const parts = parsed.pathname.split('/');
-        const bucketIdx = parts.indexOf(bucket);
-        objectKey =
-          bucketIdx !== -1
-            ? parts.slice(bucketIdx + 1).join('/')
-            : parsed.pathname.replace(/^\//, '');
-      } catch {
-        // Not a URL, treat as raw object key
-      }
-
-      // Generate fresh pre-signed URL valid for 1 hour
-      const presignedUrl = await storageService.getFileUrl(objectKey, 3600);
-      return c.json({ success: true, url: presignedUrl });
-    } catch (error: any) {
-      console.error('[Media Presign] Error:', error);
-      return c.json(
-        { success: false, message: error.message || 'Failed to generate URL' },
-        500
-      );
-    }
-  }
 }
