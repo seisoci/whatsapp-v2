@@ -39,7 +39,6 @@ const app = new Hono();
 
 // Global middlewares
 app.use('*', logger());
-app.use('*', securityHeaders);
 app.use('*', corsMiddleware);
 app.use('*', ipFilter);
 app.use('*', sanitizeMiddleware);
@@ -75,7 +74,6 @@ app.route(`${env.API_PREFIX}/api-endpoints`, apiEndpointRouter);
 app.route(`${env.API_PREFIX}/message-queues`, messageQueueRouter);
 app.route(`${env.API_PREFIX}`, publicApiRouter);
 
-
 // 404 handler
 app.notFound((c) => {
   return c.json(
@@ -93,7 +91,8 @@ app.onError((err, c) => {
   return c.json(
     {
       success: false,
-      message: env.NODE_ENV === 'production' ? 'Internal server error' : err.message,
+      message:
+        env.NODE_ENV === 'production' ? 'Internal server error' : err.message,
     },
     500
   );
@@ -111,14 +110,23 @@ const startServer = async () => {
     console.log('✅ Migrations executed successfully');
 
     // Test Redis connection (non-blocking)
-    redisClient.ping()
+    redisClient
+      .ping()
       .then(() => console.log('✅ Redis connection successful'))
-      .catch((error) => console.warn('⚠️  Redis connection failed (optional service):', error));
+      .catch((error) =>
+        console.warn('⚠️  Redis connection failed (optional service):', error)
+      );
 
     // Initialize Storage Service (non-blocking)
-    storageService.initialize()
+    storageService
+      .initialize()
       .then(() => console.log('✅ Storage service initialized'))
-      .catch((error) => console.warn('⚠️  Storage service initialization failed (optional service):', error));
+      .catch((error) =>
+        console.warn(
+          '⚠️  Storage service initialization failed (optional service):',
+          error
+        )
+      );
 
     // Start BullMQ queue dispatcher & worker
     QueueDispatcherService.start();
@@ -133,7 +141,10 @@ const startServer = async () => {
         const url = new URL(req.url);
 
         // Handle WebSocket upgrade for /ws/chat
-        if (url.pathname === '/ws/chat' && req.headers.get('upgrade') === 'websocket') {
+        if (
+          url.pathname === '/ws/chat' &&
+          req.headers.get('upgrade') === 'websocket'
+        ) {
           const upgraded = server.upgrade(req, {
             data: { request: req },
           });
@@ -156,7 +167,8 @@ const startServer = async () => {
         },
         open: (ws) => {
           // Delegate to ChatWebSocketManager with the stored request
-          const request = ws.data?.request || new Request(`ws://localhost:${port}/ws/chat`);
+          const request =
+            ws.data?.request || new Request(`ws://localhost:${port}/ws/chat`);
           chatWebSocketManager.handleConnection(ws, request);
         },
         close: (ws, code, reason) => {
@@ -168,7 +180,9 @@ const startServer = async () => {
 
     console.log(`🚀 Server is running on http://localhost:${port}`);
     console.log(`🔌 WebSocket endpoint: ws://localhost:${port}/ws/chat`);
-    console.log(`📝 API Documentation: http://localhost:${port}${env.API_PREFIX}`);
+    console.log(
+      `📝 API Documentation: http://localhost:${port}${env.API_PREFIX}`
+    );
     console.log(`🌍 Environment: ${env.NODE_ENV}`);
     console.log('\nAvailable Services:');
     console.log(`  - Authentication: ${env.API_PREFIX}/auth`);
@@ -176,10 +190,16 @@ const startServer = async () => {
     console.log(`  - User Management: ${env.API_PREFIX}/users`);
     console.log(`  - Role Management: ${env.API_PREFIX}/roles`);
     console.log(`  - Permission Management: ${env.API_PREFIX}/permissions`);
-    console.log(`  - Phone Numbers (WhatsApp): ${env.API_PREFIX}/phone-numbers`);
+    console.log(
+      `  - Phone Numbers (WhatsApp): ${env.API_PREFIX}/phone-numbers`
+    );
     console.log(`  - Chat WebSocket: ws://localhost:${port}/ws/chat`);
-    console.log(`  - Redis: ${process.env.REDIS_HOST}:${process.env.REDIS_PORT}`);
-    console.log(`  - MinIO: ${process.env.MINIO_ENDPOINT}:${process.env.MINIO_PORT}`);
+    console.log(
+      `  - Redis: ${process.env.REDIS_HOST}:${process.env.REDIS_PORT}`
+    );
+    console.log(
+      `  - MinIO: ${process.env.MINIO_ENDPOINT}:${process.env.MINIO_PORT}`
+    );
   } catch (error) {
     console.error('❌ Failed to start server:', error);
     process.exit(1);
