@@ -47,10 +47,12 @@ export default function EditUser({ user, onSuccess }: EditUserProps) {
     try {
       const response = await rolesApi.getAll();
       if (response.success && response.data) {
-        const roleOptions = response.data.map((role: any) => ({
-          label: role.name,
-          value: role.id,
-        }));
+        const roleOptions = (response.data as unknown as any[]).map(
+          (role: any) => ({
+            label: role.name,
+            value: role.id,
+          })
+        );
         setRoles(roleOptions);
       }
     } catch (error) {
@@ -101,7 +103,7 @@ export default function EditUser({ user, onSuccess }: EditUserProps) {
           isActive: user.isActive ? 'active' : 'inactive',
         },
       }}
-      className="grid grid-cols-1 gap-6 p-6 @container md:grid-cols-2 [&_.rizzui-input-label]:font-medium [&_.rizzui-input-label]:text-gray-900"
+      className="@container grid grid-cols-1 gap-6 p-6 md:grid-cols-2 [&_.rizzui-input-label]:font-medium [&_.rizzui-input-label]:text-gray-900"
     >
       {({ register, control, formState: { errors } }) => {
         return (

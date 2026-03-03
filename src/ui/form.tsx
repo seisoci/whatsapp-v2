@@ -15,7 +15,7 @@ type ServerErrors<T> = {
 
 type FormProps<TFormValues extends FieldValues> = {
   onSubmit: SubmitHandler<TFormValues>;
-  children: (methods: UseFormReturn<TFormValues>) => React.ReactNode;
+  children: (methods: UseFormReturn<TFormValues, any, any>) => React.ReactNode;
   useFormProps?: UseFormProps<TFormValues>;
   validationSchema?: Schema<TFormValues>;
   fieldErrors?: any[] | null;
@@ -25,9 +25,7 @@ type FormProps<TFormValues extends FieldValues> = {
   className?: string;
 };
 
-export const Form = <
-  TFormValues extends Record<string, any> = Record<string, any>,
->({
+export const Form = <TFormValues extends FieldValues = Record<string, any>>({
   onSubmit,
   children,
   useFormProps,
@@ -40,7 +38,7 @@ export const Form = <
 }: FormProps<TFormValues>) => {
   const methods = useForm<TFormValues>({
     ...useFormProps,
-    ...(validationSchema && { resolver: zodResolver(validationSchema) }),
+    ...(validationSchema && { resolver: zodResolver(validationSchema as any) }),
   });
 
   useEffect(() => {
@@ -52,7 +50,7 @@ export const Form = <
   return (
     <form
       noValidate
-      onSubmit={methods.handleSubmit(onSubmit)}
+      onSubmit={methods.handleSubmit(onSubmit as any)}
       {...formProps}
       className={className}
     >

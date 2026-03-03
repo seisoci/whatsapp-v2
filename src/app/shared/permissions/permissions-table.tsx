@@ -21,14 +21,21 @@ export default function PermissionsTable() {
     pageIndex: 0,
     pageSize: 10,
   });
-  const [sorting, setSorting] = useState<Array<{ id: string; desc: boolean }>>([]);
+  const [sorting, setSorting] = useState<Array<{ id: string; desc: boolean }>>(
+    []
+  );
   const [totalRecords, setTotalRecords] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
 
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const { openModal } = useModal();
 
-  const fetchPermissionData = async (page?: number, perPage?: number, search?: string, isInitialLoad = false) => {
+  const fetchPermissionData = async (
+    page?: number,
+    perPage?: number,
+    search?: string,
+    isInitialLoad = false
+  ) => {
     try {
       if (isInitialLoad) {
         setLoading(true);
@@ -42,7 +49,8 @@ export default function PermissionsTable() {
 
       // Prepare sort parameters
       const sortBy = sorting.length > 0 ? sorting[0].id : undefined;
-      const sortOrder = sorting.length > 0 ? (sorting[0].desc ? 'desc' : 'asc') : undefined;
+      const sortOrder =
+        sorting.length > 0 ? (sorting[0].desc ? 'desc' : 'asc') : undefined;
 
       const response = await permissionsApi.getAll({
         page: currentPage,
@@ -64,7 +72,7 @@ export default function PermissionsTable() {
 
         // Backend already returns data grouped by menu, no need to group manually
         if (Array.isArray(permissionData)) {
-          setPermissionData(permissionData);
+          setPermissionData(permissionData as Permission[]);
         } else {
           setPermissionData([]);
         }
@@ -103,7 +111,12 @@ export default function PermissionsTable() {
   useEffect(() => {
     if (loading) return;
 
-    fetchPermissionData(pagination.pageIndex + 1, pagination.pageSize, searchQuery, false);
+    fetchPermissionData(
+      pagination.pageIndex + 1,
+      pagination.pageSize,
+      searchQuery,
+      false
+    );
   }, [pagination.pageIndex, pagination.pageSize]);
 
   // Sorting effect
@@ -120,46 +133,72 @@ export default function PermissionsTable() {
 
   const handleEditPermission = (permission: Permission) => {
     openModal({
-      view: <CreateEditPermission permission={ permission } onSuccess = {() => fetchPermissionData(pagination.pageIndex + 1, pagination.pageSize, searchQuery, false)
-} />,
-customSize: 600,
+      view: (
+        <CreateEditPermission
+          permission={permission}
+          onSuccess={() =>
+            fetchPermissionData(
+              pagination.pageIndex + 1,
+              pagination.pageSize,
+              searchQuery,
+              false
+            )
+          }
+        />
+      ),
+      customSize: 600,
     });
   };
 
-const handleDeletePermission = async (id: string) => {
-  try {
-    const response = await permissionsApi.delete(id);
-    if (response.success) {
-      toast.success(response.message || 'Permission deleted successfully');
-      fetchPermissionData(pagination.pageIndex + 1, pagination.pageSize, searchQuery, false);
-    } else {
-      toast.error(response.message || 'Failed to delete permission');
+  const handleDeletePermission = async (id: string) => {
+    try {
+      const response = await permissionsApi.delete(id);
+      if (response.success) {
+        toast.success(response.message || 'Permission deleted successfully');
+        fetchPermissionData(
+          pagination.pageIndex + 1,
+          pagination.pageSize,
+          searchQuery,
+          false
+        );
+      } else {
+        toast.error(response.message || 'Failed to delete permission');
+      }
+    } catch (error: any) {
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Failed to delete permission';
+      toast.error(errorMessage);
     }
-  } catch (error: any) {
-    const errorMessage = error?.response?.data?.message || error?.message || 'Failed to delete permission';
-    toast.error(errorMessage);
-  }
-};
+  };
 
-return (
-  <div ref= { tableContainerRef } >
-  <PermissionsTableContent
-        data={ permissionData }
-loading = { loading }
-isRefreshing = { isRefreshing }
-onRefresh = {() => fetchPermissionData(pagination.pageIndex + 1, pagination.pageSize, searchQuery, false)}
-pagination = { pagination }
-setPagination = { setPagination }
-sorting = { sorting }
-setSorting = { setSorting }
-totalRecords = { totalRecords }
-searchQuery = { searchQuery }
-onSearchChange = { setSearchQuery }
-onResetFilters = { handleResetFilters }
-onEditPermission = { handleEditPermission }
-onDeletePermission = { handleDeletePermission }
-  />
-  </div>
+  return (
+    <div ref={tableContainerRef}>
+      <PermissionsTableContent
+        data={permissionData}
+        loading={loading}
+        isRefreshing={isRefreshing}
+        onRefresh={() =>
+          fetchPermissionData(
+            pagination.pageIndex + 1,
+            pagination.pageSize,
+            searchQuery,
+            false
+          )
+        }
+        pagination={pagination}
+        setPagination={setPagination}
+        sorting={sorting}
+        setSorting={setSorting}
+        totalRecords={totalRecords}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        onResetFilters={handleResetFilters}
+        onEditPermission={handleEditPermission}
+        onDeletePermission={handleDeletePermission}
+      />
+    </div>
   );
 }
 
@@ -186,7 +225,9 @@ function PermissionsTableContent({
   pagination: { pageIndex: number; pageSize: number };
   setPagination: (pagination: { pageIndex: number; pageSize: number }) => void;
   sorting: Array<{ id: string; desc: boolean }>;
-  setSorting: React.Dispatch<React.SetStateAction<Array<{ id: string; desc: boolean }>>>;
+  setSorting: React.Dispatch<
+    React.SetStateAction<Array<{ id: string; desc: boolean }>>
+  >;
   totalRecords: number;
   searchQuery: string;
   onSearchChange: (value: string) => void;
@@ -196,7 +237,10 @@ function PermissionsTableContent({
 }) {
   const { table, setData } = useTanStackTable<Permission>({
     tableData: data,
-    columnConfig: createPermissionsColumns({ onEditPermission, onDeletePermission }),
+    columnConfig: createPermissionsColumns({
+      onEditPermission,
+      onDeletePermission,
+    }) as any,
     options: {
       pageCount: Math.ceil(totalRecords / pagination.pageSize),
       state: {
@@ -218,73 +262,70 @@ function PermissionsTableContent({
 
   if (loading) {
     return (
-      <div className= "flex min-h-[400px] items-center justify-center" >
-      <Loader variant="spinner" size="lg" />
-        </div>
+      <div className="flex min-h-[400px] items-center justify-center">
+        <Loader variant="spinner" size="lg" />
+      </div>
     );
   }
 
   return (
     <>
-    <Flex
-        direction= "col"
-  justify = "between"
-  className = "mb-4 gap-3 xs:flex-row xs:items-center"
-    >
-    <Title as="h3" className = "text-base font-semibold sm:text-lg" >
-      Permissions({ totalRecords } total)
-      </Title>
-      < Flex align = "center" className = "w-full gap-3 xs:w-auto" >
-        <Input
+      <Flex
+        direction="col"
+        justify="between"
+        className="xs:flex-row xs:items-center mb-4 gap-3"
+      >
+        <Title as="h3" className="text-base font-semibold sm:text-lg">
+          Permissions({totalRecords} total)
+        </Title>
+        <Flex align="center" className="xs:w-auto w-full gap-3">
+          <Input
             type="search"
-  clearable = { true}
-  placeholder = "Search by name or slug..."
-  onClear = {() => onSearchChange('')
-}
-value = { searchQuery }
-prefix = {< PiMagnifyingGlassBold className = "size-4" />}
-onChange = {(e) => onSearchChange(e.target.value)}
-className = "w-full xs:max-w-80"
-  />
-  { searchQuery && (
-    <Button
+            clearable={true}
+            placeholder="Search by name or slug..."
+            onClear={() => onSearchChange('')}
+            value={searchQuery}
+            prefix={<PiMagnifyingGlassBold className="size-4" />}
+            onChange={(e) => onSearchChange(e.target.value)}
+            className="xs:max-w-80 w-full"
+          />
+          {searchQuery && (
+            <Button
               variant="outline"
-onClick = { onResetFilters }
-className = "w-auto"
-  >
-  Reset
-  </Button>
+              onClick={onResetFilters}
+              className="w-auto"
+            >
+              Reset
+            </Button>
           )}
-</Flex>
-  </Flex>
+        </Flex>
+      </Flex>
 
-{/* Table wrapper with smooth transitions */ }
-<div className="relative overflow-hidden" >
-  <div
+      {/* Table wrapper with smooth transitions */}
+      <div className="relative overflow-hidden">
+        <div
           className="transition-opacity duration-300 ease-in-out"
-style = {{ opacity: isRefreshing ? 0.4 : 1 }}
+          style={{ opacity: isRefreshing ? 0.4 : 1 }}
         >
-  <Table
-            table={ table }
-variant = "minimal"
-classNames = {{
-  rowClassName: 'last:!border-b-0 hover:bg-gray-50',
-    cellClassName: 'py-3',
+          <Table
+            table={table}
+            variant="minimal"
+            classNames={{
+              rowClassName: 'last:!border-b-0 hover:bg-gray-50',
+              cellClassName: 'py-3',
             }}
           />
-  </div>
-
-{/* Loading indicator */ }
-{
-  isRefreshing && (
-    <div className="absolute right-4 top-4 z-10" >
-      <Loader variant="spinner" size = "sm" className = "text-primary" />
         </div>
-        )
-}
-</div>
 
-  < TablePagination table = { table } className = "py-4" />
+        {/* Loading indicator */}
+        {isRefreshing && (
+          <div className="absolute top-4 right-4 z-10">
+            <Loader variant="spinner" size="sm" className="text-primary" />
+          </div>
+        )}
+      </div>
+
+      <TablePagination table={table} className="py-4" />
     </>
   );
 }

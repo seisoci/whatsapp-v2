@@ -22,7 +22,9 @@ export default function UsersTable() {
     pageIndex: 0,
     pageSize: 10,
   });
-  const [sorting, setSorting] = useState<Array<{ id: string; desc: boolean }>>([]);
+  const [sorting, setSorting] = useState<Array<{ id: string; desc: boolean }>>(
+    []
+  );
   const [totalRecords, setTotalRecords] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState({});
@@ -30,7 +32,12 @@ export default function UsersTable() {
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const { openModal } = useModal();
 
-  const fetchUserData = async (page?: number, perPage?: number, search?: string, isInitialLoad = false) => {
+  const fetchUserData = async (
+    page?: number,
+    perPage?: number,
+    search?: string,
+    isInitialLoad = false
+  ) => {
     try {
       if (isInitialLoad) {
         setLoading(true);
@@ -44,7 +51,8 @@ export default function UsersTable() {
 
       // Prepare sort parameters
       const sortBy = sorting.length > 0 ? sorting[0].id : undefined;
-      const sortOrder = sorting.length > 0 ? (sorting[0].desc ? 'desc' : 'asc') : undefined;
+      const sortOrder =
+        sorting.length > 0 ? (sorting[0].desc ? 'desc' : 'asc') : undefined;
 
       try {
         const response = await usersApi.getAll({
@@ -66,7 +74,7 @@ export default function UsersTable() {
           }
 
           if (Array.isArray(userData)) {
-            setUserData(userData);
+            setUserData(userData as User[]);
           } else {
             setUserData([]);
           }
@@ -75,7 +83,10 @@ export default function UsersTable() {
         }
       } catch (apiError: any) {
         setUserData([]);
-        const errorMessage = apiError?.response?.data?.message || apiError?.message || 'Failed to load users';
+        const errorMessage =
+          apiError?.response?.data?.message ||
+          apiError?.message ||
+          'Failed to load users';
         toast.error(errorMessage);
       }
     } catch (error: any) {
@@ -103,12 +114,16 @@ export default function UsersTable() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-
   // Pagination effect
   useEffect(() => {
     if (loading) return;
 
-    fetchUserData(pagination.pageIndex + 1, pagination.pageSize, searchQuery, false);
+    fetchUserData(
+      pagination.pageIndex + 1,
+      pagination.pageSize,
+      searchQuery,
+      false
+    );
   }, [pagination.pageIndex, pagination.pageSize]);
 
   // Sorting effect
@@ -125,14 +140,38 @@ export default function UsersTable() {
 
   const handleEditUser = (user: User) => {
     openModal({
-      view: <EditUser user={user} onSuccess={() => fetchUserData(pagination.pageIndex + 1, pagination.pageSize, searchQuery, false)} />,
+      view: (
+        <EditUser
+          user={user as any}
+          onSuccess={() =>
+            fetchUserData(
+              pagination.pageIndex + 1,
+              pagination.pageSize,
+              searchQuery,
+              false
+            )
+          }
+        />
+      ),
       customSize: 600,
     });
   };
 
   const handleResetPassword = (user: User) => {
     openModal({
-      view: <ResetPasswordModal user={user} onSuccess={() => fetchUserData(pagination.pageIndex + 1, pagination.pageSize, searchQuery, false)} />,
+      view: (
+        <ResetPasswordModal
+          user={user}
+          onSuccess={() =>
+            fetchUserData(
+              pagination.pageIndex + 1,
+              pagination.pageSize,
+              searchQuery,
+              false
+            )
+          }
+        />
+      ),
       customSize: 500,
     });
   };
@@ -142,12 +181,20 @@ export default function UsersTable() {
       const response = await usersApi.delete(id);
       if (response.success) {
         toast.success(response.message || 'User deleted successfully');
-        fetchUserData(pagination.pageIndex + 1, pagination.pageSize, searchQuery, false);
+        fetchUserData(
+          pagination.pageIndex + 1,
+          pagination.pageSize,
+          searchQuery,
+          false
+        );
       } else {
         toast.error(response.message || 'Failed to delete user');
       }
     } catch (error: any) {
-      const errorMessage = error?.response?.data?.message || error?.message || 'Failed to delete user';
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Failed to delete user';
       toast.error(errorMessage);
     }
   };
@@ -158,7 +205,14 @@ export default function UsersTable() {
         data={userData}
         loading={loading}
         isRefreshing={isRefreshing}
-        onRefresh={() => fetchUserData(pagination.pageIndex + 1, pagination.pageSize, searchQuery, false)}
+        onRefresh={() =>
+          fetchUserData(
+            pagination.pageIndex + 1,
+            pagination.pageSize,
+            searchQuery,
+            false
+          )
+        }
         pagination={pagination}
         setPagination={setPagination}
         sorting={sorting}
@@ -199,7 +253,9 @@ function UsersTableContent({
   pagination: { pageIndex: number; pageSize: number };
   setPagination: (pagination: { pageIndex: number; pageSize: number }) => void;
   sorting: Array<{ id: string; desc: boolean }>;
-  setSorting: React.Dispatch<React.SetStateAction<Array<{ id: string; desc: boolean }>>>;
+  setSorting: React.Dispatch<
+    React.SetStateAction<Array<{ id: string; desc: boolean }>>
+  >;
   totalRecords: number;
   searchQuery: string;
   onSearchChange: (value: string) => void;
@@ -210,7 +266,11 @@ function UsersTableContent({
 }) {
   const { table, setData } = useTanStackTable<User>({
     tableData: data,
-    columnConfig: createUsersColumns({ onEditUser, onResetPassword, onDeleteUser }),
+    columnConfig: createUsersColumns({
+      onEditUser,
+      onResetPassword,
+      onDeleteUser,
+    }),
     options: {
       pageCount: Math.ceil(totalRecords / pagination.pageSize),
       state: {
@@ -243,12 +303,12 @@ function UsersTableContent({
       <Flex
         direction="col"
         justify="between"
-        className="mb-4 gap-3 xs:flex-row xs:items-center"
+        className="xs:flex-row xs:items-center mb-4 gap-3"
       >
         <Title as="h3" className="text-base font-semibold sm:text-lg">
           Users ({totalRecords} total)
         </Title>
-        <Flex align="center" className="w-full gap-3 xs:w-auto">
+        <Flex align="center" className="xs:w-auto w-full gap-3">
           <Input
             type="search"
             clearable={true}
@@ -257,7 +317,7 @@ function UsersTableContent({
             value={searchQuery}
             prefix={<PiMagnifyingGlassBold className="size-4" />}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="w-full xs:max-w-80"
+            className="xs:max-w-80 w-full"
           />
           {searchQuery && (
             <Button
@@ -289,7 +349,7 @@ function UsersTableContent({
 
         {/* Loading indicator */}
         {isRefreshing && (
-          <div className="absolute right-4 top-4 z-10">
+          <div className="absolute top-4 right-4 z-10">
             <Loader variant="spinner" size="sm" className="text-primary" />
           </div>
         )}

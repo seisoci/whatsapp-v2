@@ -37,7 +37,7 @@ export const MenuList = forwardRef<
     const { trigger, openDropdown, closeDropdown } = useMenuContext();
     const wrapperRef = useRef<HTMLElement>(null);
 
-    const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    const handleKeyDown = (event: React.KeyboardEvent<any>) => {
       if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
         event.preventDefault();
         wrapperRef.current
@@ -65,7 +65,7 @@ export const MenuList = forwardRef<
     return (
       <Popover.Content
         as={Component}
-        {...props}
+        {...(props as any)}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         role="menuList"

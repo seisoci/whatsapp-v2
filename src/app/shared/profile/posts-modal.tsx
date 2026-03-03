@@ -26,11 +26,10 @@ export type CommentPropsType = {
 
 export default function PostsModal({ data, onClose }: any) {
   return (
-    <div className="round grid grow grid-cols-1 gap-0 overflow-hidden rounded-none bg-white dark:bg-gray-100/90 dark:backdrop-blur-xl lg:grid-cols-12 lg:rounded-xl">
+    <div className="round grid grow grid-cols-1 gap-0 overflow-hidden rounded-none bg-white lg:grid-cols-12 lg:rounded-xl dark:bg-gray-100/90 dark:backdrop-blur-xl">
       <div className="relative h-full lg:col-span-7">
         <Button
-         
-          className="absolute right-5 top-5 z-10 h-[30px] w-[30px] p-1 lg:left-5 2xl:hidden"
+          className="absolute top-5 right-5 z-10 h-[30px] w-[30px] p-1 lg:left-5 2xl:hidden"
           onClick={onClose}
         >
           <PiXBold className="w-5" />
@@ -98,7 +97,12 @@ function ModalCardSlider({ data }: any) {
 function ModalCardVideo({ data }: any) {
   return (
     <div className="flex h-full items-center bg-black dark:bg-gray-50">
-      <ReactPlayer url={data.video.link} controls width="100%" />
+      <ReactPlayer
+        url={data.video.link}
+        controls
+        width="100%"
+        {...({} as any)}
+      />
     </div>
   );
 }
@@ -115,7 +119,7 @@ function ModalCardText() {
             src="https://randomuser.me/api/portraits/women/2.jpg"
           />
           <div>
-            <Title as="h2" className="text-base text-gray-1000">
+            <Title as="h2" className="text-gray-1000 text-base">
               Andrei Jackson
             </Title>
             <Text className="text-xs text-gray-500 dark:text-gray-500">
@@ -128,7 +132,7 @@ function ModalCardText() {
           <span className="ms-1.5 inline-block">Follow</span>
         </Button>
       </div>
-      <Text className="py-5 text-sm leading-6 text-gray-500 dark:text-gray-1000 lg:py-7">
+      <Text className="dark:text-gray-1000 py-5 text-sm leading-6 text-gray-500 lg:py-7">
         Hi 👋🏻😊 The passage experienced a surge in popularity during the 1960s
         😜 when Leeriest used it on their dry-transfer sheets, and again during
         the 90s 👋🏻😊 as desktop publishers bundled 😜 the text with their
@@ -168,14 +172,14 @@ function ModalCardComment({ commentData }: CommentPropsType) {
     return { __html: data };
   };
   return (
-    <div className="flex items-start gap-4 pr-3 pt-6">
+    <div className="flex items-start gap-4 pt-6 pr-3">
       <Avatar
         name="Marie Fanned"
         className="bg-[#F1A74F] font-medium tracking-wider text-white"
         src={commentData.userImg}
       />
       <div>
-        <Title as="h2" className="text-sm font-medium text-gray-1000">
+        <Title as="h2" className="text-gray-1000 text-sm font-medium">
           <Link href={'/'} className="inline-block hover:underline">
             {commentData.user}
           </Link>
@@ -209,7 +213,7 @@ function ModalCommentBox() {
       <Button
         variant="text"
         color="primary"
-        className="absolute bottom-2 end-2"
+        className="absolute end-2 bottom-2"
       >
         Post
       </Button>

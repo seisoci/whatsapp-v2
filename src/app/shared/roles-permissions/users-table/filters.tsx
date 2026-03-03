@@ -39,7 +39,7 @@ export default function Filters<TData extends Record<string, any>>({
   const isFiltered =
     table.getState().globalFilter || table.getState().columnFilters.length > 0;
   return (
-    <Box className="mb-4 @container">
+    <Box className="@container mb-4">
       <Flex
         gap="3"
         align="center"
@@ -48,7 +48,7 @@ export default function Filters<TData extends Record<string, any>>({
       >
         <Title
           as="h3"
-          className="rizzui-title-h3 order-1 whitespace-nowrap pe-4 text-base font-semibold sm:text-lg"
+          className="rizzui-title-h3 order-1 pe-4 text-base font-semibold whitespace-nowrap sm:text-lg"
         >
           All Users
         </Title>
@@ -61,7 +61,7 @@ export default function Filters<TData extends Record<string, any>>({
           <StatusField
             placeholder="Filter by status"
             options={statusOptions}
-            value={table.getColumn('status')?.getFilterValue() ?? []}
+            value={(table.getColumn('status')?.getFilterValue() as any) ?? []}
             onChange={(e) => table.getColumn('status')?.setFilterValue(e)}
             getOptionValue={(option) => option.label}
             dropdownClassName="!z-10 h-auto"
@@ -76,7 +76,7 @@ export default function Filters<TData extends Record<string, any>>({
           <StatusField
             placeholder="Filter by Role"
             options={roles}
-            value={table.getColumn('role')?.getFilterValue() ?? []}
+            value={(table.getColumn('role')?.getFilterValue() as any) ?? []}
             onChange={(e) => table.getColumn('role')?.setFilterValue(e)}
             getOptionValue={(option) => option.label}
             dropdownClassName="!z-10"
@@ -125,7 +125,7 @@ function renderOptionDisplayValue(value: string) {
       return (
         <div className="flex items-center">
           <Badge color="success" renderAsDot />
-          <Text className="ms-2 font-medium capitalize text-green-dark">
+          <Text className="text-green-dark ms-2 font-medium capitalize">
             {value}
           </Text>
         </div>
@@ -134,7 +134,7 @@ function renderOptionDisplayValue(value: string) {
       return (
         <div className="flex items-center">
           <Badge color="danger" renderAsDot />
-          <Text className="ms-2 font-medium capitalize text-red-dark">
+          <Text className="text-red-dark ms-2 font-medium capitalize">
             {value}
           </Text>
         </div>
@@ -143,7 +143,7 @@ function renderOptionDisplayValue(value: string) {
       return (
         <div className="flex items-center">
           <Badge renderAsDot className="bg-orange-dark" />
-          <Text className="ms-2 font-medium capitalize text-orange-dark">
+          <Text className="text-orange-dark ms-2 font-medium capitalize">
             {value}
           </Text>
         </div>

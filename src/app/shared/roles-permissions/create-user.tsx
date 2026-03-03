@@ -16,7 +16,9 @@ const createUserSchema = z
     username: z.string().min(3, 'Username must be at least 3 characters'),
     email: z.string().email('Invalid email address'),
     password: z.string().min(8, 'Password must be at least 8 characters'),
-    confirmPassword: z.string().min(8, 'Password confirmation must be at least 8 characters'),
+    confirmPassword: z
+      .string()
+      .min(8, 'Password confirmation must be at least 8 characters'),
     roleId: z.string().min(1, 'Role is required'),
     isActive: z.string().optional(),
   })
@@ -40,10 +42,12 @@ export default function CreateUser({ onSuccess }: { onSuccess?: () => void }) {
     try {
       const response = await rolesApi.getAll();
       if (response.success && response.data) {
-        const roleOptions = response.data.map((role: any) => ({
-          label: role.name,
-          value: role.id,
-        }));
+        const roleOptions = (response.data as unknown as any[]).map(
+          (role: any) => ({
+            label: role.name,
+            value: role.id,
+          })
+        );
         setRoles(roleOptions);
       }
     } catch (error) {
@@ -93,7 +97,7 @@ export default function CreateUser({ onSuccess }: { onSuccess?: () => void }) {
           isActive: 'active',
         },
       }}
-      className="grid grid-cols-1 gap-6 p-6 @container md:grid-cols-2 [&_.rizzui-input-label]:font-medium [&_.rizzui-input-label]:text-gray-900"
+      className="@container grid grid-cols-1 gap-6 p-6 md:grid-cols-2 [&_.rizzui-input-label]:font-medium [&_.rizzui-input-label]:text-gray-900"
     >
       {({ register, control, formState: { errors } }) => {
         return (

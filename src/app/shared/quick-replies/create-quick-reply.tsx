@@ -17,12 +17,12 @@ const createQuickReplySchema = z.object({
 
 type CreateQuickReplyInput = z.infer<typeof createQuickReplySchema>;
 
-export default function CreateQuickReply({ 
+export default function CreateQuickReply({
   reply,
-  onSuccess 
-}: { 
+  onSuccess,
+}: {
   reply?: QuickReply;
-  onSuccess?: () => void 
+  onSuccess?: () => void;
 }) {
   const { closeModal } = useModal();
   const [isLoading, setLoading] = useState(false);
@@ -34,14 +34,17 @@ export default function CreateQuickReply({
         await quickReplyApi.update(reply.id, data);
         toast.success('Quick reply updated successfully');
       } else {
-        await quickReplyApi.create(data);
+        await quickReplyApi.create(data as any);
         toast.success('Quick reply created successfully');
       }
       closeModal();
       onSuccess?.();
     } catch (error: any) {
       console.error('Quick reply error:', error);
-      const errorMessage = error?.response?.data?.message || error?.message || 'Failed to save quick reply';
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Failed to save quick reply';
       toast.error(errorMessage);
     } finally {
       setLoading(false);
@@ -58,7 +61,7 @@ export default function CreateQuickReply({
           text: reply?.text || '',
         },
       }}
-      className="grid grid-cols-1 gap-6 p-6 @container [&_.rizzui-input-label]:font-medium [&_.rizzui-input-label]:text-gray-900"
+      className="@container grid grid-cols-1 gap-6 p-6 [&_.rizzui-input-label]:font-medium [&_.rizzui-input-label]:text-gray-900"
     >
       {({ register, formState: { errors }, watch }) => {
         const shortcutValue = watch('shortcut');
@@ -74,7 +77,7 @@ export default function CreateQuickReply({
             </div>
 
             <div className="col-span-full">
-              <label className="block text-sm font-medium mb-2">
+              <label className="mb-2 block text-sm font-medium">
                 Shortcut <span className="text-gray-400">(optional)</span>
               </label>
               <Input
@@ -84,13 +87,14 @@ export default function CreateQuickReply({
                 className="w-full"
                 error={errors.shortcut?.message}
               />
-              <p className="text-xs text-gray-500 mt-1">
-                Type /{shortcutValue || 'shortcut'} in chat to use this quick reply
+              <p className="mt-1 text-xs text-gray-500">
+                Type /{shortcutValue || 'shortcut'} in chat to use this quick
+                reply
               </p>
             </div>
 
             <div className="col-span-full">
-              <label className="block text-sm font-medium mb-2">
+              <label className="mb-2 block text-sm font-medium">
                 Message Text <span className="text-red-500">*</span>
               </label>
               <Textarea

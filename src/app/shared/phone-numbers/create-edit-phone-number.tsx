@@ -46,7 +46,9 @@ export default function CreateEditPhoneNumber({
     formState: { errors, isSubmitting },
     reset,
   } = useForm<PhoneNumberFormData>({
-    resolver: zodResolver(isEditMode ? editPhoneNumberSchema : createPhoneNumberSchema),
+    resolver: zodResolver(
+      isEditMode ? editPhoneNumberSchema : createPhoneNumberSchema
+    ) as any,
     defaultValues: {
       phoneNumberId: '',
       accessToken: '',
@@ -68,7 +70,7 @@ export default function CreateEditPhoneNumber({
     }
   }, [phoneNumber, reset]);
 
-  const onSubmit: SubmitHandler<PhoneNumberFormData> = async (data) => {
+  const onSubmit: SubmitHandler<any> = async (data) => {
     try {
       let response;
 
@@ -132,8 +134,16 @@ export default function CreateEditPhoneNumber({
 
         <div className="col-span-full">
           <Textarea
-            label={isEditMode ? 'Access Token (Optional - Leave empty to keep current)' : 'Access Token'}
-            placeholder={isEditMode ? 'Enter new Access Token only if you want to update it' : 'Enter Permanent Access Token from Meta'}
+            label={
+              isEditMode
+                ? 'Access Token (Optional - Leave empty to keep current)'
+                : 'Access Token'
+            }
+            placeholder={
+              isEditMode
+                ? 'Enter new Access Token only if you want to update it'
+                : 'Enter Permanent Access Token from Meta'
+            }
             {...register('accessToken')}
             error={errors.accessToken?.message}
             rows={3}

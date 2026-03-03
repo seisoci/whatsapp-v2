@@ -31,12 +31,12 @@ export default function ProfileMenu({
         >
           <Avatar
             src="/avatar.webp"
-            name={user?.name || 'User'}
+            name={user?.username || 'User'}
             className={cn('!h-9 w-9 sm:!h-10 sm:!w-10', avatarClassName)}
           />
           {!!username && (
-            <span className="username hidden text-gray-200 dark:text-gray-700 md:inline-flex">
-              Hi, {user?.name?.split(' ')[0] || 'User'}
+            <span className="username hidden text-gray-200 md:inline-flex dark:text-gray-700">
+              Hi, {user?.username?.split(' ')[0] || 'User'}
             </span>
           )}
         </button>
@@ -58,12 +58,7 @@ function ProfileMenuPopover({ children }: React.PropsWithChildren<{}>) {
   }, [pathname]);
 
   return (
-    <Popover
-      isOpen={isOpen}
-      setIsOpen={setIsOpen}
-      shadow="sm"
-      placement="bottom-end"
-    >
+    <Popover isOpen={isOpen} setIsOpen={setIsOpen} placement="bottom-end">
       {children}
     </Popover>
   );
@@ -91,9 +86,10 @@ const menuItems = [
 
 function DropdownMenu() {
   const { user, logout } = useAuth();
-  const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
+  const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] =
+    useState(false);
 
-  const handleMenuClick = (item: typeof menuItems[0]) => {
+  const handleMenuClick = (item: (typeof menuItems)[0]) => {
     if (item.action === 'changePassword') {
       setIsChangePasswordModalOpen(true);
     }
@@ -102,17 +98,19 @@ function DropdownMenu() {
   return (
     <>
       <div className="w-64 text-left rtl:text-right">
-        <div className="flex items-center border-b border-gray-300 px-6 pb-5 pt-6">
-          <Avatar src="/avatar.webp" name={user?.name || 'User'} />
+        <div className="flex items-center border-b border-gray-300 px-6 pt-6 pb-5">
+          <Avatar src="/avatar.webp" name={user?.username || 'User'} />
           <div className="ms-3">
             <Title as="h6" className="font-semibold">
-              {user?.name || 'User'}
+              {user?.username || 'User'}
             </Title>
-            <Text className="text-gray-600">{user?.email || 'user@example.com'}</Text>
+            <Text className="text-gray-600">
+              {user?.email || 'user@example.com'}
+            </Text>
           </div>
         </div>
         <div className="grid px-3.5 py-3.5 font-medium text-gray-700">
-          {menuItems.map((item) => (
+          {menuItems.map((item) =>
             item.action ? (
               <button
                 key={item.name}
@@ -130,9 +128,9 @@ function DropdownMenu() {
                 {item.name}
               </Link>
             )
-          ))}
+          )}
         </div>
-        <div className="border-t border-gray-300 px-6 pb-6 pt-5">
+        <div className="border-t border-gray-300 px-6 pt-5 pb-6">
           <Button
             className="h-auto w-full justify-start p-0 font-medium text-gray-700 outline-none focus-within:text-gray-600 hover:text-gray-900 focus-visible:ring-0"
             variant="text"

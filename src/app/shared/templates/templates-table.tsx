@@ -18,14 +18,18 @@ import WebhookExampleModal from '@/app/shared/templates/webhook-example-modal';
 export default function TemplatesTable() {
   const [templateData, setTemplateData] = useState<Template[]>([]);
   const [filteredData, setFilteredData] = useState<Template[]>([]);
-  const [phoneNumbers, setPhoneNumbers] = useState<{ value: string; label: string }[]>([]);
+  const [phoneNumbers, setPhoneNumbers] = useState<
+    { value: string; label: string }[]
+  >([]);
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [totalRecords, setTotalRecords] = useState(0);
 
   // Modal State
   const [webhookModalOpen, setWebhookModalOpen] = useState(false);
-  const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(
+    null
+  );
 
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
@@ -44,8 +48,8 @@ export default function TemplatesTable() {
         const templateData = response.data || [];
 
         if (Array.isArray(templateData)) {
-          setTemplateData(templateData);
-          setFilteredData(templateData);
+          setTemplateData(templateData as Template[]);
+          setFilteredData(templateData as Template[]);
           setTotalRecords(templateData.length);
 
           // Extract unique phone numbers for filter
@@ -53,7 +57,8 @@ export default function TemplatesTable() {
             new Set(
               templateData.map((t: any) => ({
                 value: t.phoneNumberId,
-                label: t.phoneNumberName || t.displayPhoneNumber || t.phoneNumberId,
+                label:
+                  t.phoneNumberName || t.displayPhoneNumber || t.phoneNumberId,
               }))
             )
           ).reduce((acc: any[], curr) => {
@@ -99,7 +104,9 @@ export default function TemplatesTable() {
       toast.error('Cannot edit template: Missing Phone Number ID');
       return;
     }
-    router.push(`${routes.templates.edit(template.id)}?phoneNumberId=${template.phoneNumberId}`);
+    router.push(
+      `${routes.templates.edit(template.id)}?phoneNumberId=${template.phoneNumberId}`
+    );
   };
 
   const handleCreateTemplate = () => {
@@ -107,24 +114,35 @@ export default function TemplatesTable() {
   };
 
   const handleViewWebhook = (template: Template) => {
-      setSelectedTemplate(template);
-      setWebhookModalOpen(true);
+    setSelectedTemplate(template);
+    setWebhookModalOpen(true);
   };
 
-const handleDeleteTemplate = async (id: string, phoneNumberId: string, templateName: string) => {
-  try {
-    const response = await templatesApi.delete(id, phoneNumberId, templateName);
-    if (response.success) {
-      toast.success(response.message || 'Template deleted successfully');
-      fetchTemplateData(false);
-    } else {
-      toast.error(response.message || 'Failed to delete template');
+  const handleDeleteTemplate = async (
+    id: string,
+    phoneNumberId: string,
+    templateName: string
+  ) => {
+    try {
+      const response = await templatesApi.delete(
+        id,
+        phoneNumberId,
+        templateName
+      );
+      if (response.success) {
+        toast.success(response.message || 'Template deleted successfully');
+        fetchTemplateData(false);
+      } else {
+        toast.error(response.message || 'Failed to delete template');
+      }
+    } catch (error: any) {
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Failed to delete template';
+      toast.error(errorMessage);
     }
-  } catch (error: any) {
-    const errorMessage = error?.response?.data?.message || error?.message || 'Failed to delete template';
-    toast.error(errorMessage);
-  }
-};
+  };
 
   const handleFilter = (filters: {
     category: string;
@@ -142,35 +160,37 @@ const handleDeleteTemplate = async (id: string, phoneNumberId: string, templateN
     }
 
     if (filters.phoneNumberId) {
-      filtered = filtered.filter((t: any) => t.phoneNumberId === filters.phoneNumberId);
+      filtered = filtered.filter(
+        (t: any) => t.phoneNumberId === filters.phoneNumberId
+      );
     }
 
     setFilteredData(filtered);
     setTotalRecords(filtered.length);
   };
 
-return (
-  <div ref={tableContainerRef}>
-    <TemplatesTableContent
-      data={filteredData}
-      loading={loading}
-      isRefreshing={isRefreshing}
-      onRefresh={() => fetchTemplateData(false)}
-      totalRecords={totalRecords}
-      onEditTemplate={handleEditTemplate}
-      onDeleteTemplate={handleDeleteTemplate}
-      onViewWebhook={handleViewWebhook}
-      onCreateTemplate={handleCreateTemplate}
-      phoneNumbers={phoneNumbers}
-      onFilter={handleFilter}
-    />
+  return (
+    <div ref={tableContainerRef}>
+      <TemplatesTableContent
+        data={filteredData}
+        loading={loading}
+        isRefreshing={isRefreshing}
+        onRefresh={() => fetchTemplateData(false)}
+        totalRecords={totalRecords}
+        onEditTemplate={handleEditTemplate}
+        onDeleteTemplate={handleDeleteTemplate}
+        onViewWebhook={handleViewWebhook}
+        onCreateTemplate={handleCreateTemplate}
+        phoneNumbers={phoneNumbers}
+        onFilter={handleFilter}
+      />
 
-    <WebhookExampleModal 
-         isOpen={webhookModalOpen}
-         onClose={() => setWebhookModalOpen(false)}
-         template={selectedTemplate}
-    />
-  </div>
+      <WebhookExampleModal
+        isOpen={webhookModalOpen}
+        onClose={() => setWebhookModalOpen(false)}
+        template={selectedTemplate}
+      />
+    </div>
   );
 }
 
@@ -193,11 +213,19 @@ function TemplatesTableContent({
   onRefresh: () => void;
   totalRecords: number;
   onEditTemplate: (template: Template) => void;
-  onDeleteTemplate: (id: string, phoneNumberId: string, templateName: string) => void;
+  onDeleteTemplate: (
+    id: string,
+    phoneNumberId: string,
+    templateName: string
+  ) => void;
   onViewWebhook: (template: Template) => void;
   onCreateTemplate: () => void;
   phoneNumbers: { value: string; label: string }[];
-  onFilter: (filters: { category: string; status: string; phoneNumberId: string }) => void;
+  onFilter: (filters: {
+    category: string;
+    status: string;
+    phoneNumberId: string;
+  }) => void;
 }) {
   const { table, setData } = useTanStackTable<Template>({
     tableData: data,
@@ -222,9 +250,9 @@ function TemplatesTableContent({
 
   if (loading) {
     return (
-      <div className= "flex min-h-[400px] items-center justify-center" >
-      <Loader variant="spinner" size="lg" />
-        </div>
+      <div className="flex min-h-[400px] items-center justify-center">
+        <Loader variant="spinner" size="lg" />
+      </div>
     );
   }
 
@@ -247,14 +275,12 @@ function TemplatesTableContent({
           />
         </div>
 
-{
-  isRefreshing && (
-    <div className="absolute right-4 top-4 z-10" >
-      <Loader variant="spinner" size = "sm" className = "text-primary" />
-        </div>
-        )
-}
-</div>
-  </>
+        {isRefreshing && (
+          <div className="absolute top-4 right-4 z-10">
+            <Loader variant="spinner" size="sm" className="text-primary" />
+          </div>
+        )}
+      </div>
+    </>
   );
 }

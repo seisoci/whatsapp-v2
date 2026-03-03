@@ -38,13 +38,13 @@ export default function NavMenu(props: NavMenuProps) {
       popoverLeft: el.offsetLeft,
       hoveringWidth: el.offsetWidth,
       hoveringElRect: el.getBoundingClientRect(),
-    });
+    } as any);
     const contentElement = contentRefs.current[index];
     if (contentElement) {
       set({
         popoverHeight: contentElement.offsetHeight,
         popoverWidth: contentElement.offsetWidth,
-      });
+      } as any);
     }
   }
 

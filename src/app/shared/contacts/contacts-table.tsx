@@ -27,7 +27,12 @@ export default function ContactsTable() {
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const { openModal } = useModal();
 
-  const fetchData = async (page?: number, perPage?: number, search?: string, isInitialLoad = false) => {
+  const fetchData = async (
+    page?: number,
+    perPage?: number,
+    search?: string,
+    isInitialLoad = false
+  ) => {
     try {
       if (isInitialLoad) {
         setLoading(true);
@@ -46,7 +51,7 @@ export default function ContactsTable() {
       });
 
       if (response.success && response.data) {
-        setData(response.data || []);
+        setData((response.data as any) || []);
         if (response.meta?.total !== undefined) {
           setTotalRecords(response.meta.total);
         }
@@ -79,12 +84,29 @@ export default function ContactsTable() {
   // Pagination
   useEffect(() => {
     if (loading) return;
-    fetchData(pagination.pageIndex + 1, pagination.pageSize, searchQuery, false);
+    fetchData(
+      pagination.pageIndex + 1,
+      pagination.pageSize,
+      searchQuery,
+      false
+    );
   }, [pagination.pageIndex, pagination.pageSize]);
 
   const handleEdit = (contact: Contact) => {
     openModal({
-      view: <CreateEditContact contact={contact} onSuccess={() => fetchData(pagination.pageIndex + 1, pagination.pageSize, searchQuery, false)} />,
+      view: (
+        <CreateEditContact
+          contact={contact}
+          onSuccess={() =>
+            fetchData(
+              pagination.pageIndex + 1,
+              pagination.pageSize,
+              searchQuery,
+              false
+            )
+          }
+        />
+      ),
       customSize: 600,
     });
   };
@@ -95,7 +117,12 @@ export default function ContactsTable() {
       const response = await contactsApi.delete(id);
       if (response.success) {
         toast.success('Contact deleted successfully');
-        fetchData(pagination.pageIndex + 1, pagination.pageSize, searchQuery, false);
+        fetchData(
+          pagination.pageIndex + 1,
+          pagination.pageSize,
+          searchQuery,
+          false
+        );
       } else {
         toast.error(response.message || 'Failed to delete contact');
       }
@@ -106,7 +133,10 @@ export default function ContactsTable() {
 
   const { table, setData: setTableData } = useTanStackTable<Contact>({
     tableData: data,
-    columnConfig: createContactsColumns({ onEdit: handleEdit, onDelete: handleDelete }),
+    columnConfig: createContactsColumns({
+      onEdit: handleEdit,
+      onDelete: handleDelete,
+    }),
     options: {
       pageCount: Math.ceil(totalRecords / pagination.pageSize),
       state: {
@@ -135,12 +165,12 @@ export default function ContactsTable() {
       <Flex
         direction="col"
         justify="between"
-        className="mb-4 gap-3 xs:flex-row xs:items-center"
+        className="xs:flex-row xs:items-center mb-4 gap-3"
       >
         <Title as="h3" className="text-base font-semibold sm:text-lg">
           Contacts ({totalRecords} total)
         </Title>
-        <Flex align="center" className="w-full gap-3 xs:w-auto">
+        <Flex align="center" className="xs:w-auto w-full gap-3">
           <Input
             type="search"
             clearable={true}
@@ -149,7 +179,7 @@ export default function ContactsTable() {
             value={searchQuery}
             prefix={<PiMagnifyingGlassBold className="size-4" />}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full xs:max-w-80"
+            className="xs:max-w-80 w-full"
           />
         </Flex>
       </Flex>
@@ -169,7 +199,7 @@ export default function ContactsTable() {
           />
         </div>
         {isRefreshing && (
-          <div className="absolute right-4 top-4 z-10">
+          <div className="absolute top-4 right-4 z-10">
             <Loader variant="spinner" size="sm" className="text-primary" />
           </div>
         )}

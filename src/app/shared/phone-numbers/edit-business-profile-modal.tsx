@@ -12,9 +12,19 @@ import { PiPlus, PiX, PiUpload, PiTrash, PiImage } from 'react-icons/pi';
 
 const editBusinessProfileSchema = z.object({
   about: z.string().max(139, 'About must be 139 characters or less').optional(),
-  address: z.string().max(256, 'Address must be 256 characters or less').optional(),
-  description: z.string().max(512, 'Description must be 512 characters or less').optional(),
-  email: z.string().max(128, 'Email must be 128 characters or less').optional().or(z.literal('')),
+  address: z
+    .string()
+    .max(256, 'Address must be 256 characters or less')
+    .optional(),
+  description: z
+    .string()
+    .max(512, 'Description must be 512 characters or less')
+    .optional(),
+  email: z
+    .string()
+    .max(128, 'Email must be 128 characters or less')
+    .optional()
+    .or(z.literal('')),
   vertical: z.string().optional(),
   websites: z.array(z.string().url('Invalid URL')).optional(),
 });
@@ -60,7 +70,9 @@ export default function EditBusinessProfileModal({
   const [filePreview, setFilePreview] = useState<string | null>(null);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [isDeletingPhoto, setIsDeletingPhoto] = useState(false);
-  const [currentProfilePicture, setCurrentProfilePicture] = useState<string | null>(null);
+  const [currentProfilePicture, setCurrentProfilePicture] = useState<
+    string | null
+  >(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const {
@@ -89,15 +101,18 @@ export default function EditBusinessProfileModal({
   const fetchBusinessProfile = async () => {
     setIsFetchingProfile(true);
     try {
-      const response = await phoneNumbersApi.getDisplayNameStatus(phoneNumber.id);
+      const response = await phoneNumbersApi.getDisplayNameStatus(
+        phoneNumber.id
+      );
 
       if (response.success && response.data) {
-        const profileData = response.data;
+        const profileData = response.data as any;
 
         // Set form values
         if (profileData.about) setValue('about', profileData.about);
         if (profileData.address) setValue('address', profileData.address);
-        if (profileData.description) setValue('description', profileData.description);
+        if (profileData.description)
+          setValue('description', profileData.description);
         if (profileData.email) setValue('email', profileData.email);
         if (profileData.vertical) setValue('vertical', profileData.vertical);
 
@@ -175,7 +190,10 @@ export default function EditBusinessProfileModal({
 
     setIsUploadingPhoto(true);
     try {
-      const response = await phoneNumbersApi.uploadProfilePicture(phoneNumber.id, selectedFile);
+      const response = await phoneNumbersApi.uploadProfilePicture(
+        phoneNumber.id,
+        selectedFile
+      );
 
       if (response.success) {
         toast.success('Profile picture uploaded successfully!');
@@ -187,7 +205,9 @@ export default function EditBusinessProfileModal({
       }
     } catch (error: any) {
       console.error('Upload photo error:', error);
-      toast.error(error.response?.data?.message || 'Failed to upload profile picture');
+      toast.error(
+        error.response?.data?.message || 'Failed to upload profile picture'
+      );
     } finally {
       setIsUploadingPhoto(false);
     }
@@ -200,7 +220,9 @@ export default function EditBusinessProfileModal({
 
     setIsDeletingPhoto(true);
     try {
-      const response = await phoneNumbersApi.deleteProfilePicture(phoneNumber.id);
+      const response = await phoneNumbersApi.deleteProfilePicture(
+        phoneNumber.id
+      );
 
       if (response.success) {
         toast.success('Profile picture deleted successfully!');
@@ -211,7 +233,9 @@ export default function EditBusinessProfileModal({
       }
     } catch (error: any) {
       console.error('Delete photo error:', error);
-      toast.error(error.response?.data?.message || 'Failed to delete profile picture');
+      toast.error(
+        error.response?.data?.message || 'Failed to delete profile picture'
+      );
     } finally {
       setIsDeletingPhoto(false);
     }
@@ -221,7 +245,7 @@ export default function EditBusinessProfileModal({
     setIsLoading(true);
     try {
       // Filter out empty websites
-      const validWebsites = websites.filter(w => w.trim() !== '');
+      const validWebsites = websites.filter((w) => w.trim() !== '');
 
       const profileData: any = {};
 
@@ -232,7 +256,10 @@ export default function EditBusinessProfileModal({
       if (data.vertical) profileData.vertical = data.vertical;
       if (validWebsites.length > 0) profileData.websites = validWebsites;
 
-      const response = await phoneNumbersApi.updateBusinessProfile(phoneNumber.id, profileData);
+      const response = await phoneNumbersApi.updateBusinessProfile(
+        phoneNumber.id,
+        profileData
+      );
 
       if (response.success) {
         toast.success('Business profile updated successfully!');
@@ -243,7 +270,9 @@ export default function EditBusinessProfileModal({
       }
     } catch (error: any) {
       console.error('Update business profile error:', error);
-      toast.error(error.response?.data?.message || 'Failed to update business profile');
+      toast.error(
+        error.response?.data?.message || 'Failed to update business profile'
+      );
     } finally {
       setIsLoading(false);
     }
@@ -252,7 +281,9 @@ export default function EditBusinessProfileModal({
   if (isFetchingProfile) {
     return (
       <div className="m-auto p-6">
-        <Text className="mb-6 text-lg font-semibold">Edit Business Profile</Text>
+        <Text className="mb-6 text-lg font-semibold">
+          Edit Business Profile
+        </Text>
         <div className="flex items-center justify-center py-12">
           <Loader variant="spinner" size="lg" />
         </div>
@@ -271,14 +302,20 @@ export default function EditBusinessProfileModal({
         </Text>
         {phoneNumber.verifiedName && (
           <>
-            <Text className="mt-2 text-sm font-medium text-gray-700">Verified Name</Text>
-            <Text className="text-sm text-gray-600">{phoneNumber.verifiedName}</Text>
+            <Text className="mt-2 text-sm font-medium text-gray-700">
+              Verified Name
+            </Text>
+            <Text className="text-sm text-gray-600">
+              {phoneNumber.verifiedName}
+            </Text>
           </>
         )}
       </div>
 
       <div className="mb-4 rounded-lg bg-blue-50 p-4">
-        <Text className="text-sm font-medium text-blue-800">Important Notes:</Text>
+        <Text className="text-sm font-medium text-blue-800">
+          Important Notes:
+        </Text>
         <ul className="mt-1 list-inside list-disc text-sm text-blue-700">
           <li>About: Max 139 characters (shown in chat list)</li>
           <li>Description: Max 512 characters (shown in business info)</li>
@@ -290,7 +327,9 @@ export default function EditBusinessProfileModal({
 
       {/* Profile Picture Upload Section */}
       <div className="mb-5 rounded-lg border border-gray-200 p-4">
-        <Text className="mb-3 text-sm font-medium text-gray-900">Profile Picture</Text>
+        <Text className="mb-3 text-sm font-medium text-gray-900">
+          Profile Picture
+        </Text>
 
         {/* Show current profile picture if exists */}
         {currentProfilePicture && !filePreview && (
@@ -444,7 +483,7 @@ export default function EditBusinessProfileModal({
               </label>
               <select
                 {...field}
-                className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                className="focus:border-primary focus:ring-primary block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:ring-1 focus:outline-none"
               >
                 {verticalOptions.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -453,7 +492,9 @@ export default function EditBusinessProfileModal({
                 ))}
               </select>
               {errors.vertical && (
-                <Text className="mt-1 text-xs text-red-500">{errors.vertical.message}</Text>
+                <Text className="mt-1 text-xs text-red-500">
+                  {errors.vertical.message}
+                </Text>
               )}
             </div>
           )}
@@ -461,7 +502,9 @@ export default function EditBusinessProfileModal({
 
         <div>
           <div className="mb-2 flex items-center justify-between">
-            <label className="block text-sm font-medium text-gray-900">Websites</label>
+            <label className="block text-sm font-medium text-gray-900">
+              Websites
+            </label>
             {websites.length < 2 && (
               <Button
                 type="button"

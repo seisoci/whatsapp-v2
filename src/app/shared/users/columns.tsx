@@ -18,17 +18,13 @@ export const createUsersColumns = ({
   onDeleteUser: (id: string) => void;
   onResetPassword: (user: any) => void;
 }) => [
-  columnHelper.accessor('name', {
+  columnHelper.display({
     id: 'name',
     size: 250,
     header: 'User',
-    enableSorting: true,
     cell: ({ row }) => (
       <div className="flex items-center gap-3">
-        <Avatar
-          name={row.original.username || row.original.email}
-          size="sm"
-        />
+        <Avatar name={row.original.username || row.original.email} size="sm" />
         <div>
           <Text className="font-medium text-gray-900">
             {row.original.username}
@@ -43,9 +39,7 @@ export const createUsersColumns = ({
     size: 200,
     header: 'Email',
     enableSorting: true,
-    cell: ({ row }) => (
-      <Text className="text-sm">{row.original.email}</Text>
-    ),
+    cell: ({ row }) => <Text className="text-sm">{row.original.email}</Text>,
   }),
   columnHelper.accessor('role', {
     id: 'role',
@@ -63,11 +57,13 @@ export const createUsersColumns = ({
     enableSorting: true,
     cell: ({ row }) => (
       <Text className="text-sm">
-        {row.original.createdAt ? new Date(row.original.createdAt).toLocaleDateString('en-US', {
-          month: 'short',
-          day: 'numeric',
-          year: 'numeric',
-        }) : '-'}
+        {row.original.createdAt
+          ? new Date(row.original.createdAt).toLocaleDateString('en-US', {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric',
+            })
+          : '-'}
       </Text>
     ),
   }),
@@ -87,7 +83,12 @@ export const createUsersColumns = ({
             <PencilIcon className="h-4 w-4" />
           </ActionIcon>
         </Tooltip>
-        <Tooltip size="sm" content="Reset Password" placement="top" color="invert">
+        <Tooltip
+          size="sm"
+          content="Reset Password"
+          placement="top"
+          color="invert"
+        >
           <ActionIcon
             size="sm"
             variant="outline"

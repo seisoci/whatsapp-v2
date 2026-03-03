@@ -3,7 +3,7 @@ import { messages } from '@/config/messages';
 
 export const productDetailsSchema = z.object({
   productSize: z.coerce.number({
-    invalid_type_error: messages.productSizeRequired,
+    message: messages.productSizeRequired,
   }),
   productColor: z.object({
     name: z.string(),

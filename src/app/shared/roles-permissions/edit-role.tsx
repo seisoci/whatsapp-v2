@@ -49,7 +49,7 @@ export default function EditRole() {
           customer: [PERMISSIONS.Read],
         },
       }}
-      className="grid grid-cols-1 gap-6 p-6 @container [&_.rizzui-input-label]:font-medium [&_.rizzui-input-label]:text-gray-900"
+      className="@container grid grid-cols-1 gap-6 p-6 [&_.rizzui-input-label]:font-medium [&_.rizzui-input-label]:text-gray-900"
     >
       {({ register, control, watch, formState: { errors } }) => {
         return (
@@ -81,7 +81,7 @@ export default function EditRole() {
                       {label}
                     </Title>
                     <Controller
-                      name={value.toLowerCase()}
+                      name={value.toLowerCase() as any}
                       control={control}
                       render={({ field: { onChange, value } }) => (
                         <CheckboxGroup

@@ -43,7 +43,10 @@ export default function useQueryParams(pathname: string = '/') {
 
   function getParams(url = window.location) {
     const params: any = {};
-    new URL(url).searchParams.forEach(function (val: string, key: string) {
+    new URL(String(url)).searchParams.forEach(function (
+      val: string,
+      key: string
+    ) {
       if (params[key] !== undefined) {
         if (!Array.isArray(params[key])) {
           params[key] = [params[key]];

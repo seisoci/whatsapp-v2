@@ -117,8 +117,8 @@ export function NavMenuContentWrapper({
       >
         {items.map((item, index) => {
           const uiProps = {
-            rounded: item?.component?.props?.rounded || null,
-            shadow: item?.component?.props?.shadow || null,
+            rounded: (item?.component as any)?.props?.rounded || null,
+            shadow: (item?.component as any)?.props?.shadow || null,
           };
           return (
             <Fragment key={index}>
@@ -134,10 +134,10 @@ export function NavMenuContentWrapper({
                   }}
                   className={cn(
                     'w-32',
-                    item?.component?.props?.children?.props?.className
+                    (item?.component as any)?.props?.children?.props?.className
                   )}
                 >
-                  {item?.component?.props?.children?.props?.children}
+                  {(item?.component as any)?.props?.children?.props?.children}
                 </div>
               </Wrapper>
             </Fragment>

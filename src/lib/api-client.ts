@@ -102,19 +102,22 @@ export async function refreshAccessToken(): Promise<string | null> {
         return null;
       }
 
-      const response = await fetch(`${API_URL}${API_PREFIX}/auth/refresh-token`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ refreshToken }),
-      });
+      const response = await fetch(
+        `${API_URL}${API_PREFIX}/auth/refresh-token`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ refreshToken }),
+        }
+      );
 
       if (!response.ok) {
         throw new Error('Token refresh failed');
       }
 
-      const data = await response.json();
+      const data: any = await response.json();
 
       if (data.success && data.data) {
         const { accessToken } = data.data;
@@ -172,9 +175,9 @@ async function apiRequest<T = any>(
 
   // Set headers - don't set Content-Type for FormData (browser will set multipart/form-data automatically)
   const isFormData = fetchConfig.body instanceof FormData;
-  const headers: HeadersInit = {
+  const headers: Record<string, string> = {
     ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
-    ...fetchConfig.headers,
+    ...(fetchConfig.headers as Record<string, string>),
   };
 
   if (token) {
@@ -203,7 +206,7 @@ async function apiRequest<T = any>(
   }
 
   // Parse response
-  const data = await response.json();
+  const data: any = await response.json();
 
   if (!response.ok) {
     throw {
@@ -230,7 +233,8 @@ export const apiClient = {
       ...config,
       method: 'POST',
       body: body instanceof FormData ? body : JSON.stringify(body),
-      headers: body instanceof FormData ? {} : { 'Content-Type': 'application/json' },
+      headers:
+        body instanceof FormData ? {} : { 'Content-Type': 'application/json' },
     }),
 
   put: <T = any>(endpoint: string, body?: any, config?: RequestConfig) =>
@@ -251,20 +255,19 @@ export const apiClient = {
     apiRequest<T>(endpoint, { ...config, method: 'DELETE' }),
 };
 
-// Auth API endpoints
 export const authApi = {
   login: (credentials: { email: string; password: string }) =>
-    apiClient.post<ApiResponse>('/auth/login', credentials),
+    apiClient.post<any>('/auth/login', credentials),
 
   register: (data: { email: string; username: string; password: string }) =>
-    apiClient.post<ApiResponse>('/auth/register', data),
+    apiClient.post<any>('/auth/register', data),
 
-  logout: () => apiClient.post<ApiResponse>('/auth/logout'),
+  logout: () => apiClient.post<any>('/auth/logout'),
 
-  me: () => apiClient.get<ApiResponse>('/auth/me'),
+  me: () => apiClient.get<any>('/auth/me'),
 
   refreshToken: (refreshToken: string) =>
-    apiClient.post<ApiResponse>('/auth/refresh-token', { refreshToken }),
+    apiClient.post<any>('/auth/refresh-token', { refreshToken }),
 };
 
 // Upload API endpoints
@@ -275,13 +278,13 @@ export const uploadApi = {
     if (metadata) {
       formData.append('metadata', JSON.stringify(metadata));
     }
-    return apiClient.post<ApiResponse>('/upload/file', formData);
+    return apiClient.post<any>('/upload/file', formData);
   },
 
   uploadAvatar: (file: File) => {
     const formData = new FormData();
     formData.append('file', file);
-    return apiClient.post<ApiResponse>('/upload/avatar', formData);
+    return apiClient.post<any>('/upload/avatar', formData);
   },
 };
 

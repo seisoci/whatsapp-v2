@@ -34,7 +34,7 @@ export default function ApiManagementTable() {
         const data = response.data || [];
 
         if (Array.isArray(data)) {
-          setApiEndpointData(data);
+          setApiEndpointData(data as ApiEndpoint[]);
           setTotalRecords(data.length);
         } else {
           setApiEndpointData([]);
@@ -62,7 +62,12 @@ export default function ApiManagementTable() {
 
   const handleEditApiEndpoint = (apiEndpoint: ApiEndpoint) => {
     openModal({
-      view: <CreateEditApiEndpoint apiEndpoint={apiEndpoint} onSuccess={() => fetchApiEndpointData(false)} />,
+      view: (
+        <CreateEditApiEndpoint
+          apiEndpoint={apiEndpoint}
+          onSuccess={() => fetchApiEndpointData(false)}
+        />
+      ),
       customSize: 600,
     });
   };
@@ -77,7 +82,10 @@ export default function ApiManagementTable() {
         toast.error(response.message || 'Failed to delete API endpoint');
       }
     } catch (error: any) {
-      const errorMessage = error?.response?.data?.message || error?.message || 'Failed to delete API endpoint';
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Failed to delete API endpoint';
       toast.error(errorMessage);
     }
   };
@@ -86,13 +94,19 @@ export default function ApiManagementTable() {
     try {
       const response = await apiEndpointsApi.toggleStatus(id);
       if (response.success) {
-        toast.success(response.message || `API endpoint ${!currentStatus ? 'activated' : 'deactivated'} successfully`);
+        toast.success(
+          response.message ||
+            `API endpoint ${!currentStatus ? 'activated' : 'deactivated'} successfully`
+        );
         fetchApiEndpointData(false);
       } else {
         toast.error(response.message || 'Failed to toggle status');
       }
     } catch (error: any) {
-      const errorMessage = error?.response?.data?.message || error?.message || 'Failed to toggle status';
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Failed to toggle status';
       toast.error(errorMessage);
     }
   };
@@ -158,7 +172,7 @@ function ApiManagementTableContent({
       <Flex
         direction="col"
         justify="between"
-        className="mb-4 gap-3 xs:flex-row xs:items-center"
+        className="xs:flex-row xs:items-center mb-4 gap-3"
       >
         <Title as="h3" className="text-base font-semibold sm:text-lg">
           API Endpoints ({totalRecords} total)
@@ -181,7 +195,7 @@ function ApiManagementTableContent({
         </div>
 
         {isRefreshing && (
-          <div className="absolute right-4 top-4 z-10">
+          <div className="absolute top-4 right-4 z-10">
             <Loader variant="spinner" size="sm" className="text-primary" />
           </div>
         )}

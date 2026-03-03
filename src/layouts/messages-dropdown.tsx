@@ -32,7 +32,7 @@ function MessagesList({
           View all
         </Link>
       </div>
-      <div className="custom-scrollbar overflow-y-auto scroll-smooth max-h-[406px]">
+      <div className="custom-scrollbar max-h-[406px] overflow-y-auto scroll-smooth">
         <div className="grid grid-cols-1 ps-4">
           {messagesData.map((item) => (
             <div
@@ -45,14 +45,14 @@ function MessagesList({
                   name={item.name}
                   className={cn(
                     item.avatar.length > 1 &&
-                    'relative -end-1 -top-0.5 !h-9 !w-9'
+                      'relative -end-1 -top-0.5 !h-9 !w-9'
                   )}
                 />
                 {item.avatar.length > 1 && (
                   <Avatar
                     src={item.avatar[1]}
                     name={item.name}
-                    className="absolute -bottom-1 end-1.5 !h-9 !w-9 border-2 border-gray-0 dark:border-gray-100"
+                    className="border-gray-0 absolute end-1.5 -bottom-1 !h-9 !w-9 border-2 dark:border-gray-100"
                   />
                 )}
               </div>
@@ -65,7 +65,7 @@ function MessagesList({
                     <Text className="w-10/12 truncate pe-7 text-xs text-gray-500">
                       {item.message}
                     </Text>
-                    <Text className="ms-auto whitespace-nowrap pe-8 text-xs text-gray-500">
+                    <Text className="ms-auto pe-8 text-xs whitespace-nowrap text-gray-500">
                       {dayjs(item.sendTime).fromNow(true)}
                     </Text>
                   </div>
@@ -104,11 +104,10 @@ export default function MessagesDropdown({
     <Popover
       isOpen={isOpen}
       setIsOpen={setIsOpen}
-      shadow="sm"
       placement={isMobile ? 'bottom' : 'bottom-end'}
     >
       <Popover.Trigger>{children}</Popover.Trigger>
-      <Popover.Content className="z-[9999] pb-6 pe-6 ps-0 pt-5 dark:bg-gray-100 [&>svg]:hidden [&>svg]:dark:fill-gray-100 sm:[&>svg]:inline-flex">
+      <Popover.Content className="z-[9999] ps-0 pe-6 pt-5 pb-6 dark:bg-gray-100 [&>svg]:hidden sm:[&>svg]:inline-flex [&>svg]:dark:fill-gray-100">
         <MessagesList setIsOpen={setIsOpen} />
       </Popover.Content>
     </Popover>

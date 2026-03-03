@@ -1,14 +1,7 @@
 import { useDirection } from '../../../hooks/use-direction';
 import React, { useCallback, useId, useState } from 'react';
-import {
-  PopoverWidth,
-  usePopover,
-} from './use-popover';
-import {
-  FloatingPlacement,
-  FloatingPosition,
-  FloatingSide,
-} from './types';
+import { PopoverWidth, usePopover } from './use-popover';
+import { FloatingPlacement, FloatingPosition, FloatingSide } from './types';
 import { useClickOutside } from './use-click-outside';
 import { PopoverContextProvider } from './popover-context';
 import { PopoverTrigger } from './popover-trigger';
@@ -129,10 +122,7 @@ export default function Popover({
   const popover = usePopover({
     middlewares,
     width,
-    position: getFloatingPosition(
-      direction,
-      position!
-    ),
+    position: getFloatingPosition(direction as 'rtl' | 'ltr', position!),
     offset: offset!,
     onPositionChange,
     positionDependencies,

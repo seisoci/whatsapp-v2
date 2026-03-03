@@ -44,7 +44,7 @@ function NotificationsList({
                   <Text className="mb-0.5 w-11/12 truncate text-sm font-semibold text-gray-900 dark:text-gray-700">
                     {item.name}
                   </Text>
-                  <Text className="ms-auto whitespace-nowrap pe-8 text-xs text-gray-500">
+                  <Text className="ms-auto pe-8 text-xs whitespace-nowrap text-gray-500">
                     {dayjs(item.sendTime).fromNow(true)}
                   </Text>
                 </div>
@@ -70,7 +70,7 @@ function NotificationsList({
       <Link
         href={'#'}
         onClick={() => setIsOpen(false)}
-        className="-me-6 block px-6 pb-0.5 pt-3 text-center hover:underline"
+        className="-me-6 block px-6 pt-3 pb-0.5 text-center hover:underline"
       >
         View All Activity
       </Link>
@@ -89,11 +89,10 @@ export default function NotificationDropdown({
     <Popover
       isOpen={isOpen}
       setIsOpen={setIsOpen}
-      shadow="sm"
       placement={isMobile ? 'bottom' : 'bottom-end'}
     >
       <Popover.Trigger>{children}</Popover.Trigger>
-      <Popover.Content className="z-[9999] px-0 pb-4 pe-6 pt-5 dark:bg-gray-100 [&>svg]:hidden [&>svg]:dark:fill-gray-100 sm:[&>svg]:inline-flex">
+      <Popover.Content className="z-[9999] px-0 pe-6 pt-5 pb-4 dark:bg-gray-100 [&>svg]:hidden sm:[&>svg]:inline-flex [&>svg]:dark:fill-gray-100">
         <NotificationsList setIsOpen={setIsOpen} />
       </Popover.Content>
     </Popover>

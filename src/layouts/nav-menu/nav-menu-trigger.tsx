@@ -9,7 +9,7 @@ export const NavMenuTrigger = React.forwardRef<
   HTMLButtonElement,
   NavMenuTriggerProps
 >(({ triggerType = 'hover', className, children, ...props }, ref) => {
-  const { index, ...restProps } = props;
+  const { index, ...restProps } = props as any;
 
   const { handleMouseEnter: trigger } = useNavMenu();
   const NavMenuButton: React.ElementType = 'li' as React.ElementType;
@@ -74,9 +74,10 @@ export function NavMenuTriggerWrapper({
                   ...item?.props,
                   /*
                   REASON OF IGNORING TS ERROR:
-                  We need the index of the individual item in the <NavMenu.Trigger></NavMenu.Trigger> Component internally to handle the content/dropdown slide animation. Users won't need these props. if the user pass this props and we use the user provided index props for our internal logic then the UI interaction might not work properly. in our cases if user passed `index` props , user provided index props will not effect the UI. because we are internally managing this props based on our internal logic. and in typescript project, user will get a typescript error. So, last of all what is happening here? we are here able to passing and getting the Index props internally but user is not able to pass the index props from their end. */
+...
+                  */
                   index: index,
-                });
+                } as any);
               }
               return null;
             })}

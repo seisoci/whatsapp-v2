@@ -58,28 +58,28 @@ export function NavMenuItemWrapper(props: NavMenuItemWrapperProps) {
 
     if (
       React.isValidElement(child) &&
-      child.props &&
-      child.props.children &&
-      child.props.children.length
+      (child as any).props &&
+      (child as any).props.children &&
+      (child as any).props.children.length
     ) {
-      child?.props?.children?.map((item: React.ReactNode) => {
+      (child as any)?.props?.children?.map((item: React.ReactNode) => {
         if (React.isValidElement(item)) {
           if (item.type === NavMenuTrigger) {
             itemObj.trigger.component = item;
             itemObj.trigger.props = item.props;
           } else if (item.type === NavMenuContent) {
             itemObj.content.component = item;
-            itemObj.content.props = item.props;
+            itemObj.content.props = (item as any).props;
           }
         }
       });
       items.current[idx] = itemObj;
     } else if (
       React.isValidElement(child) &&
-      child.props &&
-      child.props.children
+      (child as any).props &&
+      (child as any).props.children
     ) {
-      const item = child.props.children;
+      const item = (child as any).props.children;
       if (item.type === NavMenuTrigger) {
         itemObj.trigger.component = item;
         itemObj.trigger.props = item.props;
@@ -93,7 +93,6 @@ export function NavMenuItemWrapper(props: NavMenuItemWrapperProps) {
 
   const triggers = items.current.map((item) => item?.trigger);
   const contents = items.current.map((item) => item?.content);
-
 
   return (
     <nav

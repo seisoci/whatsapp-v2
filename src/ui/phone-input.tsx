@@ -73,17 +73,16 @@ const clearIconClasses = {
   },
 };
 
-export interface PhoneNumberProps
-  extends Omit<
-    PhoneInputProps,
-    | 'inputClass'
-    | 'buttonClass'
-    | 'containerClass'
-    | 'dropdownClass'
-    | 'searchClass'
-    | 'enableSearch'
-    | 'disableSearchIcon'
-  > {
+export interface PhoneNumberProps extends Omit<
+  PhoneInputProps,
+  | 'inputClass'
+  | 'buttonClass'
+  | 'containerClass'
+  | 'dropdownClass'
+  | 'searchClass'
+  | 'enableSearch'
+  | 'disableSearchIcon'
+> {
   /** Set field label */
   label?: React.ReactNode;
   /** Show error message using this prop */
@@ -160,8 +159,8 @@ export const PhoneNumber = ({
         buttonClass={cn(
           buttonClasses.base,
           buttonClasses.size[size],
-          props.inputProps?.disabled && 'pointer-events-none',
-          props.inputProps?.readOnly && 'pointer-events-none',
+          (props.inputProps as any)?.disabled && 'pointer-events-none',
+          (props.inputProps as any)?.readOnly && 'pointer-events-none',
           buttonClassName
         )}
         dropdownClass={cn(
@@ -186,13 +185,20 @@ export const PhoneNumber = ({
     </div>
 
     {!error && helperText ? (
-      <FieldHelperText size={size === 'xl' ? 'lg' : size} className={helperClassName}>
+      <FieldHelperText
+        size={size === 'xl' ? 'lg' : size}
+        className={helperClassName}
+      >
         {helperText}
       </FieldHelperText>
     ) : null}
 
     {error ? (
-      <FieldErrorText size={size === 'xl' ? 'lg' : size} error={error} className={errorClassName} />
+      <FieldErrorText
+        size={size === 'xl' ? 'lg' : size}
+        error={error}
+        className={errorClassName}
+      />
     ) : null}
   </div>
 );

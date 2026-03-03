@@ -13,12 +13,16 @@ import { OnuType } from './columns';
 import Image from 'next/image';
 
 const updateOnuTypeSchema = z.object({
-  wifi_ports: z.number().min(0, 'Cannot be negative').refine((val) =>
-    [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].includes(val),
-    { message: 'Must be one of: 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10' }
-  ),
+  wifi_ports: z
+    .number()
+    .min(0, 'Cannot be negative')
+    .refine((val) => [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].includes(val), {
+      message: 'Must be one of: 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10',
+    }),
   catv: z.boolean(),
-  capability: z.enum(['bridging', 'bridging/routing'], { message: 'Capability is required' }),
+  capability: z.enum(['bridging', 'bridging/routing'], {
+    message: 'Capability is required',
+  }),
 });
 
 type UpdateOnuTypeInput = z.infer<typeof updateOnuTypeSchema>;
@@ -52,7 +56,9 @@ export default function EditOnuType({
   const { closeModal } = useModal();
   const [isLoading, setLoading] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(onuType.onu_type_image);
+  const [imagePreview, setImagePreview] = useState<string | null>(
+    (onuType as any).onu_type_image
+  );
   const [removeExistingImage, setRemoveExistingImage] = useState(false);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -114,10 +120,10 @@ export default function EditOnuType({
         defaultValues: {
           wifi_ports: onuType.wifi_ports,
           catv: onuType.catv || false,
-          capability: onuType.capability,
+          capability: (onuType.capability as string).toLowerCase() as any,
         },
       }}
-      className="grid grid-cols-1 gap-6 p-6 @container [&_.rizzui-input-label]:font-medium [&_.rizzui-input-label]:text-gray-900"
+      className="@container grid grid-cols-1 gap-6 p-6 [&_.rizzui-input-label]:font-medium [&_.rizzui-input-label]:text-gray-900"
     >
       {({ control, formState: { errors } }) => {
         return (
@@ -131,22 +137,30 @@ export default function EditOnuType({
               </ActionIcon>
             </div>
 
-            <div className="rounded-lg bg-gray-50 p-4 space-y-2">
+            <div className="space-y-2 rounded-lg bg-gray-50 p-4">
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Device Name:</span>
-                <span className="font-medium text-gray-900">{onuType.name}</span>
+                <span className="font-medium text-gray-900">
+                  {onuType.name}
+                </span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">PON Type:</span>
-                <span className="font-medium text-gray-900 uppercase">{onuType.pon_type}</span>
+                <span className="font-medium text-gray-900 uppercase">
+                  {onuType.pon_type}
+                </span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Ethernet Ports:</span>
-                <span className="font-medium text-gray-900">{onuType.ethernet_ports}</span>
+                <span className="font-medium text-gray-900">
+                  {onuType.ethernet_ports}
+                </span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">VoIP Ports:</span>
-                <span className="font-medium text-gray-900">{onuType.voip_ports}</span>
+                <span className="font-medium text-gray-900">
+                  {onuType.voip_ports}
+                </span>
               </div>
             </div>
 
@@ -163,7 +177,8 @@ export default function EditOnuType({
                   error={errors.wifi_ports?.message}
                   getOptionValue={(option) => option.value}
                   displayValue={(selected: number) =>
-                    wifiPortOptions.find((r) => r.value === selected)?.label ?? ''
+                    wifiPortOptions.find((r) => r.value === selected)?.label ??
+                    ''
                   }
                   dropdownClassName="!z-[1]"
                   inPortal={false}
@@ -187,7 +202,8 @@ export default function EditOnuType({
                   error={errors.capability?.message}
                   getOptionValue={(option) => option.value}
                   displayValue={(selected: string) =>
-                    capabilityOptions.find((r) => r.value === selected)?.label ?? ''
+                    capabilityOptions.find((r) => r.value === selected)
+                      ?.label ?? ''
                   }
                   dropdownClassName="!z-[1]"
                   inPortal={false}
@@ -203,7 +219,9 @@ export default function EditOnuType({
                 <Title as="h6" className="mb-1 text-sm font-medium">
                   CATV Support
                 </Title>
-                <p className="text-xs text-gray-500">Enable CATV port support</p>
+                <p className="text-xs text-gray-500">
+                  Enable CATV port support
+                </p>
               </div>
               <Controller
                 name="catv"
@@ -218,7 +236,7 @@ export default function EditOnuType({
               <label className="block text-sm font-medium text-gray-900">
                 Device Image
               </label>
-              <p className="text-xs text-gray-500 mb-2">
+              <p className="mb-2 text-xs text-gray-500">
                 JPG, JPEG, or PNG. Max 2MB. Recommended dimensions: 400x91px
               </p>
               {imagePreview ? (
@@ -249,7 +267,7 @@ export default function EditOnuType({
                     type="file"
                     accept="image/jpeg,image/jpg,image/png"
                     onChange={handleImageChange}
-                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:bg-primary-dark file:cursor-pointer"
+                    className="file:bg-primary hover:file:bg-primary-dark block w-full text-sm text-gray-500 file:mr-4 file:cursor-pointer file:rounded-lg file:border-0 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white"
                   />
                 </div>
               )}

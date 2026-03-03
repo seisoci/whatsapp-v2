@@ -30,12 +30,13 @@ export default function AssignPermissionsPage() {
         }
 
         // Fetch all available permissions grouped by menu (no pagination)
-        const permissionsResponse = await permissionsApi.getAll({ pagination: 'all' });
+        const permissionsResponse = await permissionsApi.getAll({
+          pagination: 'all',
+        });
 
         if (permissionsResponse.success) {
-          setAllPermissions(permissionsResponse.data);
+          setAllPermissions(permissionsResponse.data as unknown as any[]);
         }
-
       } catch (error) {
         console.error('Error fetching data:', error);
         toast.error('Failed to load permissions data');
@@ -60,24 +61,27 @@ export default function AssignPermissionsPage() {
         toast.error(response.message || 'Failed to update permissions');
       }
     } catch (error: any) {
-      const errorMessage = error?.response?.data?.message || error?.message || 'Failed to update permissions';
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Failed to update permissions';
       toast.error(errorMessage);
     }
   };
 
   if (loading) {
     return (
-      <div className= "flex min-h-[400px] items-center justify-center" >
-      <Loader variant="spinner" size="lg" />
-        </div>
+      <div className="flex min-h-[400px] items-center justify-center">
+        <Loader variant="spinner" size="lg" />
+      </div>
     );
   }
 
   if (!role) {
     return (
-      <div className= "flex min-h-[400px] items-center justify-center" >
-      <Title>Role not found </Title>
-        </div>
+      <div className="flex min-h-[400px] items-center justify-center">
+        <Title>Role not found </Title>
+      </div>
     );
   }
 
@@ -96,27 +100,23 @@ export default function AssignPermissionsPage() {
 
   return (
     <>
-    <PageHeader title= { pageHeader.title } breadcrumb = { pageHeader.breadcrumb } >
-      <div className="mt-4 flex items-center gap-3 @lg:mt-0" >
-        <Button
-            variant="outline"
-  onClick = {() => router.push('/roles')
-}
-          >
-  Cancel
-  </Button>
-  </div>
-  </PageHeader>
+      <PageHeader title={pageHeader.title} breadcrumb={pageHeader.breadcrumb}>
+        <div className="mt-4 flex items-center gap-3 @lg:mt-0">
+          <Button variant="outline" onClick={() => router.push('/roles')}>
+            Cancel
+          </Button>
+        </div>
+      </PageHeader>
 
-  < div className = "@container" >
-    <div className="grid gap-6 @4xl:gap-7" >
-      <AssignPermissionsForm
-            role={ role }
-allPermissions = { allPermissions }
-onSubmit = { handleSubmit }
-  />
-  </div>
-  </div>
-  </>
+      <div className="@container">
+        <div className="grid gap-6 @4xl:gap-7">
+          <AssignPermissionsForm
+            role={role}
+            allPermissions={allPermissions}
+            onSubmit={handleSubmit}
+          />
+        </div>
+      </div>
+    </>
   );
 }

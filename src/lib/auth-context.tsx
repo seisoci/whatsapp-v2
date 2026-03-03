@@ -2,7 +2,14 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { authApi, setTokens, clearTokens, getUser, setUser as saveUser, getAccessToken } from './api-client';
+import {
+  authApi,
+  setTokens,
+  clearTokens,
+  getUser,
+  setUser as saveUser,
+  getAccessToken,
+} from './api-client';
 import { routes } from '@/config/routes';
 
 interface User {
@@ -60,13 +67,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Try to get user from localStorage first
       const cachedUser = getUser();
       if (cachedUser) {
-        setUser(cachedUser);
+        setUser(cachedUser as User);
       }
 
       // Fetch fresh user data from API
       const response = await authApi.me();
       if (response.success && response.data) {
-        const userData = response.data;
+        const userData = response.data as User;
         setUser(userData);
         saveUser(userData);
       } else {
@@ -88,7 +95,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Response already contains { success, message, data }
       if (response.success && response.data) {
-        const { user: userData, tokens } = response.data;
+        const { user: userData, tokens } = response.data as any;
 
         // Save tokens
         setTokens(tokens.accessToken, tokens.refreshToken);
@@ -123,8 +130,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const refetchUser = async () => {
     try {
       const response = await authApi.me();
-      if (response.data.success && response.data.data) {
-        const userData = response.data.data;
+      if (response.success && response.data) {
+        const userData = response.data as User;
         setUser(userData);
         saveUser(userData);
       }
@@ -139,7 +146,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!user || !user.role) return false;
     // Super admin has all permissions
     if (user.role.slug === 'super-admin') return true;
-    return user.role.permissions?.some((p: any) => p.slug === permission) || false;
+    return (
+      user.role.permissions?.some((p: any) => p.slug === permission) || false
+    );
   };
 
   const hasAnyPermission = (permissions: string[]): boolean => {

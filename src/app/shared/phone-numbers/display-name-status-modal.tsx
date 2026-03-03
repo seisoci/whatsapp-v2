@@ -27,7 +27,9 @@ export default function DisplayNameStatusModal({
   onClose,
 }: DisplayNameStatusModalProps) {
   const [isLoading, setIsLoading] = useState(true);
-  const [profileData, setProfileData] = useState<BusinessProfileData | null>(null);
+  const [profileData, setProfileData] = useState<BusinessProfileData | null>(
+    null
+  );
 
   useEffect(() => {
     fetchDisplayNameStatus();
@@ -36,16 +38,20 @@ export default function DisplayNameStatusModal({
   const fetchDisplayNameStatus = async () => {
     setIsLoading(true);
     try {
-      const response = await phoneNumbersApi.getDisplayNameStatus(phoneNumber.id);
+      const response = await phoneNumbersApi.getDisplayNameStatus(
+        phoneNumber.id
+      );
 
       if (response.success && response.data) {
-        setProfileData(response.data);
+        setProfileData(response.data as any);
       } else {
         toast.error(response.message || 'Failed to fetch display name status');
       }
     } catch (error: any) {
       console.error('Display name status error:', error);
-      toast.error(error.response?.data?.message || 'Failed to fetch display name status');
+      toast.error(
+        error.response?.data?.message || 'Failed to fetch display name status'
+      );
     } finally {
       setIsLoading(false);
     }
@@ -53,7 +59,9 @@ export default function DisplayNameStatusModal({
 
   return (
     <div className="m-auto p-6">
-      <Text className="mb-6 text-lg font-semibold">Business Profile Status</Text>
+      <Text className="mb-6 text-lg font-semibold">
+        Business Profile Status
+      </Text>
 
       <div className="mb-4 rounded-lg bg-gray-50 p-4">
         <Text className="text-sm font-medium text-gray-700">Phone Number</Text>
@@ -62,10 +70,16 @@ export default function DisplayNameStatusModal({
         </Text>
         {phoneNumber.verifiedName && (
           <>
-            <Text className="mt-2 text-sm font-medium text-gray-700">Verified Name</Text>
+            <Text className="mt-2 text-sm font-medium text-gray-700">
+              Verified Name
+            </Text>
             <div className="flex items-center gap-2">
-              <Text className="text-sm text-gray-600">{phoneNumber.verifiedName}</Text>
-              <Badge color="success" size="sm">Verified</Badge>
+              <Text className="text-sm text-gray-600">
+                {phoneNumber.verifiedName}
+              </Text>
+              <Badge color="success" size="sm">
+                Verified
+              </Badge>
             </div>
           </>
         )}
@@ -175,20 +189,24 @@ export default function DisplayNameStatusModal({
           </table>
 
           {!profileData.about &&
-           !profileData.description &&
-           !profileData.address &&
-           !profileData.email &&
-           !profileData.websites?.length &&
-           !profileData.vertical &&
-           !profileData.profile_picture_url && (
-            <div className="bg-gray-50 p-8 text-center">
-              <Text className="text-sm text-gray-600">No business profile information available</Text>
-            </div>
-          )}
+            !profileData.description &&
+            !profileData.address &&
+            !profileData.email &&
+            !profileData.websites?.length &&
+            !profileData.vertical &&
+            !profileData.profile_picture_url && (
+              <div className="bg-gray-50 p-8 text-center">
+                <Text className="text-sm text-gray-600">
+                  No business profile information available
+                </Text>
+              </div>
+            )}
         </div>
       ) : (
         <div className="rounded-lg bg-red-50 p-4">
-          <Text className="text-sm text-red-800">Failed to load business profile data</Text>
+          <Text className="text-sm text-red-800">
+            Failed to load business profile data
+          </Text>
         </div>
       )}
 

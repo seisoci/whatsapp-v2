@@ -8,7 +8,10 @@ import { MessageQueueItem } from '.';
 import { createMessageQueueColumns } from './columns';
 import { Flex, Title, Loader, Select, Input, Button } from 'rizzui';
 import { useModal } from '@/app/shared/modal-views/use-modal';
-import { messageQueuesApi, type MessageQueueFilters } from '@/lib/api/message-queues';
+import {
+  messageQueuesApi,
+  type MessageQueueFilters,
+} from '@/lib/api/message-queues';
 import MessageQueueDetail from './message-queue-detail';
 import toast from 'react-hot-toast';
 import { PiMagnifyingGlass, PiExportDuotone } from 'react-icons/pi';
@@ -111,7 +114,10 @@ export default function MessageQueueTable() {
     pageIndex: 0,
     pageSize: 25,
   });
-  const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([null, null]);
+  const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([
+    null,
+    null,
+  ]);
   const [queueStatus, setQueueStatus] = useState('');
   const [templateName, setTemplateName] = useState('');
   const [billable, setBillable] = useState('');
@@ -140,9 +146,13 @@ export default function MessageQueueTable() {
       const response = await messageQueuesApi.getAll(filters);
 
       if (response.success && response.data) {
-        setData(Array.isArray(response.data) ? response.data : []);
-        if (response.pagination) {
-          setTotalRecords(response.pagination.total);
+        setData(
+          Array.isArray(response.data)
+            ? (response.data as MessageQueueItem[])
+            : []
+        );
+        if ((response as any).pagination) {
+          setTotalRecords((response as any).pagination.total);
         }
       } else {
         toast.error('Failed to load message queues');
@@ -211,7 +221,7 @@ export default function MessageQueueTable() {
   return (
     <div ref={tableContainerRef}>
       {/* Filters */}
-      <Flex className="mb-3 gap-3 flex-wrap" align="end">
+      <Flex className="mb-3 flex-wrap gap-3" align="end">
         <div className="w-52">
           <Input
             placeholder="Search template..."
@@ -227,7 +237,10 @@ export default function MessageQueueTable() {
             label=""
             placeholder="Queue Status"
             options={queueStatusOptions}
-            value={queueStatusOptions.find((o) => o.value === queueStatus) || queueStatusOptions[0]}
+            value={
+              queueStatusOptions.find((o) => o.value === queueStatus) ||
+              queueStatusOptions[0]
+            }
             onChange={(opt: any) => setQueueStatus(opt?.value || '')}
           />
         </div>
@@ -237,7 +250,10 @@ export default function MessageQueueTable() {
             label=""
             placeholder="Billable"
             options={billableOptions}
-            value={billableOptions.find((o) => o.value === billable) || billableOptions[0]}
+            value={
+              billableOptions.find((o) => o.value === billable) ||
+              billableOptions[0]
+            }
             onChange={(opt: any) => setBillable(opt?.value || '')}
           />
         </div>
@@ -295,7 +311,9 @@ function MessageQueueTableContent({
   isRefreshing: boolean;
   totalRecords: number;
   pagination: { pageIndex: number; pageSize: number };
-  setPagination: React.Dispatch<React.SetStateAction<{ pageIndex: number; pageSize: number }>>;
+  setPagination: React.Dispatch<
+    React.SetStateAction<{ pageIndex: number; pageSize: number }>
+  >;
   onViewDetail: (item: MessageQueueItem) => void;
 }) {
   const { table, setData } = useTanStackTable<MessageQueueItem>({
@@ -329,7 +347,7 @@ function MessageQueueTableContent({
       <Flex
         direction="col"
         justify="between"
-        className="mb-4 gap-3 xs:flex-row xs:items-center"
+        className="xs:flex-row xs:items-center mb-4 gap-3"
       >
         <Title as="h3" className="text-base font-semibold sm:text-lg">
           Message Queues ({totalRecords} total)
@@ -352,7 +370,7 @@ function MessageQueueTableContent({
         </div>
 
         {isRefreshing && (
-          <div className="absolute right-4 top-4 z-10">
+          <div className="absolute top-4 right-4 z-10">
             <Loader variant="spinner" size="sm" className="text-primary" />
           </div>
         )}
