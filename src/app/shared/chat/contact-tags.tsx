@@ -33,13 +33,13 @@ function TagItem({ tag, onRemove }: TagItemProps) {
         <Popover.Trigger>
           <button
             type="button"
-            className="hover:opacity-60 transition-opacity"
+            className="cursor-pointer hover:opacity-60 transition-opacity"
             aria-label="Remove tag"
           >
             <PiX className="h-3 w-3" />
           </button>
         </Popover.Trigger>
-        <Popover.Content className="z-10">
+        <Popover.Content className="!z-[9999]">
           {({ setOpen }) => (
             <div className="w-56 pb-2 pt-1 text-left rtl:text-right">
               <Text
@@ -174,14 +174,14 @@ export default function ContactTags({ contact, onUpdate }: ContactTagsProps) {
       {/* Add Tag Button */}
       <Popover placement="bottom-start">
         <Popover.Trigger>
-          <button 
+          <button
             type="button"
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="inline-flex cursor-pointer items-center justify-center rounded p-0.5 text-gray-400 hover:text-gray-600 transition-colors"
           >
-            <PiPlus className="h-4 w-4" />
+            <PiPlus className="h-3.5 w-3.5" />
           </button>
         </Popover.Trigger>
-        <Popover.Content className="z-50 p-3 w-72 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg rounded-lg">
+        <Popover.Content className="!z-[9999] p-3 w-72 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg rounded-lg">
           <div className="space-y-3">
             {/* Create Input */}
             <div>

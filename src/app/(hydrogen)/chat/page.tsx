@@ -1896,14 +1896,14 @@ export default function ChatPage() {
                   </div>
                 )}
                 {/* Chat Header */}
-                <div className="flex flex-shrink-0 items-center justify-between border-b border-gray-200 p-4">
-                  <div className="flex items-center gap-3">
+                <div className="flex flex-shrink-0 items-center justify-between border-b border-gray-200 px-3 py-2">
+                  <div className="flex items-center gap-2">
                     <Button
                       variant="text"
                       className="h-auto p-0 hover:bg-transparent @lg:hidden"
                       onClick={handleBackToList}
                     >
-                      <PiArrowLeft className="h-6 w-6" />
+                      <PiArrowLeft className="h-5 w-5" />
                     </Button>
                     <Avatar
                       src={
@@ -1914,19 +1914,17 @@ export default function ChatPage() {
                         selectedContact.profileName ||
                         selectedContact.phoneNumber
                       }
-                      className="h-10 w-10"
+                      className="h-8 w-8"
                     />
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h6 className="text-sm font-semibold">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <h6 className="truncate text-xs font-semibold">
                           {selectedContact.profileName ||
                             selectedContact.phoneNumber}
                         </h6>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <p className="text-xs text-gray-600 dark:text-gray-400">
+                        <span className="text-[10px] font-semibold text-gray-500">
                           {selectedContact.phoneNumber}
-                        </p>
+                        </span>
                         <button
                           onClick={() =>
                             copyPhoneNumber(selectedContact.phoneNumber)
@@ -1935,14 +1933,14 @@ export default function ChatPage() {
                           title={copiedPhone ? 'Copied!' : 'Copy phone number'}
                         >
                           {copiedPhone ? (
-                            <PiCheck className="h-3.5 w-3.5 text-green-600" />
+                            <PiCheck className="h-3 w-3 text-green-600" />
                           ) : (
-                            <PiCopy className="h-3.5 w-3.5" />
+                            <PiCopy className="h-3 w-3" />
                           )}
                         </button>
                       </div>
-                      <div className="mt-1 flex items-center gap-2">
-                        <p className="text-xs text-gray-500">
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-[10px] text-gray-500">
                           {selectedContact.isSessionActive &&
                           selectedContact.sessionExpiresAt ? (
                             <span className="font-bold text-green-600 tabular-nums">
@@ -1961,7 +1959,6 @@ export default function ChatPage() {
                         <ContactTags
                           contact={selectedContact}
                           onUpdate={(updatedContact) => {
-                            // Update local contact state and list
                             setSelectedContact(updatedContact);
                             setContacts((prev) =>
                               prev.map((c) =>
@@ -1979,7 +1976,7 @@ export default function ChatPage() {
                 <div
                   ref={chatContainerRef}
                   className={`custom-scrollbar-message relative min-h-0 flex-1 overflow-y-auto p-4 ${messagesLoading ? 'invisible' : 'visible'}`}
-                  style={{ scrollBehavior: 'auto' }}
+                  style={{ scrollBehavior: 'auto', backgroundImage: 'url(/background.png)', backgroundRepeat: 'repeat', backgroundSize: 'auto' }}
                 >
                   {/* Loading overlay - show while messages load */}
                   {messagesLoading && (
@@ -1999,27 +1996,20 @@ export default function ChatPage() {
                           <div
                             className={`max-w-[65%] ${isOwn ? 'items-end' : 'items-start'} flex flex-col`}
                           >
-                            {/* User name for outgoing messages */}
-                            {isOwn && msg.user && (
-                              <div
-                                className={`mb-0.5 px-2 text-[10px] font-medium ${
-                                  isOwn
-                                    ? 'text-right text-blue-600 dark:text-blue-400'
-                                    : 'text-left text-gray-600 dark:text-gray-400'
-                                }`}
-                              >
-                                {msg.user.username}
-                              </div>
-                            )}
-
                             {/* Message Content */}
                             <div
-                              className={`rounded-2xl px-3 py-1.5 ${
+                              className={`rounded-lg px-2.5 py-1 ${
                                 isOwn
-                                  ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-md'
-                                  : 'border border-gray-200 bg-white text-gray-900 shadow-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100'
-                              } relative transition-all hover:shadow-lg`}
+                                  ? 'bg-[#d9fdd3] text-gray-900 shadow-sm dark:bg-[#005c4b] dark:text-gray-100'
+                                  : 'bg-white text-gray-900 shadow-sm dark:bg-[#202c33] dark:text-gray-100'
+                              } relative transition-all`}
                             >
+                              {/* Username inside bubble */}
+                              {isOwn && msg.user && (
+                                <p className="text-[10px] font-semibold text-green-700 dark:text-green-300">
+                                  {msg.user.username}
+                                </p>
+                              )}
                               {msg.messageType === 'reaction' ? (
                                 // Reaction message - just show the emoji
                                 <div className="flex items-center gap-2">
@@ -2028,7 +2018,7 @@ export default function ChatPage() {
                                   </span>
                                   <div className="flex items-center gap-1">
                                     <span
-                                      className={`text-[10px] ${isOwn ? 'text-blue-100' : 'text-gray-500'}`}
+                                      className={`text-[10px] ${isOwn ? 'text-gray-500 dark:text-gray-400' : 'text-gray-500'}`}
                                     >
                                       {(() => {
                                         const date = new Date(msg.timestamp);
@@ -2125,7 +2115,7 @@ export default function ChatPage() {
                                               href={headerMediaUrl}
                                               target="_blank"
                                               rel="noopener noreferrer"
-                                              className={`flex items-center gap-3 rounded-lg p-3 transition-colors ${isOwn ? 'bg-blue-400/30 hover:bg-blue-400/40' : 'bg-gray-200/80 hover:bg-gray-300/80'}`}
+                                              className={`flex items-center gap-3 rounded-lg p-3 transition-colors ${isOwn ? 'bg-[#c6f0bf] hover:bg-[#b8e8b0] dark:bg-[#025144] dark:hover:bg-[#036b58]' : 'bg-gray-200/80 hover:bg-gray-300/80'}`}
                                             >
                                               <div
                                                 className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg ${isOwn ? 'bg-blue-300/50' : 'bg-gray-300'}`}
@@ -2134,7 +2124,7 @@ export default function ChatPage() {
                                               </div>
                                               <div className="min-w-0 flex-1">
                                                 <p
-                                                  className={`truncate text-sm font-medium ${isOwn ? 'text-white' : 'text-gray-800'}`}
+                                                  className={`truncate text-sm font-medium ${isOwn ? 'text-gray-800 dark:text-gray-100' : 'text-gray-800'}`}
                                                 >
                                                   {headerParam?.document
                                                     ?.filename ||
@@ -2154,7 +2144,7 @@ export default function ChatPage() {
                                       {/* Text Header */}
                                       {headerComp?.text && !headerMediaUrl && (
                                         <p
-                                          className={`mb-1 text-sm font-semibold ${isOwn ? 'text-white' : 'text-gray-900'}`}
+                                          className={`mb-1 text-sm font-semibold ${isOwn ? 'text-gray-900 dark:text-gray-100' : 'text-gray-900'}`}
                                         >
                                           {headerComp.text}
                                         </p>
@@ -2162,7 +2152,7 @@ export default function ChatPage() {
 
                                       {/* Template Body */}
                                       {bodyText && (
-                                        <p className="mb-1 text-sm leading-relaxed whitespace-pre-wrap">
+                                        <p className="mb-1 text-xs leading-snug whitespace-pre-wrap">
                                           {bodyText}
                                         </p>
                                       )}
@@ -2184,7 +2174,7 @@ export default function ChatPage() {
                                               (btn: any, idx: number) => (
                                                 <span
                                                   key={idx}
-                                                  className={`rounded px-2 py-1 text-xs ${isOwn ? 'bg-blue-400/30 text-blue-100' : 'bg-gray-200 text-gray-700'}`}
+                                                  className={`rounded px-2 py-1 text-xs ${isOwn ? 'bg-[#c6f0bf] text-green-800 dark:bg-[#025144] dark:text-green-200' : 'bg-gray-200 text-gray-700'}`}
                                                 >
                                                   {btn.text ||
                                                     btn.payload ||
@@ -2196,15 +2186,15 @@ export default function ChatPage() {
                                         )}
 
                                       {/* Template indicator and timestamp */}
-                                      <div className="mt-2 flex items-center justify-between gap-2">
+                                      <div className="mt-1 flex items-center justify-between gap-2">
                                         <span
-                                          className={`rounded px-1.5 py-0.5 text-[10px] ${isOwn ? 'bg-blue-400/30 text-blue-100' : 'bg-gray-200 text-gray-600'}`}
+                                          className={`rounded px-1.5 py-0.5 text-[10px] ${isOwn ? 'bg-[#c6f0bf] text-green-800 dark:bg-[#025144] dark:text-green-200' : 'bg-gray-200 text-gray-600'}`}
                                         >
                                           {msg.templateName || 'Template'}
                                         </span>
                                         <div className="flex items-center gap-1.5">
                                           <span
-                                            className={`text-[10px] ${isOwn ? 'text-blue-100' : 'text-gray-500'}`}
+                                            className={`text-[10px] ${isOwn ? 'text-gray-500 dark:text-gray-400' : 'text-gray-500'}`}
                                           >
                                             {(() => {
                                               const date = new Date(
@@ -2227,7 +2217,7 @@ export default function ChatPage() {
                                           {isOwn && (
                                             <span
                                               className={
-                                                isOwn ? 'text-white' : ''
+                                                isOwn ? 'text-gray-600 dark:text-gray-300' : ''
                                               }
                                             >
                                               {getStatusIcon(msg.status)}
@@ -2271,7 +2261,7 @@ export default function ChatPage() {
                                           <div
                                             className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-base font-semibold ${
                                               isOwn
-                                                ? 'bg-blue-300/50 text-white'
+                                                ? 'bg-green-200 text-green-800 dark:bg-[#025144] dark:text-green-200'
                                                 : 'bg-gray-300 text-gray-700 dark:bg-gray-600 dark:text-gray-200'
                                             }`}
                                           >
@@ -2279,20 +2269,20 @@ export default function ChatPage() {
                                           </div>
                                           <div className="min-w-0 flex-1">
                                             <p
-                                              className={`truncate text-sm font-semibold ${isOwn ? 'text-white' : 'text-gray-900 dark:text-gray-100'}`}
+                                              className={`truncate text-sm font-semibold ${isOwn ? 'text-gray-900 dark:text-gray-100' : 'text-gray-900 dark:text-gray-100'}`}
                                             >
                                               {name}
                                             </p>
                                             {phones[0] && (
                                               <p
-                                                className={`truncate text-xs ${isOwn ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'}`}
+                                                className={`truncate text-xs ${isOwn ? 'text-gray-500 dark:text-gray-400' : 'text-gray-500 dark:text-gray-400'}`}
                                               >
                                                 {phones[0]}
                                               </p>
                                             )}
                                             {!phones[0] && emails[0] && (
                                               <p
-                                                className={`truncate text-xs ${isOwn ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'}`}
+                                                className={`truncate text-xs ${isOwn ? 'text-gray-500 dark:text-gray-400' : 'text-gray-500 dark:text-gray-400'}`}
                                               >
                                                 {emails[0]}
                                               </p>
@@ -2305,7 +2295,7 @@ export default function ChatPage() {
                                   {/* Timestamp */}
                                   <div className="flex items-center justify-end gap-1">
                                     <span
-                                      className={`text-[10px] ${isOwn ? 'text-blue-100' : 'text-gray-500'}`}
+                                      className={`text-[10px] ${isOwn ? 'text-gray-500 dark:text-gray-400' : 'text-gray-500'}`}
                                     >
                                       {(() => {
                                         const date = new Date(msg.timestamp);
@@ -2324,7 +2314,7 @@ export default function ChatPage() {
                                     </span>
                                     {isOwn && (
                                       <span
-                                        className={isOwn ? 'text-white' : ''}
+                                        className={isOwn ? 'text-gray-600 dark:text-gray-300' : ''}
                                       >
                                         {getStatusIcon(msg.status)}
                                       </span>
@@ -2411,14 +2401,14 @@ export default function ChatPage() {
                                         <p
                                           className={`truncate text-sm font-medium ${
                                             isOwn
-                                              ? 'text-white'
+                                              ? 'text-gray-800 dark:text-gray-100'
                                               : 'text-gray-800'
                                           }`}
                                         >
                                           {msg.mediaFilename || 'Document'}
                                         </p>
                                         <p
-                                          className={`text-xs ${isOwn ? 'text-blue-100' : 'text-gray-500'}`}
+                                          className={`text-xs ${isOwn ? 'text-gray-500 dark:text-gray-400' : 'text-gray-500'}`}
                                         >
                                           PDF • Tap to open
                                         </p>
@@ -2443,7 +2433,7 @@ export default function ChatPage() {
                                   {/* Timestamp & Status for Media */}
                                   <div className="mt-1 flex items-center justify-end gap-1">
                                     <span
-                                      className={`text-[10px] ${isOwn ? 'text-blue-100' : 'text-gray-500'}`}
+                                      className={`text-[10px] ${isOwn ? 'text-gray-500 dark:text-gray-400' : 'text-gray-500'}`}
                                     >
                                       {(() => {
                                         const date = new Date(msg.timestamp);
@@ -2465,7 +2455,7 @@ export default function ChatPage() {
                                     </span>
                                     {isOwn && (
                                       <span
-                                        className={isOwn ? 'text-white' : ''}
+                                        className={isOwn ? 'text-gray-600 dark:text-gray-300' : ''}
                                       >
                                         {getStatusIcon(msg.status)}
                                       </span>
@@ -2474,7 +2464,7 @@ export default function ChatPage() {
                                 </div>
                               ) : (
                                 <div className="flex flex-wrap items-end gap-2">
-                                  <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                                  <p className="text-xs leading-snug whitespace-pre-wrap">
                                     {msg.textBody}
                                   </p>
                                   <div className="min-w-[60px] flex-1" />
@@ -2482,7 +2472,7 @@ export default function ChatPage() {
                                     <span
                                       className={`text-[10px] leading-none font-medium ${
                                         isOwn
-                                          ? 'text-white opacity-90'
+                                          ? 'text-gray-500 dark:text-gray-400'
                                           : 'text-gray-500 dark:text-gray-400'
                                       }`}
                                     >
@@ -2523,12 +2513,6 @@ export default function ChatPage() {
 
                 {/* Input Area */}
                 <div className="flex-shrink-0 border-t border-gray-200 p-4">
-                  {!selectedContact.isSessionActive && (
-                    <div className="mb-3 rounded-lg border border-yellow-200 bg-yellow-50 p-3 text-sm text-yellow-800">
-                      ⚠️ Sesi berakhir. Anda hanya dapat mengirim pesan
-                      template.
-                    </div>
-                  )}
 
                   {/* Attachment Preview */}
                   {pendingAttachment && (
@@ -2674,7 +2658,7 @@ export default function ChatPage() {
                             : 'Session expired. User must reply to open 24h window.'
                         }
                         disabled={sending || !selectedContact.isSessionActive}
-                        className="w-full resize-none"
+                        className="w-full resize-none [&_textarea]:!placeholder-gray-900"
                         rows={1}
                       />
                     </div>
@@ -2722,31 +2706,39 @@ export default function ChatPage() {
                     </Button>
                   </div>
 
-                  {/* Quick Replies */}
-                  <div className="relative mt-2" ref={quickReplyRef}>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={toggleQuickReplies}
-                      disabled={!selectedContact.isSessionActive}
-                      className="gap-2"
-                    >
-                      <PiLightning className="h-4 w-4" />
-                      Quick Replies
-                    </Button>
+                  {/* Quick Replies & Session Warning */}
+                  <div className="mt-2 flex items-center gap-2">
+                    <div className="relative" ref={quickReplyRef}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={toggleQuickReplies}
+                        disabled={!selectedContact.isSessionActive}
+                        className="gap-2"
+                      >
+                        <PiLightning className="h-4 w-4" />
+                        Quick Replies
+                      </Button>
 
-                    {showQuickReplies && (
-                      <div className="absolute bottom-full left-0 mb-2 max-h-64 w-full space-y-1 overflow-y-auto rounded-lg border border-gray-200 bg-white p-2 shadow-lg">
-                        {quickReplies.map((reply) => (
-                          <button
-                            key={reply.id}
-                            onClick={() => handleQuickReply(reply)}
-                            className="w-full rounded px-3 py-2 text-left text-sm hover:bg-gray-100"
-                          >
-                            {reply.text}
-                          </button>
-                        ))}
-                      </div>
+                      {showQuickReplies && (
+                        <div className="absolute bottom-full left-0 mb-2 max-h-64 w-64 space-y-1 overflow-y-auto rounded-lg border border-gray-200 bg-white p-2 shadow-lg">
+                          {quickReplies.map((reply) => (
+                            <button
+                              key={reply.id}
+                              onClick={() => handleQuickReply(reply)}
+                              className="w-full rounded px-3 py-2 text-left text-sm hover:bg-gray-100"
+                            >
+                              {reply.text}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {!selectedContact.isSessionActive && (
+                      <span className="rounded-md border border-yellow-200 bg-yellow-50 px-2 py-1 text-[10px] text-yellow-700">
+                        ⚠️ Sesi berakhir — hanya template
+                      </span>
                     )}
                   </div>
                 </div>
@@ -2762,7 +2754,7 @@ export default function ChatPage() {
                     Choose a contact to start chatting
                   </p>
                   <Button
-                    variant="outline"
+                    variant="solid"
                     className="mt-4"
                     onClick={() => {
                       if (!selectedPhoneNumberId) return;
