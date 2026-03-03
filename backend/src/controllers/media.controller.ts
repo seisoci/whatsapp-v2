@@ -154,6 +154,63 @@ export class MediaController {
   }
 
   /**
+   * Upload media file to S3/MinIO storage
+   * Returns the object key (path) and a presigned URL for immediate use
+   */
+  static async uploadToS3(c: Context) {
+    try {
+      const body = await c.req.parseBody();
+      const file = body.file as File;
+      const contactWaId = body.contactWaId as string;
+      const mediaType = (body.mediaType as string) || 'image';
+
+      if (!file) {
+        return c.json({ success: false, message: 'File harus disediakan.' }, 400);
+      }
+
+      if (!contactWaId) {
+        return c.json({ success: false, message: 'contactWaId harus disediakan.' }, 400);
+      }
+
+      // Convert File to Buffer
+      const arrayBuffer = await file.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+
+      // Upload to S3 — path: {contactWaId}/{mediaType}/{timestamp}-{filename}
+      const s3Path = `${contactWaId}/${mediaType}`;
+      const uploadResult = await storageService.uploadFileToPath(
+        s3Path,
+        file.name,
+        buffer,
+        file.type,
+      );
+
+      console.log('[Media S3 Upload] Success:', {
+        path: uploadResult.path,
+        size: uploadResult.size,
+      });
+
+      return c.json({
+        success: true,
+        message: 'File berhasil diupload ke S3.',
+        data: {
+          objectKey: uploadResult.path,   // e.g. 628xxx/image/1704000000000-photo.jpg
+          presignedUrl: uploadResult.url,  // for immediate use (e.g. WhatsApp link)
+          fileName: uploadResult.fileName,
+          fileSize: uploadResult.size,
+          fileType: file.type,
+        },
+      });
+    } catch (error: any) {
+      console.error('[Media S3 Upload] Error:', error);
+      return c.json(
+        { success: false, message: error.message || 'Gagal upload file ke S3.' },
+        500
+      );
+    }
+  }
+
+  /**
    * Generate a fresh pre-signed URL from a stored base URL or object path
    * GET /media/presign?url=https://s3.itn.net.id/whatsapp/path/to/file.jpg
    */

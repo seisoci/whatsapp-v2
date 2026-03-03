@@ -123,7 +123,7 @@ export class WhatsAppMediaService {
       );
 
       return {
-        mediaUrl: uploadResult.url,
+        mediaUrl: uploadResult.path,  // Store object key, not presigned URL
         mediaFilename: filename,
         mediaMimeType: mediaUrlData.mime_type,
         mediaFileSize: uploadResult.size,

@@ -111,6 +111,7 @@ export class MessageController {
       );
 
       // Presign media URLs (with Redis cache, TTL = 7 days)
+      // mediaUrl stores an S3 object key (e.g. 628xxx/image/1704000000000-photo.jpg)
       const PRESIGN_TTL = 7 * 24 * 60 * 60; // 7 days in seconds
       const finalMessages = await Promise.all(
         processedMessages.map(async (msg) => {
@@ -121,12 +122,13 @@ export class MessageController {
 
           if (!presignedUrl) {
             try {
-              // Extract object key from full URL
-              // stored URL: https://s3.itn.net.id/whatsapp/path/to/file.jpg
-              const bucket = process.env.MINIO_BUCKET || 'whatsapp';
+              // mediaUrl is now an object key — pass directly to storage service
+              // For legacy full URLs, extract the key first
               let objectKey = msg.mediaUrl;
               try {
                 const parsed = new URL(msg.mediaUrl);
+                // It's a full URL (legacy) — extract object key
+                const bucket = process.env.MINIO_BUCKET || 'whatsapp';
                 const parts = parsed.pathname.split('/');
                 const bucketIdx = parts.indexOf(bucket);
                 objectKey =
@@ -134,7 +136,7 @@ export class MessageController {
                     ? parts.slice(bucketIdx + 1).join('/')
                     : parsed.pathname.replace(/^\//, '');
               } catch {
-                // Already a plain key, use as-is
+                // Not a URL — already a plain object key, use as-is
               }
 
               presignedUrl = await storageService.getFileUrl(
@@ -142,15 +144,12 @@ export class MessageController {
                 PRESIGN_TTL
               );
               await cacheService.set(cacheKey, presignedUrl, PRESIGN_TTL);
-              console.log(
-                `[MessageController] Presigned URL cached for message ${msg.id}`
-              );
             } catch (err) {
               console.warn(
                 `[MessageController] Failed to presign URL for message ${msg.id}:`,
                 err
               );
-              presignedUrl = msg.mediaUrl; // fallback to stored URL
+              presignedUrl = msg.mediaUrl; // fallback to stored value
             }
           }
 

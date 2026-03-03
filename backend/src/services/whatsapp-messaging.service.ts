@@ -253,7 +253,7 @@ export class WhatsAppMessagingService {
       }
 
       // Extract media from HEADER component if present
-      let templateMediaId: string | undefined;
+      // Template only allows 1 media (image/video/document) in HEADER
       let templateMediaUrl: string | undefined;
       let templateMediaMimeType: string | undefined;
       let templateMediaFilename: string | undefined;
@@ -266,37 +266,30 @@ export class WhatsAppMessagingService {
         const mediaType = headerParam.type; // 'image', 'video', 'document'
         const mediaObj = headerParam[mediaType]; // e.g. headerParam.image
         if (mediaObj) {
-          templateMediaId = mediaObj.id || undefined;
-          // Strip S3 pre-signed query params (X-Amz-*) so URL doesn't expire in DB
+          // Extract S3 object key from presigned URL (link)
+          // Store only the object key (e.g. 628xxx/image/1704000000000-photo.jpg)
           if (mediaObj.link) {
             try {
+              const bucket = process.env.MINIO_BUCKET || 'whatsapp';
               const url = new URL(mediaObj.link);
-              // Remove all AWS pre-signed params
-              [
-                'X-Amz-Algorithm',
-                'X-Amz-Credential',
-                'X-Amz-Date',
-                'X-Amz-Expires',
-                'X-Amz-SignedHeaders',
-                'X-Amz-Signature',
-              ].forEach((p) => url.searchParams.delete(p));
-              templateMediaUrl = url.toString();
-              // Remove trailing ? if no remaining params
-              if (templateMediaUrl.endsWith('?')) {
-                templateMediaUrl = templateMediaUrl.slice(0, -1);
+              const parts = url.pathname.split('/');
+              const bucketIdx = parts.indexOf(bucket);
+              if (bucketIdx !== -1) {
+                templateMediaUrl = parts.slice(bucketIdx + 1).join('/');
+              } else {
+                templateMediaUrl = url.pathname.replace(/^\//, '');
               }
             } catch {
+              // Not a URL — assume it's already an object key or external URL
               templateMediaUrl = mediaObj.link;
             }
           }
           templateMediaFilename = mediaObj.filename || undefined;
-          // Map type to a reasonable MIME type for storage
-          if (!templateMediaMimeType) {
-            if (mediaType === 'image') templateMediaMimeType = 'image/jpeg';
-            else if (mediaType === 'video') templateMediaMimeType = 'video/mp4';
-            else if (mediaType === 'document')
-              templateMediaMimeType = 'application/pdf';
-          }
+          // Map media type to MIME type
+          if (mediaType === 'image') templateMediaMimeType = 'image/jpeg';
+          else if (mediaType === 'video') templateMediaMimeType = 'video/mp4';
+          else if (mediaType === 'document')
+            templateMediaMimeType = 'application/pdf';
         }
       }
 
@@ -311,8 +304,8 @@ export class WhatsAppMessagingService {
         templateName: params.templateName,
         templateLanguage: params.templateLanguage,
         templateComponents: params.components,
-        mediaId: templateMediaId,
         mediaUrl: templateMediaUrl,
+        mediaMimeType: templateMediaMimeType,
         mediaFilename: templateMediaFilename,
         status: 'sent',
         userId: params.userId,

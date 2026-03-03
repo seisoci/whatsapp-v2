@@ -219,17 +219,26 @@ export default function SendTemplateModal({
         if (headerMediaType === 'url') {
           mediaParam = { link: headerMediaUrl };
         } else if (headerMediaType === 'file' && headerMediaFile) {
-          // Upload the file first
+          // Determine target waId for S3 path
+          const targetWaId =
+            entryMode === 'manual'
+              ? manualPhone.replace(/\D/g, '')
+              : contacts.find((c) => c.id === targetContactId)?.waId ||
+                targetContactId;
+
           try {
-            const uploadRes = await mediaApi.upload(
-              phoneNumberId,
-              headerMediaFile
+            // 1) Upload to S3 for permanent storage
+            const s3Res = await mediaApi.uploadToS3(
+              targetWaId,
+              headerMediaFile,
+              headerFormat.toLowerCase()
             );
-            if (uploadRes.success && uploadRes.data?.id) {
-              mediaParam = { id: uploadRes.data.id };
-            } else {
-              throw new Error('Upload failed');
+            if (!s3Res.success || !s3Res.data) {
+              throw new Error('S3 upload failed');
             }
+
+            // 2) Use the presigned URL as link so WhatsApp can fetch it
+            mediaParam = { link: s3Res.data.presignedUrl };
           } catch (uploadError) {
             console.error('Failed to upload media:', uploadError);
             setLoading(false);

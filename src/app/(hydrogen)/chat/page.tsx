@@ -2103,7 +2103,7 @@ export default function ChatPage() {
                                             <img
                                               src={headerMediaUrl}
                                               alt="Template header"
-                                              className="w-full max-w-[280px] cursor-pointer rounded transition-opacity hover:opacity-90 sm:max-w-sm"
+                                              className="max-h-[200px] max-w-[180px] cursor-pointer rounded object-cover transition-opacity hover:opacity-90"
                                               onClick={() => {
                                                 setLightboxSlides([
                                                   {
@@ -2118,7 +2118,7 @@ export default function ChatPage() {
                                             <video
                                               src={headerMediaUrl}
                                               controls
-                                              className="w-full max-w-[280px] rounded sm:max-w-sm"
+                                              className="max-h-[200px] max-w-[220px] rounded"
                                             />
                                           ) : (
                                             <a
@@ -2337,7 +2337,7 @@ export default function ChatPage() {
                                     <img
                                       src={msg.mediaUrl}
                                       alt="Image"
-                                      className="mb-2 w-full max-w-[280px] cursor-pointer rounded transition-opacity hover:opacity-90 sm:max-w-sm"
+                                      className="mb-2 max-h-[200px] max-w-[180px] cursor-pointer rounded object-cover transition-opacity hover:opacity-90"
                                       onClick={() => {
                                         setLightboxSlides([
                                           {
@@ -2360,7 +2360,7 @@ export default function ChatPage() {
                                     <video
                                       src={msg.mediaUrl}
                                       controls
-                                      className="mb-2 w-full max-w-[280px] cursor-pointer rounded sm:max-w-sm"
+                                      className="mb-2 max-h-[200px] max-w-[220px] cursor-pointer rounded"
                                       onClick={(e) => {
                                         // If clicking on video (not controls), open in lightbox
                                         if (e.target === e.currentTarget) {
