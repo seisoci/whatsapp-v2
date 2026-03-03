@@ -7,10 +7,11 @@ import TablePagination from '@core/components/table/pagination';
 import { Contact } from '@/lib/api/types/contacts';
 import { createContactsColumns } from './columns';
 import { PiMagnifyingGlassBold } from 'react-icons/pi';
-import { Flex, Input, Title, Loader, Button } from 'rizzui';
+import { Flex, Input, Title, Loader, Select } from 'rizzui';
 import { useModal } from '@/app/shared/modal-views/use-modal';
 import CreateEditContact from './create-edit-contact';
 import { contactsApi } from '@/lib/api/contacts';
+import { phoneNumbersApi } from '@/lib/api/phone-numbers';
 import toast from 'react-hot-toast';
 
 export default function ContactsTable() {
@@ -23,14 +24,31 @@ export default function ContactsTable() {
   });
   const [totalRecords, setTotalRecords] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
+  const [phoneNumbers, setPhoneNumbers] = useState<any[]>([]);
+  const [selectedPhoneNumberId, setSelectedPhoneNumberId] = useState('');
 
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const { openModal } = useModal();
+
+  // Fetch phone numbers for filter
+  useEffect(() => {
+    const fetchPhoneNumbers = async () => {
+      try {
+        const res: any = await phoneNumbersApi.getAll();
+        const list = Array.isArray(res) ? res : res?.data || [];
+        setPhoneNumbers(list);
+      } catch (error) {
+        console.error('Failed to fetch phone numbers:', error);
+      }
+    };
+    fetchPhoneNumbers();
+  }, []);
 
   const fetchData = async (
     page?: number,
     perPage?: number,
     search?: string,
+    phoneNumberId?: string,
     isInitialLoad = false
   ) => {
     try {
@@ -43,11 +61,13 @@ export default function ContactsTable() {
       const currentPage = page ?? pagination.pageIndex + 1;
       const currentPerPage = perPage ?? pagination.pageSize;
       const currentSearch = search ?? searchQuery;
+      const currentPhoneNumberId = phoneNumberId ?? selectedPhoneNumberId;
 
       const response = await contactsApi.getAll({
         page: currentPage,
         limit: currentPerPage,
         search: currentSearch || undefined,
+        phoneNumberId: currentPhoneNumberId || undefined,
       });
 
       if (response.success && response.data) {
@@ -68,7 +88,7 @@ export default function ContactsTable() {
   };
 
   useEffect(() => {
-    fetchData(1, pagination.pageSize, searchQuery, true);
+    fetchData(1, pagination.pageSize, searchQuery, selectedPhoneNumberId, true);
   }, []);
 
   // Debounced search
@@ -76,10 +96,17 @@ export default function ContactsTable() {
     if (loading) return;
     const timer = setTimeout(() => {
       setPagination((prev) => ({ ...prev, pageIndex: 0 }));
-      fetchData(1, pagination.pageSize, searchQuery, false);
+      fetchData(1, pagination.pageSize, searchQuery, selectedPhoneNumberId, false);
     }, 500);
     return () => clearTimeout(timer);
   }, [searchQuery]);
+
+  // Filter by phone number
+  useEffect(() => {
+    if (loading) return;
+    setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+    fetchData(1, pagination.pageSize, searchQuery, selectedPhoneNumberId, false);
+  }, [selectedPhoneNumberId]);
 
   // Pagination
   useEffect(() => {
@@ -88,6 +115,7 @@ export default function ContactsTable() {
       pagination.pageIndex + 1,
       pagination.pageSize,
       searchQuery,
+      selectedPhoneNumberId,
       false
     );
   }, [pagination.pageIndex, pagination.pageSize]);
@@ -102,6 +130,7 @@ export default function ContactsTable() {
               pagination.pageIndex + 1,
               pagination.pageSize,
               searchQuery,
+              selectedPhoneNumberId,
               false
             )
           }
@@ -121,6 +150,7 @@ export default function ContactsTable() {
           pagination.pageIndex + 1,
           pagination.pageSize,
           searchQuery,
+          selectedPhoneNumberId,
           false
         );
       } else {
@@ -152,6 +182,14 @@ export default function ContactsTable() {
     setTableData([...data]);
   }, [data, setTableData]);
 
+  const phoneNumberOptions = [
+    { label: 'Semua Nomor', value: '' },
+    ...phoneNumbers.map((pn) => ({
+      label: pn.displayPhoneNumber || pn.phoneNumberId,
+      value: pn.id,
+    })),
+  ];
+
   if (loading) {
     return (
       <div className="flex min-h-[400px] items-center justify-center">
@@ -171,10 +209,22 @@ export default function ContactsTable() {
           Contacts ({totalRecords} total)
         </Title>
         <Flex align="center" className="xs:w-auto w-full gap-3">
+          <Select
+            options={phoneNumberOptions}
+            value={selectedPhoneNumberId}
+            onChange={(option: any) => setSelectedPhoneNumberId(option.value)}
+            getOptionDisplayValue={(option) => option.label}
+            displayValue={(selected) =>
+              phoneNumberOptions.find((o) => o.value === selected)?.label || 'Semua Nomor'
+            }
+            placeholder="Filter nomor bisnis..."
+            className="w-72"
+            inPortal={false}
+          />
           <Input
             type="search"
             clearable={true}
-            placeholder="Search by name or ID..."
+            placeholder="Cari nama atau nomor..."
             onClear={() => setSearchQuery('')}
             value={searchQuery}
             prefix={<PiMagnifyingGlassBold className="size-4" />}

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Title, Text, Button } from 'rizzui';
+import { Title, Text, Button, Select } from 'rizzui';
 import cn from '@/utils/class-names';
 import {
   PiChatCircleText,
@@ -22,6 +22,7 @@ import {
   Legend,
 } from 'recharts';
 import { dashboardApi, type DashboardStats } from '@/lib/api/dashboard';
+import { phoneNumbersApi } from '@/lib/api/phone-numbers';
 import Link from 'next/link';
 import { format } from 'date-fns';
 
@@ -69,12 +70,29 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [phoneNumbers, setPhoneNumbers] = useState<any[]>([]);
+  const [selectedPhoneNumberId, setSelectedPhoneNumberId] = useState('');
+
+  useEffect(() => {
+    const fetchPhoneNumbers = async () => {
+      try {
+        const res: any = await phoneNumbersApi.getAll();
+        const list = Array.isArray(res) ? res : res?.data || [];
+        setPhoneNumbers(list);
+      } catch (error) {
+        console.error('Failed to fetch phone numbers:', error);
+      }
+    };
+    fetchPhoneNumbers();
+  }, []);
 
   useEffect(() => {
     async function fetchStats() {
       try {
-        const data = await dashboardApi.getStats();
+        setIsLoading(true);
+        const data = await dashboardApi.getStats(selectedPhoneNumberId || undefined);
         setStats(data);
+        setError(null);
       } catch (err) {
         console.error(err);
         setError('Failed to load dashboard data');
@@ -83,7 +101,15 @@ export default function DashboardPage() {
       }
     }
     fetchStats();
-  }, []);
+  }, [selectedPhoneNumberId]);
+
+  const phoneNumberOptions = [
+    { label: 'Semua Nomor', value: '' },
+    ...phoneNumbers.map((pn) => ({
+      label: pn.displayPhoneNumber || pn.phoneNumberId,
+      value: pn.id,
+    })),
+  ];
 
   if (isLoading) {
     return (
@@ -115,7 +141,19 @@ export default function DashboardPage() {
             Overview of your WhatsApp Business api activity & performance.
           </Text>
         </div>
-        <div className="flex gap-3">
+        <div className="flex items-center gap-3">
+            <Select
+              options={phoneNumberOptions}
+              value={selectedPhoneNumberId}
+              onChange={(option: any) => setSelectedPhoneNumberId(option.value)}
+              getOptionDisplayValue={(option) => option.label}
+              displayValue={(selected) =>
+                phoneNumberOptions.find((o) => o.value === selected)?.label || 'Semua Nomor'
+              }
+              placeholder="Filter nomor..."
+              className="w-72"
+              inPortal={false}
+            />
             <Link href="/chat">
               <Button className="gap-2">
                 Go to Chat <PiArrowRight />
@@ -161,7 +199,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 gap-8">
         <div className="border border-gray-200 bg-white rounded-xl p-6 shadow-sm dark:bg-gray-800 dark:border-gray-700">
           <Title as="h4" className="mb-6 font-semibold">
-            Message Traffic (Last 7 Days)
+            Message Traffic (Last 30 Days)
           </Title>
           <div className="h-[400px] w-full">
             <ResponsiveContainer width="100%" height="100%">

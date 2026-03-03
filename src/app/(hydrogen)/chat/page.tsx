@@ -2152,7 +2152,7 @@ export default function ChatPage() {
 
                                       {/* Template Body */}
                                       {bodyText && (
-                                        <p className="mb-1 text-xs leading-snug whitespace-pre-wrap">
+                                        <p className="mb-1 text-[13px] leading-normal whitespace-pre-wrap">
                                           {bodyText}
                                         </p>
                                       )}
@@ -2464,7 +2464,7 @@ export default function ChatPage() {
                                 </div>
                               ) : (
                                 <div className="flex flex-wrap items-end gap-2">
-                                  <p className="text-xs leading-snug whitespace-pre-wrap">
+                                  <p className="text-[13px] leading-normal whitespace-pre-wrap">
                                     {msg.textBody}
                                   </p>
                                   <div className="min-w-[60px] flex-1" />
@@ -2658,7 +2658,7 @@ export default function ChatPage() {
                             : 'Session expired. User must reply to open 24h window.'
                         }
                         disabled={sending || !selectedContact.isSessionActive}
-                        className="w-full resize-none [&_textarea]:!placeholder-gray-900"
+                        className="w-full resize-none [&_textarea]:!bg-white [&_textarea]:!placeholder-gray-900 dark:[&_textarea]:!bg-gray-800"
                         rows={1}
                       />
                     </div>

@@ -10,5 +10,8 @@ import type { DashboardStats } from '../types/dashboard';
 export type { DashboardStats };
 
 export const dashboardApi = {
-  getStats: () => apiClient.get<DashboardStats>('/dashboard/stats').then(r => r.data),
+  getStats: (phoneNumberId?: string) => {
+    const params = phoneNumberId ? `?phoneNumberId=${phoneNumberId}` : '';
+    return apiClient.get<DashboardStats>(`/dashboard/stats${params}`).then(r => r.data);
+  },
 };

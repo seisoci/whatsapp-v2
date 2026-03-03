@@ -10,6 +10,7 @@ export class ContactController {
       const page = parseInt(c.req.query('page') || '1');
       const limit = parseInt(c.req.query('limit') || '10');
       const search = c.req.query('search');
+      const phoneNumberId = c.req.query('phoneNumberId');
 
       const queryBuilder = contactRepository.createQueryBuilder('contact')
         .leftJoinAndSelect('contact.phoneNumber_', 'phoneNumber')
@@ -18,8 +19,12 @@ export class ContactController {
         .skip((page - 1) * limit)
         .take(limit);
 
+      if (phoneNumberId) {
+        queryBuilder.andWhere('contact.phoneNumberId = :phoneNumberId', { phoneNumberId });
+      }
+
       if (search) {
-        queryBuilder.where(
+        queryBuilder.andWhere(
           '(contact.profileName ILIKE :search OR contact.waId ILIKE :search)',
           { search: `%${search}%` }
         );

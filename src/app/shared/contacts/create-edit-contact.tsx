@@ -1,23 +1,21 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { PiXBold } from 'react-icons/pi';
 import { SubmitHandler } from 'react-hook-form';
 import { Form } from '@core/ui/form';
-import { Input, Button, ActionIcon, Title, Textarea } from 'rizzui';
+import { Input, Button, ActionIcon, Title, Select } from 'rizzui';
 import { useModal } from '@/app/shared/modal-views/use-modal';
-import { contactsApi } from '@/lib/api/contacts'; // Make sure this path is correct
+import { contactsApi } from '@/lib/api/contacts';
+import { phoneNumbersApi } from '@/lib/api/phone-numbers';
 import toast from 'react-hot-toast';
 import { z } from 'zod';
-import { Contact } from '@/lib/api/types/contacts'; // Make sure this path is correct
+import { Contact } from '@/lib/api/types/contacts';
 
 const createContactSchema = z.object({
-  waId: z.string().min(1, 'WhatsApp ID is required'),
-  phoneNumberId: z.string().min(1, 'Phone Number ID is required'), // Ideally this should be a select if we have list of phone numbers
+  waId: z.string().min(1, 'Nomor WhatsApp harus diisi'),
+  phoneNumberId: z.string().min(1, 'Pilih nomor bisnis'),
   profileName: z.string().optional(),
-  businessName: z.string().optional(),
-  email: z.string().email('Invalid email address').optional().or(z.literal('')),
-  notes: z.string().optional(),
 });
 
 type CreateContactInput = z.infer<typeof createContactSchema>;
@@ -31,6 +29,20 @@ export default function CreateEditContact({
 }) {
   const { closeModal } = useModal();
   const [isLoading, setLoading] = useState(false);
+  const [phoneNumbers, setPhoneNumbers] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchPhoneNumbers = async () => {
+      try {
+        const res: any = await phoneNumbersApi.getAll();
+        const data = Array.isArray(res) ? res : res?.data || [];
+        setPhoneNumbers(data);
+      } catch (error) {
+        console.error('Failed to fetch phone numbers:', error);
+      }
+    };
+    fetchPhoneNumbers();
+  }, []);
 
   const onSubmit: SubmitHandler<CreateContactInput> = async (data) => {
     setLoading(true);
@@ -39,34 +51,43 @@ export default function CreateEditContact({
       if (contact) {
         response = await contactsApi.update(contact.id, {
           profileName: data.profileName,
-          businessName: data.businessName,
-          email: data.email,
-          notes: data.notes,
         });
       } else {
         response = await contactsApi.create({
-          waId: data.waId,
+          waId: data.waId.replace(/\D/g, ''),
           phoneNumberId: data.phoneNumberId,
           profileName: data.profileName,
-          businessName: data.businessName,
-          email: data.email,
         });
       }
 
       if (response.success) {
-        toast.success(contact ? 'Contact updated successfully' : 'Contact created successfully');
+        toast.success(
+          contact
+            ? 'Contact updated successfully'
+            : 'Contact created successfully'
+        );
         closeModal();
         onSuccess?.();
       } else {
-        toast.error(response.message || `Failed to ${contact ? 'update' : 'create'} contact`);
+        toast.error(
+          response.message ||
+            `Failed to ${contact ? 'update' : 'create'} contact`
+        );
       }
     } catch (error: any) {
       console.error('Contact operation error:', error);
-      toast.error(error.message || `Failed to ${contact ? 'update' : 'create'} contact`);
+      toast.error(
+        error.message || `Failed to ${contact ? 'update' : 'create'} contact`
+      );
     } finally {
       setLoading(false);
     }
   };
+
+  const phoneNumberOptions = phoneNumbers.map((pn) => ({
+    label: pn.displayPhoneNumber || pn.phoneNumberId,
+    value: pn.id,
+  }));
 
   return (
     <Form<CreateContactInput>
@@ -77,19 +98,18 @@ export default function CreateEditContact({
           waId: contact?.waId || '',
           phoneNumberId: contact?.phoneNumberId || '',
           profileName: contact?.profileName || '',
-          businessName: contact?.businessName || '',
-          email: contact?.customFields?.email || '',
-          notes: contact?.notes || '',
         },
       }}
-      className="grid grid-cols-1 gap-6 p-6 @container md:grid-cols-2 [&_.rizzui-input-label]:font-medium [&_.rizzui-input-label]:text-gray-900"
+      className="grid grid-cols-1 gap-5 p-6 [&_.rizzui-input-label]:font-medium [&_.rizzui-input-label]:text-gray-900"
     >
-      {({ register, formState: { errors } }) => {
+      {({ register, setValue, watch, formState: { errors } }) => {
+        const selectedPhoneNumberId = watch('phoneNumberId');
+
         return (
           <>
-            <div className="col-span-full flex items-center justify-between">
+            <div className="flex items-center justify-between">
               <Title as="h4" className="font-semibold">
-                {contact ? 'Edit Contact' : 'Add New Contact'}
+                {contact ? 'Edit Contact' : 'Tambah Contact'}
               </Title>
               <ActionIcon size="sm" variant="text" onClick={closeModal}>
                 <PiXBold className="h-auto w-5" />
@@ -97,69 +117,49 @@ export default function CreateEditContact({
             </div>
 
             <Input
-              label="WhatsApp ID"
-              placeholder="e.g. 628123456789"
-              {...register('waId')}
-              className="col-span-full"
-              error={errors.waId?.message}
-              disabled={!!contact} // ID usually shouldn't change
-            />
-
-            <Input
-              label="Phone Number ID"
-              placeholder="UUID of Phone Number"
-              {...register('phoneNumberId')}
-              className="col-span-full"
-              error={errors.phoneNumberId?.message}
-              disabled={!!contact}
-            />
-
-            <Input
-              label="Profile Name"
-              placeholder="Enter profile name"
+              label="Nama"
+              placeholder="Masukkan nama contact"
               {...register('profileName')}
-              className="col-span-full"
               error={errors.profileName?.message}
             />
 
             <Input
-              label="Business Name"
-              placeholder="Enter business name (optional)"
-              {...register('businessName')}
-              className="col-span-full"
-              error={errors.businessName?.message}
+              label="Nomor WhatsApp"
+              placeholder="contoh: 6281234567890"
+              {...register('waId')}
+              error={errors.waId?.message}
+              disabled={!!contact}
+              helperText="Masukkan nomor dengan kode negara, tanpa + atau spasi"
             />
 
-            <Input
-              label="Email"
-              placeholder="Enter email address (optional)"
-              {...register('email')}
-              className="col-span-full"
-              error={errors.email?.message}
-            />
+            <div>
+              <Select
+                label="Nomor Bisnis WhatsApp"
+                placeholder="Pilih nomor bisnis..."
+                options={phoneNumberOptions}
+                value={selectedPhoneNumberId}
+                onChange={(option: any) =>
+                  setValue('phoneNumberId', option.value, {
+                    shouldValidate: true,
+                  })
+                }
+                getOptionDisplayValue={(option) => option.label}
+                displayValue={(selected) =>
+                  phoneNumberOptions.find((o) => o.value === selected)?.label ||
+                  ''
+                }
+                disabled={!!contact}
+                error={errors.phoneNumberId?.message}
+                inPortal={false}
+              />
+            </div>
 
-             <Textarea
-              label="Notes"
-              placeholder="Enter notes (optional)"
-              {...register('notes')}
-              className="col-span-full"
-              error={errors.notes?.message}
-            />
-
-            <div className="col-span-full flex items-center justify-end gap-4">
-              <Button
-                variant="outline"
-                onClick={closeModal}
-                className="w-full @xl:w-auto"
-              >
-                Cancel
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <Button variant="outline" onClick={closeModal}>
+                Batal
               </Button>
-              <Button
-                type="submit"
-                isLoading={isLoading}
-                className="w-full @xl:w-auto"
-              >
-                {contact ? 'Update Contact' : 'Create Contact'}
+              <Button type="submit" isLoading={isLoading}>
+                {contact ? 'Update' : 'Simpan'}
               </Button>
             </div>
           </>
