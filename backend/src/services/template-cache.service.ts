@@ -45,7 +45,11 @@ class TemplateCacheService {
   /**
    * Get cache key for template
    */
-  private getCacheKey(wabaId: string, templateName: string, language: string): string {
+  private getCacheKey(
+    wabaId: string,
+    templateName: string,
+    language: string
+  ): string {
     return `${this.CACHE_PREFIX}${wabaId}:${templateName}:${language}`;
   }
 
@@ -67,14 +71,20 @@ class TemplateCacheService {
       return cached;
     }
 
-    console.log(`[TemplateCache] Cache MISS for ${templateName}:${language}, fetching from API...`);
+    console.log(
+      `[TemplateCache] Cache MISS for ${templateName}:${language}, fetching from API...`
+    );
 
     // Fetch from API
     try {
-      const result = await WhatsAppService.getMessageTemplates(wabaId, accessToken, {
-        name: templateName,
-        limit: 100,
-      });
+      const result = await WhatsAppService.getMessageTemplates(
+        wabaId,
+        accessToken,
+        {
+          name: templateName,
+          limit: 100,
+        }
+      );
 
       if (result.data && Array.isArray(result.data)) {
         // Find template with matching name and language
@@ -85,12 +95,16 @@ class TemplateCacheService {
         if (template) {
           // Cache the template
           await cacheService.set(cacheKey, template, this.CACHE_TTL);
-          console.log(`[TemplateCache] Cached template ${templateName}:${language}`);
+          console.log(
+            `[TemplateCache] Cached template ${templateName}:${language}`
+          );
           return template;
         }
       }
 
-      console.warn(`[TemplateCache] Template not found: ${templateName}:${language}`);
+      console.warn(
+        `[TemplateCache] Template not found: ${templateName}:${language}`
+      );
       return null;
     } catch (error) {
       console.error(`[TemplateCache] Error fetching template:`, error);
@@ -132,17 +146,32 @@ class TemplateCacheService {
   renderTemplateBody(
     template: TemplateDefinition,
     components: any[]
-  ): { header?: string; body?: string; footer?: string } {
-    const result: { header?: string; body?: string; footer?: string } = {};
+  ): { header?: string; body?: string; footer?: string; buttons?: string[] } {
+    const result: {
+      header?: string;
+      body?: string;
+      footer?: string;
+      buttons?: string[];
+    } = {};
 
-    // Find BODY component in template definition
+    // Find components in template definition
     const bodyDef = template.components.find((c) => c.type === 'BODY');
     const headerDef = template.components.find((c) => c.type === 'HEADER');
     const footerDef = template.components.find((c) => c.type === 'FOOTER');
+    const buttonsDef = template.components.find((c) => c.type === 'BUTTONS');
 
     // Find parameter components from sent message
-    const bodyParams = components?.find((c: any) => c.type?.toUpperCase() === 'BODY');
-    const headerParams = components?.find((c: any) => c.type?.toUpperCase() === 'HEADER');
+    const bodyParams = components?.find(
+      (c: any) => c.type?.toUpperCase() === 'BODY'
+    );
+    const headerParams = components?.find(
+      (c: any) => c.type?.toUpperCase() === 'HEADER'
+    );
+    const footerParams = components?.find(
+      (c: any) => c.type?.toUpperCase() === 'FOOTER'
+    );
+    const buttonParams =
+      components?.filter((c: any) => c.type?.toLowerCase() === 'button') || [];
 
     // Render body text
     if (bodyDef?.text) {
@@ -152,30 +181,69 @@ class TemplateCacheService {
       // Replace placeholders {{1}}, {{2}}, etc.
       params.forEach((param: any, index: number) => {
         const placeholder = `{{${index + 1}}}`;
-        const value = param.text || param.currency?.fallback_value || param.date_time?.fallback_value || '';
-        bodyText = bodyText.replace(placeholder, value);
+        const value =
+          param.text ||
+          param.currency?.fallback_value ||
+          param.date_time?.fallback_value ||
+          '';
+        bodyText = bodyText.replace(new RegExp(placeholder, 'g'), value);
       });
 
       result.body = bodyText;
     }
 
     // Render header text (if text type)
-    if (headerDef?.text && headerDef.format !== 'IMAGE' && headerDef.format !== 'VIDEO' && headerDef.format !== 'DOCUMENT') {
+    if (
+      headerDef?.text &&
+      headerDef.format !== 'IMAGE' &&
+      headerDef.format !== 'VIDEO' &&
+      headerDef.format !== 'DOCUMENT'
+    ) {
       let headerText = headerDef.text;
       const params = headerParams?.parameters || [];
 
       params.forEach((param: any, index: number) => {
         const placeholder = `{{${index + 1}}}`;
         const value = param.text || '';
-        headerText = headerText.replace(placeholder, value);
+        headerText = headerText.replace(new RegExp(placeholder, 'g'), value);
       });
 
       result.header = headerText;
     }
 
-    // Footer doesn't have variables, just copy text
+    // Render footer text
     if (footerDef?.text) {
-      result.footer = footerDef.text;
+      let footerText = footerDef.text;
+      const params = footerParams?.parameters || [];
+
+      params.forEach((param: any, index: number) => {
+        const placeholder = `{{${index + 1}}}`;
+        const value = param.text || '';
+        footerText = footerText.replace(new RegExp(placeholder, 'g'), value);
+      });
+
+      result.footer = footerText;
+    }
+
+    // Render buttons text
+    if (buttonsDef?.buttons && buttonsDef.buttons.length > 0) {
+      result.buttons = buttonsDef.buttons.map((btn, index) => {
+        let btnText = btn.text;
+
+        // Find if any parameters match this button index
+        const matchButtonParam = buttonParams.find(
+          (b: any) => String(b.index) === String(index)
+        );
+        if (matchButtonParam) {
+          const params = matchButtonParam.parameters || [];
+          params.forEach((param: any, pIndex: number) => {
+            const placeholder = `{{${pIndex + 1}}}`;
+            const value = param.text || '';
+            btnText = btnText.replace(new RegExp(placeholder, 'g'), value);
+          });
+        }
+        return `[${btnText}]`;
+      });
     }
 
     return result;
@@ -187,12 +255,16 @@ class TemplateCacheService {
   async invalidateCache(wabaId: string, templateName?: string): Promise<void> {
     if (templateName) {
       // Invalidate specific template (all languages)
-      await cacheService.invalidatePattern(`${this.CACHE_PREFIX}${wabaId}:${templateName}:*`);
+      await cacheService.invalidatePattern(
+        `${this.CACHE_PREFIX}${wabaId}:${templateName}:*`
+      );
     } else {
       // Invalidate all templates for this WABA
       await cacheService.invalidatePattern(`${this.CACHE_PREFIX}${wabaId}:*`);
     }
-    console.log(`[TemplateCache] Invalidated cache for ${wabaId}${templateName ? `:${templateName}` : ''}`);
+    console.log(
+      `[TemplateCache] Invalidated cache for ${wabaId}${templateName ? `:${templateName}` : ''}`
+    );
   }
 
   /**
@@ -224,7 +296,9 @@ class TemplateCacheService {
           );
           await cacheService.set(cacheKey, template, this.CACHE_TTL);
         }
-        console.log(`[TemplateCache] Preloaded ${result.data.length} templates for ${phoneNumberId}`);
+        console.log(
+          `[TemplateCache] Preloaded ${result.data.length} templates for ${phoneNumberId}`
+        );
         return result.data.length;
       }
 

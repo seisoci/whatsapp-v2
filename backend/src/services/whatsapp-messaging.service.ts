@@ -10,7 +10,7 @@ import { PhoneNumber } from '../models/PhoneNumber';
 import { WhatsAppService } from './whatsapp.service';
 import { templateCacheService } from './template-cache.service';
 
-const WHATSAPP_API_BASE_URL = process.env.WHATSAPP_API_VERSION 
+const WHATSAPP_API_BASE_URL = process.env.WHATSAPP_API_VERSION
   ? `https://graph.facebook.com/${process.env.WHATSAPP_API_VERSION}`
   : 'https://graph.facebook.com/v18.0';
 
@@ -59,7 +59,10 @@ export class WhatsAppMessagingService {
   /**
    * Update contact session when customer sends message
    */
-  static async updateCustomerSession(contactId: string, messageTimestamp: Date): Promise<void> {
+  static async updateCustomerSession(
+    contactId: string,
+    messageTimestamp: Date
+  ): Promise<void> {
     const contactRepo = AppDataSource.getRepository(Contact);
     const contact = await contactRepo.findOne({ where: { id: contactId } });
 
@@ -70,12 +73,14 @@ export class WhatsAppMessagingService {
     // Update session timestamps
     contact.lastCustomerMessageAt = messageTimestamp;
     // Session expires 24 hours after customer message
-    contact.sessionExpiresAt = new Date(messageTimestamp.getTime() + 24 * 60 * 60 * 1000);
-    
+    contact.sessionExpiresAt = new Date(
+      messageTimestamp.getTime() + 24 * 60 * 60 * 1000
+    );
+
     if (!contact.firstMessageAt) {
       contact.firstMessageAt = messageTimestamp;
     }
-    
+
     contact.lastMessageAt = messageTimestamp;
 
     await contactRepo.save(contact);
@@ -85,41 +90,45 @@ export class WhatsAppMessagingService {
    * Send text message
    */
   static async sendTextMessage(params: {
-    phoneNumberId: string;  // WhatsApp numeric ID for API
-    internalPhoneNumberId?: string;  // Internal UUID for database
+    phoneNumberId: string; // WhatsApp numeric ID for API
+    internalPhoneNumberId?: string; // Internal UUID for database
     accessToken: string;
     to: string;
     text: string;
     contactId?: string;
     preview_url?: boolean;
-    userId?: string;  // User who sent the message
+    userId?: string; // User who sent the message
   }): Promise<any> {
     // Validate session if contactId provided
     if (params.contactId) {
       const sessionStatus = await this.checkSessionStatus(params.contactId);
       if (!sessionStatus.canSend) {
         throw new Error(
-          sessionStatus.reason || 'Cannot send message. Session expired. Use template message.'
+          sessionStatus.reason ||
+            'Cannot send message. Session expired. Use template message.'
         );
       }
     }
 
-    const response = await fetch(`${WHATSAPP_API_BASE_URL}/${params.phoneNumberId}/messages`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${params.accessToken}`,
-      },
-      body: JSON.stringify({
-        messaging_product: 'whatsapp',
-        to: params.to,
-        type: 'text',
-        text: {
-          body: params.text,
-          preview_url: params.preview_url || false,
+    const response = await fetch(
+      `${WHATSAPP_API_BASE_URL}/${params.phoneNumberId}/messages`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${params.accessToken}`,
         },
-      }),
-    });
+        body: JSON.stringify({
+          messaging_product: 'whatsapp',
+          to: params.to,
+          type: 'text',
+          text: {
+            body: params.text,
+            preview_url: params.preview_url || false,
+          },
+        }),
+      }
+    );
 
     if (!response.ok) {
       const error: any = await response.json();
@@ -141,7 +150,7 @@ export class WhatsAppMessagingService {
           messageType: 'text',
           textBody: params.text,
           status: 'sent',
-          userId: params.userId,  // Add userId
+          userId: params.userId, // Add userId
         });
         console.log('✅ Outgoing message saved to database');
       } catch (dbError: any) {
@@ -171,29 +180,34 @@ export class WhatsAppMessagingService {
     internalPhoneNumberId?: string; // Add internalPhoneNumberId for DB storage
     userId?: string; // Add userId
   }): Promise<any> {
-    const response = await fetch(`${WHATSAPP_API_BASE_URL}/${params.phoneNumberId}/messages`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${params.accessToken}`,
-      },
-      body: JSON.stringify({
-        messaging_product: 'whatsapp',
-        to: params.to,
-        type: 'template',
-        template: {
-          name: params.templateName,
-          language: {
-            code: params.templateLanguage,
-          },
-          components: params.components || [],
+    const response = await fetch(
+      `${WHATSAPP_API_BASE_URL}/${params.phoneNumberId}/messages`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${params.accessToken}`,
         },
-      }),
-    });
+        body: JSON.stringify({
+          messaging_product: 'whatsapp',
+          to: params.to,
+          type: 'template',
+          template: {
+            name: params.templateName,
+            language: {
+              code: params.templateLanguage,
+            },
+            components: params.components || [],
+          },
+        }),
+      }
+    );
 
     if (!response.ok) {
       const error: any = await response.json();
-      throw new Error(error.error?.message || 'Failed to send template message');
+      throw new Error(
+        error.error?.message || 'Failed to send template message'
+      );
     }
 
     const result: any = await response.json();
@@ -217,17 +231,73 @@ export class WhatsAppMessagingService {
             templateDef,
             params.components || []
           );
-          // Combine header, body, and footer into a single text for display
+          // Combine header, body, footer, and buttons into a single text for display
           const parts: string[] = [];
           if (rendered.header) parts.push(rendered.header);
           if (rendered.body) parts.push(rendered.body);
           if (rendered.footer) parts.push(rendered.footer);
+          if (rendered.buttons && rendered.buttons.length > 0) {
+            parts.push(rendered.buttons.join('\n'));
+          }
           renderedTextBody = parts.join('\n\n');
-          console.log(`[TemplateMessage] Rendered template body: ${renderedTextBody}`);
+          console.log(
+            `[TemplateMessage] Rendered template body: ${renderedTextBody}`
+          );
         }
       } catch (error) {
-        console.error('[TemplateMessage] Failed to render template body:', error);
+        console.error(
+          '[TemplateMessage] Failed to render template body:',
+          error
+        );
         // Continue without rendered text - the template components will still be saved
+      }
+
+      // Extract media from HEADER component if present
+      let templateMediaId: string | undefined;
+      let templateMediaUrl: string | undefined;
+      let templateMediaMimeType: string | undefined;
+      let templateMediaFilename: string | undefined;
+
+      const headerComponent = params.components?.find(
+        (c: any) => c.type?.toUpperCase() === 'HEADER'
+      );
+      if (headerComponent?.parameters?.length > 0) {
+        const headerParam = headerComponent.parameters[0];
+        const mediaType = headerParam.type; // 'image', 'video', 'document'
+        const mediaObj = headerParam[mediaType]; // e.g. headerParam.image
+        if (mediaObj) {
+          templateMediaId = mediaObj.id || undefined;
+          // Strip S3 pre-signed query params (X-Amz-*) so URL doesn't expire in DB
+          if (mediaObj.link) {
+            try {
+              const url = new URL(mediaObj.link);
+              // Remove all AWS pre-signed params
+              [
+                'X-Amz-Algorithm',
+                'X-Amz-Credential',
+                'X-Amz-Date',
+                'X-Amz-Expires',
+                'X-Amz-SignedHeaders',
+                'X-Amz-Signature',
+              ].forEach((p) => url.searchParams.delete(p));
+              templateMediaUrl = url.toString();
+              // Remove trailing ? if no remaining params
+              if (templateMediaUrl.endsWith('?')) {
+                templateMediaUrl = templateMediaUrl.slice(0, -1);
+              }
+            } catch {
+              templateMediaUrl = mediaObj.link;
+            }
+          }
+          templateMediaFilename = mediaObj.filename || undefined;
+          // Map type to a reasonable MIME type for storage
+          if (!templateMediaMimeType) {
+            if (mediaType === 'image') templateMediaMimeType = 'image/jpeg';
+            else if (mediaType === 'video') templateMediaMimeType = 'video/mp4';
+            else if (mediaType === 'document')
+              templateMediaMimeType = 'application/pdf';
+          }
+        }
       }
 
       savedMessage = await this.storeOutgoingMessage({
@@ -237,12 +307,15 @@ export class WhatsAppMessagingService {
         toNumber: params.to,
         fromNumber: params.phoneNumberId,
         messageType: 'template',
-        textBody: renderedTextBody, // Store rendered template text
+        textBody: renderedTextBody,
         templateName: params.templateName,
         templateLanguage: params.templateLanguage,
         templateComponents: params.components,
+        mediaId: templateMediaId,
+        mediaUrl: templateMediaUrl,
+        mediaFilename: templateMediaFilename,
         status: 'sent',
-        userId: params.userId, // Pass userId
+        userId: params.userId,
       });
     }
 
@@ -257,7 +330,7 @@ export class WhatsAppMessagingService {
    */
   static async sendMediaMessage(params: {
     phoneNumberId: string;
-    internalPhoneNumberId?: string;  // Internal UUID for database
+    internalPhoneNumberId?: string; // Internal UUID for database
     accessToken: string;
     to: string;
     mediaType: 'image' | 'video' | 'document' | 'audio';
@@ -266,7 +339,7 @@ export class WhatsAppMessagingService {
     caption?: string;
     filename?: string;
     contactId?: string;
-    userId?: string;  // User who sent the message
+    userId?: string; // User who sent the message
   }): Promise<any> {
     // Validate session if contactId provided
     if (params.contactId) {
@@ -291,19 +364,22 @@ export class WhatsAppMessagingService {
       mediaObject.filename = params.filename;
     }
 
-    const response = await fetch(`${WHATSAPP_API_BASE_URL}/${params.phoneNumberId}/messages`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${params.accessToken}`,
-      },
-      body: JSON.stringify({
-        messaging_product: 'whatsapp',
-        to: params.to,
-        type: params.mediaType,
-        [params.mediaType]: mediaObject,
-      }),
-    });
+    const response = await fetch(
+      `${WHATSAPP_API_BASE_URL}/${params.phoneNumberId}/messages`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${params.accessToken}`,
+        },
+        body: JSON.stringify({
+          messaging_product: 'whatsapp',
+          to: params.to,
+          type: params.mediaType,
+          [params.mediaType]: mediaObject,
+        }),
+      }
+    );
 
     if (!response.ok) {
       const error: any = await response.json();
@@ -328,11 +404,14 @@ export class WhatsAppMessagingService {
           mediaId: params.mediaId,
           mediaFilename: params.filename,
           status: 'sent',
-          userId: params.userId,  // Add userId
+          userId: params.userId, // Add userId
         });
         console.log('✅ Outgoing media message saved to database');
       } catch (dbError: any) {
-        console.error('❌ Failed to store outgoing media message:', dbError.message);
+        console.error(
+          '❌ Failed to store outgoing media message:',
+          dbError.message
+        );
         console.error('Full error:', dbError);
       }
     }
@@ -361,8 +440,9 @@ export class WhatsAppMessagingService {
     mediaUrl?: string;
     mediaId?: string;
     mediaFilename?: string;
+    mediaMimeType?: string;
     status: string;
-    userId?: string;  // User who sent the message
+    userId?: string; // User who sent the message
   }): Promise<Message> {
     const messageRepo = AppDataSource.getRepository(Message);
     const contactRepo = AppDataSource.getRepository(Contact);
@@ -374,7 +454,7 @@ export class WhatsAppMessagingService {
       wamid: params.wamid,
       contactId: params.contactId,
       phoneNumberId: params.phoneNumberId,
-      userId: params.userId,  // Add userId
+      userId: params.userId, // Add userId
       direction: 'outgoing',
       messageType: params.messageType as any,
       status: params.status as any,
@@ -387,6 +467,7 @@ export class WhatsAppMessagingService {
       mediaUrl: params.mediaUrl,
       mediaId: params.mediaId,
       mediaFilename: params.mediaFilename,
+      mediaMimeType: params.mediaMimeType,
       timestamp: new Date(),
       sentAt: new Date(),
     });
@@ -400,12 +481,12 @@ export class WhatsAppMessagingService {
         { id: params.contactId },
         {
           lastMessageAt: new Date(),
-          updatedAt: new Date()
+          updatedAt: new Date(),
         }
       );
       console.log(`Updated lastMessageAt for contact ${params.contactId}`);
     } catch (error) {
-       console.error(`Failed to update contact lastMessageAt:`, error);
+      console.error(`Failed to update contact lastMessageAt:`, error);
     }
 
     // Reload message with user relation
@@ -428,8 +509,10 @@ export class WhatsAppMessagingService {
     errorMessage?: string;
   }): Promise<void> {
     const messageRepo = AppDataSource.getRepository(Message);
-    
-    const message = await messageRepo.findOne({ where: { wamid: params.wamid } });
+
+    const message = await messageRepo.findOne({
+      where: { wamid: params.wamid },
+    });
     if (!message) {
       console.warn(`Message not found for wamid: ${params.wamid}`);
       return;
@@ -437,26 +520,30 @@ export class WhatsAppMessagingService {
 
     // Status Hierarchy Logic to prevent race conditions (e.g. 'delivered' arriving before 'sent')
     const statusPriority: Record<string, number> = {
-      'pending': 0,
-      'sent': 1,
-      'delivered': 2,
-      'read': 3,
-      'failed': 4,
-      'played': 5 // Highest priority as per user request
+      pending: 0,
+      sent: 1,
+      delivered: 2,
+      read: 3,
+      failed: 4,
+      played: 5, // Highest priority as per user request
     };
 
-    const currentPriority = statusPriority[message.status as keyof typeof statusPriority] || 0;
-    const newPriority = statusPriority[params.status as keyof typeof statusPriority] || 0;
+    const currentPriority =
+      statusPriority[message.status as keyof typeof statusPriority] || 0;
+    const newPriority =
+      statusPriority[params.status as keyof typeof statusPriority] || 0;
 
     // Special case: Allow 'failed' to overwrite 'sent' or 'delivered' but not 'read' or 'played'
     // General rule: Only update if new priority is higher
     if (newPriority <= currentPriority && message.status !== 'failed') {
-      console.log(`[Status] Ignoring update ${params.status} for message ${message.wamid} (Current: ${message.status})`);
+      console.log(
+        `[Status] Ignoring update ${params.status} for message ${message.wamid} (Current: ${message.status})`
+      );
       return;
     }
 
     message.status = params.status;
-    
+
     switch (params.status) {
       case 'sent':
         // Only update if sentAt is not already set (preserve original sent time)

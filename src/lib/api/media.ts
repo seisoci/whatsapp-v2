@@ -23,15 +23,27 @@ export const mediaApi = {
     formData.append('phoneNumberId', phoneNumberId);
     formData.append('file', file);
 
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/media/upload`,
-      {
-        method: 'POST',
-        body: formData,
-        credentials: 'include',
-      }
+    const response = await apiClient.post<UploadMediaResponse>(
+      '/media/upload',
+      formData
     );
 
-    return response.json() as Promise<UploadMediaResponse>;
+    return response as unknown as UploadMediaResponse;
+  },
+
+  /**
+   * Generate a fresh pre-signed URL for a stored media URL/path.
+   * Use this when displaying media from DB messages whose stored URL may have expired.
+   */
+  presign: async (url: string): Promise<string | null> => {
+    try {
+      const response = await apiClient.get<{ success: boolean; url: string }>(
+        `/media/presign?url=${encodeURIComponent(url)}`
+      );
+      const data = response as unknown as { success: boolean; url: string };
+      return data.success ? data.url : null;
+    } catch {
+      return null;
+    }
   },
 };

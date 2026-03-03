@@ -31,64 +31,162 @@ import {
 } from 'react-icons/pi';
 import Link from 'next/link';
 import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
-import Lightbox from "yet-another-react-lightbox";
-import "yet-another-react-lightbox/styles.css";
-import Video from "yet-another-react-lightbox/plugins/video";
-import Zoom from "yet-another-react-lightbox/plugins/zoom";
+import Lightbox from 'yet-another-react-lightbox';
+import 'yet-another-react-lightbox/styles.css';
+import Video from 'yet-another-react-lightbox/plugins/video';
+import Zoom from 'yet-another-react-lightbox/plugins/zoom';
 import { chatApi, type Contact, type Message } from '@/lib/api/chat';
 import { uploadApi } from '@/lib/api-client';
 import { chatWebSocket } from '@/lib/websocket/chat-websocket';
 
 import { quickReplyApi, type QuickReply } from '@/lib/api/quick-replies';
-import { formatDistanceToNow, format, differenceInCalendarDays } from 'date-fns';
+import {
+  formatDistanceToNow,
+  format,
+  differenceInCalendarDays,
+} from 'date-fns';
 import { useDebounce } from '@/hooks/use-debounce';
 import ContactTags from '@/app/shared/chat/contact-tags';
 import SessionTimer from './session-timer';
 import { useLayout } from '@/layouts/use-layout';
 import { LAYOUT_OPTIONS } from '@/config/enums';
 import { useBerylliumSidebars } from '@/layouts/beryllium/beryllium-utils';
+import { useModal } from '@/app/shared/modal-views/use-modal';
+import SendTemplateModal from '@/app/shared/chat/send-template-modal';
 
 const defaultEmojis = [
-  '😀', '😃', '😄', '😁', '😆', '😅', '🤣', '😂',
-  '🙂', '🙃', '😉', '😊', '😇', '🥰', '😍', '🤩',
-  '😘', '😗', '😚', '😙', '🥲', '😋', '😛', '😜',
-  '🤪', '😝', '🤑', '🤗', '🤭', '🤫', '🤔', '🤐',
-  '🤨', '😐', '😑', '😶', '😏', '😒', '🙄', '😬',
-  '🤥', '😌', '😔', '😪', '🤤', '😴', '😷', '🤒',
-  '🤕', '🤢', '🤮', '🤧', '🥵', '🥶', '😶‍🌫️', '😵',
-  '😵‍💫', '🤯', '🤠', '🥳', '🥸', '😎', '🤓', '🧐',
-  '👍', '👎', '👌', '✌️', '🤞', '🤟', '🤘', '🤙',
-  '👏', '🙌', '👐', '🤲', '🤝', '🙏', '✍️', '💪',
-  '❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍',
-  '💔', '❤️‍🔥', '❤️‍🩹', '💕', '💞', '💓', '💗', '💖',
-  '🔥', '⭐', '✨', '💫', '💥', '💯', '✅', '❌',
+  '😀',
+  '😃',
+  '😄',
+  '😁',
+  '😆',
+  '😅',
+  '🤣',
+  '😂',
+  '🙂',
+  '🙃',
+  '😉',
+  '😊',
+  '😇',
+  '🥰',
+  '😍',
+  '🤩',
+  '😘',
+  '😗',
+  '😚',
+  '😙',
+  '🥲',
+  '😋',
+  '😛',
+  '😜',
+  '🤪',
+  '😝',
+  '🤑',
+  '🤗',
+  '🤭',
+  '🤫',
+  '🤔',
+  '🤐',
+  '🤨',
+  '😐',
+  '😑',
+  '😶',
+  '😏',
+  '😒',
+  '🙄',
+  '😬',
+  '🤥',
+  '😌',
+  '😔',
+  '😪',
+  '🤤',
+  '😴',
+  '😷',
+  '🤒',
+  '🤕',
+  '🤢',
+  '🤮',
+  '🤧',
+  '🥵',
+  '🥶',
+  '😶‍🌫️',
+  '😵',
+  '😵‍💫',
+  '🤯',
+  '🤠',
+  '🥳',
+  '🥸',
+  '😎',
+  '🤓',
+  '🧐',
+  '👍',
+  '👎',
+  '👌',
+  '✌️',
+  '🤞',
+  '🤟',
+  '🤘',
+  '🤙',
+  '👏',
+  '🙌',
+  '👐',
+  '🤲',
+  '🤝',
+  '🙏',
+  '✍️',
+  '💪',
+  '❤️',
+  '🧡',
+  '💛',
+  '💚',
+  '💙',
+  '💜',
+  '🖤',
+  '🤍',
+  '💔',
+  '❤️‍🔥',
+  '❤️‍🩹',
+  '💕',
+  '💞',
+  '💓',
+  '💗',
+  '💖',
+  '🔥',
+  '⭐',
+  '✨',
+  '💫',
+  '💥',
+  '💯',
+  '✅',
+  '❌',
 ];
-
-
 
 export default function ChatPage() {
   const { layout } = useLayout();
   const { expandedLeft } = useBerylliumSidebars();
-  
+  const { openModal } = useModal();
+
   // Calculate sidebar offset based on layout
   const getSidebarOffset = () => {
     if (layout === LAYOUT_OPTIONS.BERYLLIUM) {
       // Beryllium: 88px fixed + (414px expanded OR 110px collapsed)
-      return expandedLeft 
-        ? 'xl:left-[502px]'  // 88 + 414
+      return expandedLeft
+        ? 'xl:left-[502px]' // 88 + 414
         : 'xl:left-[198px]'; // 88 + 110
     }
-    
+
     // Hydrogen, Helium, Carbon, Boron: 270px/288px
-    if ([
-      LAYOUT_OPTIONS.HYDROGEN,
-      LAYOUT_OPTIONS.HELIUM,
-      LAYOUT_OPTIONS.CARBON,
-      LAYOUT_OPTIONS.BORON,
-    ].includes(layout)) {
+    if (
+      [
+        LAYOUT_OPTIONS.HYDROGEN,
+        LAYOUT_OPTIONS.HELIUM,
+        LAYOUT_OPTIONS.CARBON,
+        LAYOUT_OPTIONS.BORON,
+      ].includes(layout)
+    ) {
       return 'xl:left-[270px] 2xl:left-72';
     }
-    
+
     // Lithium: no sidebar
     return '';
   };
@@ -105,10 +203,14 @@ export default function ChatPage() {
   const [quickReplies, setQuickReplies] = useState<QuickReply[]>([]);
   const [, setQuickRepliesLoading] = useState(true);
   const [showQuickReplies, setShowQuickReplies] = useState(false);
-  const [filteredQuickReplies, setFilteredQuickReplies] = useState<QuickReply[]>([]);
+  const [filteredQuickReplies, setFilteredQuickReplies] = useState<
+    QuickReply[]
+  >([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(0);
-  const [chatFilter, setChatFilter] = useState<'all' | 'unread' | 'archived'>('all');
+  const [chatFilter, setChatFilter] = useState<'all' | 'unread' | 'archived'>(
+    'all'
+  );
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxSlides, setLightboxSlides] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -125,7 +227,9 @@ export default function ChatPage() {
 
   // Pinned chats (local storage)
   const [pinnedContacts, setPinnedContacts] = useState<string[]>([]);
-  const [contactOptionsMenuId, setContactOptionsMenuId] = useState<string | null>(null);
+  const [contactOptionsMenuId, setContactOptionsMenuId] = useState<
+    string | null
+  >(null);
   const contactOptionsMenuRef = useRef<HTMLDivElement>(null);
 
   // Load pinned contacts from localStorage on mount
@@ -152,7 +256,7 @@ export default function ChatPage() {
   const handlePinContact = (contactId: string) => {
     const isPinned = pinnedContacts.includes(contactId);
     if (isPinned) {
-      savePinnedContacts(pinnedContacts.filter(id => id !== contactId));
+      savePinnedContacts(pinnedContacts.filter((id) => id !== contactId));
     } else {
       savePinnedContacts([...pinnedContacts, contactId]);
     }
@@ -205,9 +309,11 @@ export default function ChatPage() {
       if (document.visibilityState === 'visible') {
         // Reconnect WebSocket if disconnected
         if (!chatWebSocket.isConnected()) {
-          chatWebSocket.connect().catch(err =>
-            console.error('WebSocket reconnect on visibility failed:', err)
-          );
+          chatWebSocket
+            .connect()
+            .catch((err) =>
+              console.error('WebSocket reconnect on visibility failed:', err)
+            );
         }
         syncMissedData();
       }
@@ -292,7 +398,9 @@ export default function ChatPage() {
         setQuickRepliesLoading(true);
         const response = await quickReplyApi.getAll();
         // API client returns { data: QuickReply[] }
-        const replies: QuickReply[] = Array.isArray(response) ? response as QuickReply[] : ((response as any).data || []);
+        const replies: QuickReply[] = Array.isArray(response)
+          ? (response as QuickReply[])
+          : (response as any).data || [];
         setQuickReplies(replies);
         setFilteredQuickReplies(replies); // Initialize filtered list
       } catch (error) {
@@ -301,24 +409,22 @@ export default function ChatPage() {
         setQuickRepliesLoading(false);
       }
     };
-    
+
     fetchQuickReplies();
   }, []);
 
   // WebSocket event listeners
   useEffect(() => {
-    const handleConnectionSuccess = (event: any) => {
-    };
+    const handleConnectionSuccess = (event: any) => {};
 
-    const handleSubscribeSuccess = (event: any) => {
-    };
+    const handleSubscribeSuccess = (event: any) => {};
 
     const handleNewMessage = async (event: any) => {
       console.log('[WS] New message event:', event);
 
       if (event.phoneNumberId === selectedPhoneNumberId) {
         const rawMessage = event.data.message;
-        
+
         // Format message to match Message interface from lib/api/chat.ts
         const formattedMessage = {
           id: rawMessage.id,
@@ -343,16 +449,20 @@ export default function ChatPage() {
         };
 
         // Update contact list locally without full reload
-        setContacts(prevContacts => {
+        setContacts((prevContacts) => {
           const contactId = event.data.contactId;
-          const contactIndex = prevContacts.findIndex(c => c.id === contactId);
+          const contactIndex = prevContacts.findIndex(
+            (c) => c.id === contactId
+          );
 
           // If contact exists, update it and move to top
           if (contactIndex !== -1) {
             // Calculate unread count first before merging
-            const newUnreadCount = (rawMessage.direction === 'incoming' && selectedContact?.id !== contactId)
-              ? (prevContacts[contactIndex].unreadCount || 0) + 1
-              : prevContacts[contactIndex].unreadCount;
+            const newUnreadCount =
+              rawMessage.direction === 'incoming' &&
+              selectedContact?.id !== contactId
+                ? (prevContacts[contactIndex].unreadCount || 0) + 1
+                : prevContacts[contactIndex].unreadCount;
 
             const updatedContact = {
               ...prevContacts[contactIndex],
@@ -360,7 +470,10 @@ export default function ChatPage() {
               lastMessage: {
                 id: rawMessage.id,
                 messageType: rawMessage.messageType,
-                textBody: rawMessage.textBody || rawMessage.mediaCaption || `[${rawMessage.messageType}]`,
+                textBody:
+                  rawMessage.textBody ||
+                  rawMessage.mediaCaption ||
+                  `[${rawMessage.messageType}]`,
                 mediaCaption: rawMessage.mediaCaption || null,
                 direction: rawMessage.direction,
                 timestamp: rawMessage.timestamp,
@@ -370,7 +483,7 @@ export default function ChatPage() {
               // Update session info if available in event (after lastMessage so session fields override)
               ...(event.data.contact || {}),
               // Override unread count with our calculated value
-              unreadCount: newUnreadCount
+              unreadCount: newUnreadCount,
             };
 
             console.log('[WS] Updated contact session info:', {
@@ -378,7 +491,7 @@ export default function ChatPage() {
               isSessionActive: updatedContact.isSessionActive,
               sessionExpiresAt: updatedContact.sessionExpiresAt,
               hasContactData: !!event.data.contact,
-              rawEventContact: event.data.contact
+              rawEventContact: event.data.contact,
             });
 
             // Also update selectedContact if it matches - use updatedContact for consistency
@@ -388,20 +501,27 @@ export default function ChatPage() {
                 setSelectedContact(updatedContact);
               } else {
                 // If no contact data in WS event, fetch fresh contact data for session info
-                console.log('[WS] No contact data in event, fetching fresh contact...');
-                chatApi.getContact(contactId)
-                  .then(freshContact => {
+                console.log(
+                  '[WS] No contact data in event, fetching fresh contact...'
+                );
+                chatApi
+                  .getContact(contactId)
+                  .then((freshContact) => {
                     console.log('[WS] Fresh contact fetched:', {
                       isSessionActive: freshContact.isSessionActive,
-                      sessionExpiresAt: freshContact.sessionExpiresAt
+                      sessionExpiresAt: freshContact.sessionExpiresAt,
                     });
                     setSelectedContact(freshContact);
                     // Also update in contacts list
-                    setContacts(prevContacts =>
-                      prevContacts.map(c => c.id === contactId ? { ...c, ...freshContact } : c)
+                    setContacts((prevContacts) =>
+                      prevContacts.map((c) =>
+                        c.id === contactId ? { ...c, ...freshContact } : c
+                      )
                     );
                   })
-                  .catch(error => console.error('[WS] Failed to fetch fresh contact:', error));
+                  .catch((error) =>
+                    console.error('[WS] Failed to fetch fresh contact:', error)
+                  );
               }
             }
 
@@ -421,26 +541,29 @@ export default function ChatPage() {
           // 1. It's a completely new contact
           // 2. Filter is "unread" and this contact had unreadCount=0 before (so not in filtered list)
           // 3. Filter is "archived" and this contact is not archived (or vice versa)
-          
+
           // If this is an incoming message and we have contact data, check if it should be added
           if (rawMessage.direction === 'incoming' && event.data.contact) {
             const incomingContact = event.data.contact;
             const isContactArchived = incomingContact.isArchived || false;
-            
+
             // Only add to list if it matches current filter
             // If filter is 'archived', only show archived contacts
             // If filter is 'all' or 'unread', only show non-archived contacts
-            const shouldAddToCurrentFilter = 
+            const shouldAddToCurrentFilter =
               (chatFilter === 'archived' && isContactArchived) ||
               (chatFilter !== 'archived' && !isContactArchived);
-            
+
             if (shouldAddToCurrentFilter) {
               const newContact = {
                 ...incomingContact,
                 lastMessage: {
                   id: rawMessage.id,
                   messageType: rawMessage.messageType,
-                  textBody: rawMessage.textBody || rawMessage.mediaCaption || `[${rawMessage.messageType}]`,
+                  textBody:
+                    rawMessage.textBody ||
+                    rawMessage.mediaCaption ||
+                    `[${rawMessage.messageType}]`,
                   mediaCaption: rawMessage.mediaCaption || null,
                   direction: rawMessage.direction,
                   timestamp: rawMessage.timestamp,
@@ -450,7 +573,9 @@ export default function ChatPage() {
                 unreadCount: (incomingContact.unreadCount || 0) + 1,
               };
               // Filter out any existing contact with the same ID to avoid duplicates
-              const filteredContacts = prevContacts.filter(c => c.id !== newContact.id);
+              const filteredContacts = prevContacts.filter(
+                (c) => c.id !== newContact.id
+              );
               const updatedContacts = [newContact, ...filteredContacts];
 
               // Refresh stats from backend for accurate counts
@@ -458,7 +583,7 @@ export default function ChatPage() {
 
               return updatedContacts;
             }
-            
+
             // Contact doesn't match current filter, just refresh stats
             loadContactsStats();
             return prevContacts;
@@ -470,8 +595,11 @@ export default function ChatPage() {
 
         // If contact doesn't exist in full list (not just filtered), reload all contacts
         // Use functional check to avoid stale closure
-        setContacts(prevContacts => {
-          if (!prevContacts.find(c => c.id === event.data.contactId) && !event.data.contact) {
+        setContacts((prevContacts) => {
+          if (
+            !prevContacts.find((c) => c.id === event.data.contactId) &&
+            !event.data.contact
+          ) {
             // Schedule reload outside setState
             setTimeout(() => loadContacts(), 0);
           }
@@ -480,13 +608,18 @@ export default function ChatPage() {
 
         // If this contact's conversation is open, add message
         if (event.data.contactId === selectedContact?.id) {
-          console.log('[WS] Message for currently open chat, adding to messages');
+          console.log(
+            '[WS] Message for currently open chat, adding to messages'
+          );
 
-          setMessages(prev => {
+          setMessages((prev) => {
             // Check if message already exists (by ID or WAMID)
-            const exists = prev.some(m => 
-              m.id === formattedMessage.id || 
-              (m.wamid && formattedMessage.wamid && m.wamid === formattedMessage.wamid)
+            const exists = prev.some(
+              (m) =>
+                m.id === formattedMessage.id ||
+                (m.wamid &&
+                  formattedMessage.wamid &&
+                  m.wamid === formattedMessage.wamid)
             );
 
             if (exists) {
@@ -497,44 +630,55 @@ export default function ChatPage() {
             // This prevents race condition where optimistic message hasn't been updated with real ID yet
             // but WebSocket event arrives with real ID.
             if (formattedMessage.direction === 'outgoing') {
-               const potentialDuplicate = prev.find(m => 
-                 m.id.startsWith('temp-') && 
-                 m.direction === 'outgoing' &&
-                 m.textBody === formattedMessage.textBody &&
-                 Math.abs(new Date(m.timestamp).getTime() - new Date(formattedMessage.timestamp).getTime()) < 10000 // 10s window
-               );
+              const potentialDuplicate = prev.find(
+                (m) =>
+                  m.id.startsWith('temp-') &&
+                  m.direction === 'outgoing' &&
+                  m.textBody === formattedMessage.textBody &&
+                  Math.abs(
+                    new Date(m.timestamp).getTime() -
+                      new Date(formattedMessage.timestamp).getTime()
+                  ) < 10000 // 10s window
+              );
 
-               if (potentialDuplicate) {
-                 return prev.map(m => m.id === potentialDuplicate.id ? formattedMessage : m);
-               }
+              if (potentialDuplicate) {
+                return prev.map((m) =>
+                  m.id === potentialDuplicate.id ? formattedMessage : m
+                );
+              }
             }
 
             return [...prev, formattedMessage];
           });
           scrollToBottom();
-          
+
           // If this is an incoming message and we are viewing this contact,
           // mark as read immediately so other users see unread count = 0
           if (formattedMessage.direction === 'incoming') {
-            chatApi.markConversationAsRead(selectedContact.id)
-              .catch((error) => console.error('[WS] Failed to mark message as read:', error));
+            chatApi
+              .markConversationAsRead(selectedContact.id)
+              .catch((error) =>
+                console.error('[WS] Failed to mark message as read:', error)
+              );
           }
         }
       }
     };
 
     const handleStatusUpdate = (event: any) => {
-      
       // Only check contactId - phoneNumberId is implicit in WebSocket subscription
       if (event.data.contactId === selectedContact?.id) {
-
-        setMessages(prev =>
-          prev.map(msg => {
+        setMessages((prev) =>
+          prev.map((msg) => {
             // Robust Matching Logic:
             let isMatch = false;
-            
+
             // 1. Match by WAMID (Best for optimistic messages that have been updated with WAMID)
-            if (msg.wamid && event.data.wamid && msg.wamid === event.data.wamid) {
+            if (
+              msg.wamid &&
+              event.data.wamid &&
+              msg.wamid === event.data.wamid
+            ) {
               isMatch = true;
             }
             // 2. Match by Database ID (Standard match)
@@ -543,24 +687,31 @@ export default function ChatPage() {
             }
             // 3. Fallback: Fuzzy Match by Content + Destination (For optimistic messages if WAMID missing)
             // Sometimes status update arrives before WAMID is set in UI state
-            else if (msg.direction === 'outgoing' && msg.id.startsWith('temp-') && !msg.wamid) {
-               // We don't have body content in event, but we can assume if it's the most recent outgoing message 
-               // and we just got a status update for this contact, it's likely this one.
-               // (Simplified logic: Update the most recent pending outgoing message)
-               const timeDiff = Math.abs(new Date(msg.timestamp).getTime() - new Date().getTime());
-               if (timeDiff < 60000) { // Created within last minute
-                 isMatch = true;
-               }
+            else if (
+              msg.direction === 'outgoing' &&
+              msg.id.startsWith('temp-') &&
+              !msg.wamid
+            ) {
+              // We don't have body content in event, but we can assume if it's the most recent outgoing message
+              // and we just got a status update for this contact, it's likely this one.
+              // (Simplified logic: Update the most recent pending outgoing message)
+              const timeDiff = Math.abs(
+                new Date(msg.timestamp).getTime() - new Date().getTime()
+              );
+              if (timeDiff < 60000) {
+                // Created within last minute
+                isMatch = true;
+              }
             }
 
             if (isMatch) {
-               return { 
-                 ...msg, 
-                 status: event.data.status,
-                 // Also ensure it has the correct real ID if available
-                 ...(event.data.messageId ? { id: event.data.messageId } : {}),
-                 ...(event.data.wamid ? { wamid: event.data.wamid } : {})
-               };
+              return {
+                ...msg,
+                status: event.data.status,
+                // Also ensure it has the correct real ID if available
+                ...(event.data.messageId ? { id: event.data.messageId } : {}),
+                ...(event.data.wamid ? { wamid: event.data.wamid } : {}),
+              };
             }
             return msg;
           })
@@ -571,23 +722,22 @@ export default function ChatPage() {
 
     // Handle contact updates (e.g., when another user marks chat as read)
     const handleContactUpdated = (event: any) => {
-      
       if (event.phoneNumberId === selectedPhoneNumberId) {
         const { contactId, contact } = event.data;
-        
+
         // Update contact in the list
-        setContacts(prevContacts => 
-          prevContacts.map(c => {
+        setContacts((prevContacts) =>
+          prevContacts.map((c) => {
             if (c.id === contactId) {
               return { ...c, ...contact };
             }
             return c;
           })
         );
-        
+
         // If this is the selected contact, update it too
         if (selectedContact?.id === contactId) {
-          setSelectedContact(prev => prev ? { ...prev, ...contact } : null);
+          setSelectedContact((prev) => (prev ? { ...prev, ...contact } : null));
         }
       }
     };
@@ -621,9 +771,9 @@ export default function ChatPage() {
   const loadPhoneNumbers = async () => {
     try {
       const response = await chatApi.getPhoneNumbers();
-      const numbers = Array.isArray(response) ? response : (response.data || []);
+      const numbers = Array.isArray(response) ? response : response.data || [];
       setPhoneNumbers(numbers);
-      
+
       // Auto-select first number
       if (numbers.length > 0 && !selectedPhoneNumberId) {
         setSelectedPhoneNumberId(numbers[0].id);
@@ -635,7 +785,7 @@ export default function ChatPage() {
 
   const loadContacts = async (page: number = 1, append: boolean = false) => {
     if (!selectedPhoneNumberId) return;
-    
+
     if (!append) setLoading(true);
     try {
       const response = await chatApi.getContacts({
@@ -645,12 +795,14 @@ export default function ChatPage() {
         page,
         limit: 50,
       });
-      
+
       // API client already unwraps response.data, so response IS the array
-      const newContacts = Array.isArray(response) ? response : (response.data || []);
-      
+      const newContacts = Array.isArray(response)
+        ? response
+        : response.data || [];
+
       if (append) {
-        setContacts(prev => [...prev, ...newContacts]);
+        setContacts((prev) => [...prev, ...newContacts]);
       } else {
         setContacts(newContacts);
       }
@@ -694,43 +846,43 @@ export default function ChatPage() {
   const loadMessages = async (contact?: Contact) => {
     const targetContact = contact || selectedContact;
     if (!targetContact) return;
-    
+
     setLoading(true);
     setMessagesLoading(true); // Hide messages container
     setMessages([]); // Clear old messages so we don't flash them or previous conversation
-    
+
     try {
       const response = await chatApi.getMessages({
         contactId: targetContact.id,
         limit: 50,
       });
-      
+
       // API client already unwraps response.data
-      const msgs = Array.isArray(response) ? response : (response.data || []);
-      
+      const msgs = Array.isArray(response) ? response : response.data || [];
 
-      
       // Preserve optimistic messages (messages with temp- IDs) when merging with API data
-      setMessages(prevMessages => {
-        const optimisticMessages = prevMessages.filter(msg => msg.id?.toString().startsWith('temp-'));
-        
-        // Deduplicate: Filter out optimistic messages that are already in the loaded messages (match by WAMID)
-        const loadedWamids = new Set(msgs.map(m => m.wamid).filter(Boolean));
-        
+      setMessages((prevMessages) => {
+        const optimisticMessages = prevMessages.filter((msg) =>
+          msg.id?.toString().startsWith('temp-')
+        );
 
-        const uniqueOptimisticMessages = optimisticMessages.filter(optMsg => {
+        // Deduplicate: Filter out optimistic messages that are already in the loaded messages (match by WAMID)
+        const loadedWamids = new Set(msgs.map((m) => m.wamid).filter(Boolean));
+
+        const uniqueOptimisticMessages = optimisticMessages.filter((optMsg) => {
           // 1. Strict Deduplication by WAMID
           if (optMsg.wamid && loadedWamids.has(optMsg.wamid)) {
-             return false; // Drop strict duplicate
+            return false; // Drop strict duplicate
           }
-          
+
           // 2. Fuzzy Deduplication: Match by content + direction + timestamp (within 60s window)
           // This handles cases where optimistic message doesn't have WAMID yet but API returns the saved message.
-          const isFuzzyDuplicate = msgs.some(loadedMsg => {
+          const isFuzzyDuplicate = msgs.some((loadedMsg) => {
             if (loadedMsg.direction !== optMsg.direction) return false;
             // Check body text (trimmed)
-            if (loadedMsg.textBody?.trim() !== optMsg.textBody?.trim()) return false;
-            
+            if (loadedMsg.textBody?.trim() !== optMsg.textBody?.trim())
+              return false;
+
             // Check timestamp proximity (if both exist)
             if (loadedMsg.createdAt && optMsg.timestamp) {
               const loadedTime = new Date(loadedMsg.createdAt).getTime();
@@ -743,31 +895,31 @@ export default function ChatPage() {
           });
 
           if (isFuzzyDuplicate) {
-             return false;
+            return false;
           }
 
           return true; // Keep if no duplicate found
         });
 
-        
         // Merge: API messages + unique optimistic messages (in chronological order)
         return [...msgs, ...uniqueOptimisticMessages];
       });
-      
+
       // Wait for DOM render
-      await new Promise(resolve => setTimeout(resolve, 50));
-      
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
       // Force scroll to bottom using direct property setting (most reliable)
       if (chatContainerRef.current) {
-        chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+        chatContainerRef.current.scrollTop =
+          chatContainerRef.current.scrollHeight;
       }
-      
+
       // Double check and retry after a small delay to handle layout shifts (images etc)
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
       if (chatContainerRef.current) {
-        chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+        chatContainerRef.current.scrollTop =
+          chatContainerRef.current.scrollHeight;
       }
-      
     } catch (error) {
       console.error('Failed to load messages:', error);
     } finally {
@@ -784,10 +936,10 @@ export default function ChatPage() {
 
     setSelectedContact(contact);
     setShowChat(true);
-    
+
     // Reset unread count for this contact (mark as read)
-    setContacts(prevContacts => {
-      const updated = prevContacts.map(c =>
+    setContacts((prevContacts) => {
+      const updated = prevContacts.map((c) =>
         c.id === contact.id ? { ...c, unreadCount: 0 } : c
       );
 
@@ -796,10 +948,10 @@ export default function ChatPage() {
 
       return updated;
     });
-    
+
     // Load messages immediately with contact parameter to avoid race condition
     loadMessages(contact);
-    
+
     // Mark conversation as read in backend (persist to database)
     try {
       await chatApi.markConversationAsRead(contact.id);
@@ -817,28 +969,28 @@ export default function ChatPage() {
   const handleArchiveContact = async (contact: Contact) => {
     try {
       const isCurrentlyArchived = contact.isArchived;
-      
+
       // Optimistic UI update - remove from current list
-      setContacts(prev => prev.filter(c => c.id !== contact.id));
-      
+      setContacts((prev) => prev.filter((c) => c.id !== contact.id));
+
       // Update stats optimistically
       if (isCurrentlyArchived) {
         // Unarchiving: move to All tab
-        setArchivedCount(prev => Math.max(0, prev - 1));
-        setTotalContacts(prev => prev + 1);
+        setArchivedCount((prev) => Math.max(0, prev - 1));
+        setTotalContacts((prev) => prev + 1);
       } else {
         // Archiving: move to Archived tab
-        setArchivedCount(prev => prev + 1);
-        setTotalContacts(prev => Math.max(0, prev - 1));
+        setArchivedCount((prev) => prev + 1);
+        setTotalContacts((prev) => Math.max(0, prev - 1));
       }
-      
+
       // Call API
       if (isCurrentlyArchived) {
         await chatApi.unarchiveContact(contact.id);
       } else {
         await chatApi.archiveContact(contact.id);
       }
-      
+
       // Reload stats from server for accuracy
       loadContactsStats();
     } catch (error) {
@@ -851,20 +1003,25 @@ export default function ChatPage() {
 
   const handleSendMessage = async () => {
     // Allow sending if there's text OR an attachment
-    if ((!messageInput.trim() && !pendingAttachment) || !selectedContact || sending) return;
+    if (
+      (!messageInput.trim() && !pendingAttachment) ||
+      !selectedContact ||
+      sending
+    )
+      return;
 
     const hasAttachment = !!pendingAttachment;
     const messageText = messageInput.trim();
-    
+
     // Determine message type
     const messageType = hasAttachment ? pendingAttachment.type : 'text';
-    
+
     const optimisticMessage = {
       id: `temp-${Date.now()}`, // Temporary ID
       wamid: null,
       contactId: selectedContact.id,
       messageType: messageType,
-      textBody: hasAttachment ? (messageText || null) : messageText, // Caption for media or text body
+      textBody: hasAttachment ? messageText || null : messageText, // Caption for media or text body
       mediaUrl: pendingAttachment?.preview || null,
       mediaCaption: hasAttachment ? messageText : null,
       mediaFilename: pendingAttachment?.file?.name || null,
@@ -877,30 +1034,32 @@ export default function ChatPage() {
 
     const messageToSend = messageText;
     const attachmentToSend = pendingAttachment;
-    
+
     setMessageInput(''); // Clear input immediately
     setPendingAttachment(null); // Clear attachment
-    setMessages(prev => [...prev, optimisticMessage]); // Add to UI optimistically
-    
+    setMessages((prev) => [...prev, optimisticMessage]); // Add to UI optimistically
+
     // Update contact list order: Move active contact to top and update last message
-    setContacts(prev => {
-      const contactIndex = prev.findIndex(c => c.id === selectedContact.id);
+    setContacts((prev) => {
+      const contactIndex = prev.findIndex((c) => c.id === selectedContact.id);
       if (contactIndex === -1) return prev;
-      
-      const lastMessageText = hasAttachment 
-        ? (messageToSend ? `📎 ${messageToSend}` : `📎 ${attachmentToSend?.type}`)
+
+      const lastMessageText = hasAttachment
+        ? messageToSend
+          ? `📎 ${messageToSend}`
+          : `📎 ${attachmentToSend?.type}`
         : messageToSend;
-      
-      const updatedContact = { 
-        ...prev[contactIndex], 
+
+      const updatedContact = {
+        ...prev[contactIndex],
         lastMessage: {
           ...prev[contactIndex].lastMessage,
           textBody: lastMessageText,
           timestamp: optimisticMessage.timestamp,
-          status: 'pending'
-        }
+          status: 'pending',
+        },
       };
-      
+
       const newContacts = [...prev];
       newContacts.splice(contactIndex, 1);
       newContacts.unshift(updatedContact);
@@ -913,7 +1072,7 @@ export default function ChatPage() {
 
     setSending(true);
     setUploadingAttachment(hasAttachment);
-    
+
     try {
       let mediaUrl: string | null = null;
       let mediaFilename: string | null = null;
@@ -922,12 +1081,15 @@ export default function ChatPage() {
       if (attachmentToSend) {
         setUploadingAttachment(true);
         try {
-          const uploadResult = await uploadApi.uploadFile(attachmentToSend.file);
+          const uploadResult = await uploadApi.uploadFile(
+            attachmentToSend.file
+          );
           if (!uploadResult.success || !uploadResult.data) {
             throw new Error('Upload failed');
           }
           mediaUrl = uploadResult.data.fileUrl || uploadResult.data.url;
-          mediaFilename = uploadResult.data.fileName || attachmentToSend.file.name;
+          mediaFilename =
+            uploadResult.data.fileName || attachmentToSend.file.name;
         } finally {
           setUploadingAttachment(false);
         }
@@ -935,7 +1097,7 @@ export default function ChatPage() {
 
       // Step 2: Send message via chat API
       let sendPayload: any;
-      
+
       if (hasAttachment && attachmentToSend) {
         // Send media message - payload must match backend sendMessageSchema
         sendPayload = {
@@ -945,7 +1107,8 @@ export default function ChatPage() {
           media: {
             mediaUrl: mediaUrl,
             caption: messageToSend || undefined,
-            filename: attachmentToSend.type === 'document' ? mediaFilename : undefined,
+            filename:
+              attachmentToSend.type === 'document' ? mediaFilename : undefined,
           },
         };
       } else {
@@ -962,11 +1125,10 @@ export default function ChatPage() {
 
       const result = await chatApi.sendMessage(sendPayload);
 
-
       // Update optimistic message with real data from backend
       // result is already unwrapped: { whatsapp: {...}, message: {...} }
-      setMessages(prev =>
-        prev.map(msg => {
+      setMessages((prev) =>
+        prev.map((msg) => {
           if (msg.id === optimisticMessage.id) {
             const updated = {
               ...msg,
@@ -984,17 +1146,19 @@ export default function ChatPage() {
       scrollToBottom();
     } catch (error: any) {
       console.error('Failed to send message:', error);
-      
+
       // Mark optimistic message as failed
-      setMessages(prev => 
-        prev.map(msg => 
-          msg.id === optimisticMessage.id 
-            ? { ...msg, status: 'failed' }
-            : msg
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === optimisticMessage.id ? { ...msg, status: 'failed' } : msg
         )
       );
-      
-      alert(error.response?.data?.message || error.message || 'Failed to send message');
+
+      alert(
+        error.response?.data?.message ||
+          error.message ||
+          'Failed to send message'
+      );
     } finally {
       setSending(false);
       setUploadingAttachment(false);
@@ -1034,13 +1198,14 @@ export default function ChatPage() {
     // Check if user typed "/" to trigger suggestions
     if (value.startsWith('/')) {
       const searchTerm = value.slice(1).toLowerCase();
-      
+
       // Filter quick replies based on shortcut or text
-      const filtered = quickReplies.filter(qr => 
-        qr.shortcut.toLowerCase().includes(searchTerm) ||
-        qr.text.toLowerCase().includes(searchTerm)
+      const filtered = quickReplies.filter(
+        (qr) =>
+          qr.shortcut.toLowerCase().includes(searchTerm) ||
+          qr.text.toLowerCase().includes(searchTerm)
       );
-      
+
       setFilteredQuickReplies(filtered);
       setShowSuggestions(filtered.length > 0);
       setSelectedSuggestionIndex(0); // Reset selection
@@ -1055,13 +1220,13 @@ export default function ChatPage() {
     if (showSuggestions && filteredQuickReplies.length > 0) {
       if (e.key === 'ArrowDown') {
         e.preventDefault();
-        setSelectedSuggestionIndex(prev =>
+        setSelectedSuggestionIndex((prev) =>
           prev < filteredQuickReplies.length - 1 ? prev + 1 : prev
         );
         return;
       } else if (e.key === 'ArrowUp') {
         e.preventDefault();
-        setSelectedSuggestionIndex(prev => prev > 0 ? prev - 1 : 0);
+        setSelectedSuggestionIndex((prev) => (prev > 0 ? prev - 1 : 0));
         return;
       } else if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
@@ -1083,8 +1248,6 @@ export default function ChatPage() {
       handleSendMessage();
     }
   };
-
-
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -1115,13 +1278,22 @@ export default function ChatPage() {
   // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (emojiPickerRef.current && !emojiPickerRef.current.contains(event.target as Node)) {
+      if (
+        emojiPickerRef.current &&
+        !emojiPickerRef.current.contains(event.target as Node)
+      ) {
         setShowEmojiPicker(false);
       }
-      if (quickReplyRef.current && !quickReplyRef.current.contains(event.target as Node)) {
+      if (
+        quickReplyRef.current &&
+        !quickReplyRef.current.contains(event.target as Node)
+      ) {
         setShowQuickReplies(false);
       }
-      if (attachmentMenuRef.current && !attachmentMenuRef.current.contains(event.target as Node)) {
+      if (
+        attachmentMenuRef.current &&
+        !attachmentMenuRef.current.contains(event.target as Node)
+      ) {
         setShowAttachmentMenu(false);
       }
     };
@@ -1136,7 +1308,10 @@ export default function ChatPage() {
   }, [showEmojiPicker, showQuickReplies, showAttachmentMenu]);
 
   // Handle file selection for attachments
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'video' | 'document' | 'audio') => {
+  const handleFileSelect = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    type: 'image' | 'video' | 'document' | 'audio'
+  ) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -1148,7 +1323,7 @@ export default function ChatPage() {
 
     setPendingAttachment({ file, preview, type });
     setShowAttachmentMenu(false);
-    
+
     // Clear input value to allow re-selecting same file
     e.target.value = '';
   };
@@ -1274,7 +1449,10 @@ export default function ChatPage() {
   // Close contact options menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (contactOptionsMenuRef.current && !contactOptionsMenuRef.current.contains(event.target as Node)) {
+      if (
+        contactOptionsMenuRef.current &&
+        !contactOptionsMenuRef.current.contains(event.target as Node)
+      ) {
         setContactOptionsMenuId(null);
       }
     };
@@ -1286,16 +1464,16 @@ export default function ChatPage() {
     };
   }, [contactOptionsMenuId]);
 
-
-
   return (
     <>
       {/* Fullscreen Chat Layout: z-[9999] and top-0 to cover the global header */}
-      <div className={`@container fixed inset-0 top-0 z-[9999] ${getSidebarOffset()}`}>
-        <div className="grid grid-cols-12 gap-0 h-full overflow-hidden bg-white dark:bg-gray-50">
+      <div
+        className={`@container fixed inset-0 top-0 z-[9999] ${getSidebarOffset()}`}
+      >
+        <div className="grid h-full grid-cols-12 gap-0 overflow-hidden bg-white dark:bg-gray-50">
           {/* Sidebar - Contact List */}
           <div
-            className={`col-span-12 border-r border-gray-200 dark:border-gray-300 @lg:col-span-4 @xl:col-span-3 h-full min-h-0 ${
+            className={`col-span-12 h-full min-h-0 border-r border-gray-200 @lg:col-span-4 @xl:col-span-3 dark:border-gray-300 ${
               showChat ? 'hidden @lg:block' : 'block'
             }`}
           >
@@ -1304,70 +1482,113 @@ export default function ChatPage() {
               <div className="border-b border-gray-200 p-4">
                 <div className="mb-4 flex items-end gap-2">
                   <Link href="/">
-                    <ActionIcon 
-                      size="lg" 
+                    <ActionIcon
+                      size="lg"
                       className="h-10 w-10 shrink-0 bg-[rgb(var(--primary-default))] text-white hover:bg-[rgb(var(--primary-default))]/90"
                     >
                       <PiHouse className="h-5 w-5" />
                     </ActionIcon>
                   </Link>
-                  <div className="flex-1 min-w-0">
-                    <label className="text-xs font-medium text-gray-700 mb-1 block">
+                  <div className="min-w-0 flex-1">
+                    <label className="mb-1 block text-xs font-medium text-gray-700">
                       WhatsApp Number
                     </label>
                     <Select
                       value={selectedPhoneNumberId}
                       onChange={(selected: any) => {
-                        const value = typeof selected === 'string' ? selected : selected?.value;
+                        const value =
+                          typeof selected === 'string'
+                            ? selected
+                            : selected?.value;
                         setSelectedPhoneNumberId(value || '');
                       }}
-                    options={phoneNumbers.map((phone) => ({
-                      label: phone.verifiedName || phone.displayPhoneNumber,
-                      value: phone.id,
-                      phoneNumber: phone.displayPhoneNumber,
-                      status: phone.qualityRating,
-                    }))}
-                    displayValue={(option: any) => {
-                      const phoneNumber = typeof option === 'string' 
-                        ? phoneNumbers.find(p => p.id === option)?.displayPhoneNumber 
-                        : option?.phoneNumber;
-                      return (
-                        <span className="flex items-center gap-2">
-                          <span className="text-green-600">📱</span>
-                          <span className="font-medium">{phoneNumber}</span>
-                        </span>
-                      );
-                    }}
-                    getOptionDisplayValue={(option: any) => (
-                      <div className="flex items-center gap-3">
-                        <span className="text-2xl">📱</span>
-                        <div>
-                          <div className="font-medium">{option.label}</div>
-                          <div className="text-xs text-gray-500">{option.phoneNumber}</div>
+                      options={phoneNumbers.map((phone) => ({
+                        label: phone.verifiedName || phone.displayPhoneNumber,
+                        value: phone.id,
+                        phoneNumber: phone.displayPhoneNumber,
+                        status: phone.qualityRating,
+                      }))}
+                      displayValue={(option: any) => {
+                        const phoneNumber =
+                          typeof option === 'string'
+                            ? phoneNumbers.find((p) => p.id === option)
+                                ?.displayPhoneNumber
+                            : option?.phoneNumber;
+                        return (
+                          <span className="flex items-center gap-2">
+                            <span className="text-green-600">📱</span>
+                            <span className="font-medium">{phoneNumber}</span>
+                          </span>
+                        );
+                      }}
+                      getOptionDisplayValue={(option: any) => (
+                        <div className="flex items-center gap-3">
+                          <span className="text-2xl">📱</span>
+                          <div>
+                            <div className="font-medium">{option.label}</div>
+                            <div className="text-xs text-gray-500">
+                              {option.phoneNumber}
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    )}
-                    placeholder="Select WhatsApp Number"
-                    className="w-full"
-                  />
+                      )}
+                      placeholder="Select WhatsApp Number"
+                      className="w-full"
+                    />
                   </div>
                 </div>
-                <Input
-                  type="search"
-                  placeholder="Search Contact"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full"
-                />
+                <div className="mt-3 flex gap-2">
+                  <Input
+                    type="search"
+                    placeholder="Search Contact"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="flex-1"
+                  />
+                  <Button
+                    onClick={() => {
+                      if (!selectedPhoneNumberId) return;
+                      openModal({
+                        view: (
+                          <SendTemplateModal
+                            phoneNumberId={selectedPhoneNumberId}
+                            contacts={contacts}
+                            onSuccess={(contactId) => {
+                              // Refresh contacts or navigate
+                              const contact = contacts.find(
+                                (c) => c.id === contactId
+                              );
+                              if (contact) {
+                                handleContactClick(contact);
+                              } else {
+                                loadContacts();
+                              }
+                            }}
+                          />
+                        ),
+                        customSize: 1200,
+                      });
+                    }}
+                    disabled={!selectedPhoneNumberId}
+                    className="shrink-0"
+                    title="Send Template"
+                  >
+                    <PiPaperPlaneTilt className="h-5 w-5" />
+                  </Button>
+                </div>
               </div>
 
               {/* Contact List */}
-              <div 
-                className="flex-1 overflow-y-auto min-h-0 custom-scrollbar"
+              <div
+                className="custom-scrollbar min-h-0 flex-1 overflow-y-auto"
                 onScroll={(e) => {
                   const target = e.currentTarget;
                   // Trigger when within 10px of bottom
-                  const isNearBottom = target.scrollHeight - target.scrollTop - target.clientHeight < 10;
+                  const isNearBottom =
+                    target.scrollHeight -
+                      target.scrollTop -
+                      target.clientHeight <
+                    10;
                   if (isNearBottom && hasMoreContacts && !loading) {
                     loadContacts(contactPage + 1, true);
                   }
@@ -1378,15 +1599,17 @@ export default function ChatPage() {
                     size="sm"
                     variant={chatFilter === 'all' ? 'solid' : 'outline'}
                     onClick={() => setChatFilter('all')}
-                    className="flex-1 flex items-center justify-center gap-2"
+                    className="flex flex-1 items-center justify-center gap-2"
                   >
                     <span>All</span>
                     {totalContacts > 0 && (
-                      <span className={`inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-xs font-medium ${
-                        chatFilter === 'all'
-                          ? 'bg-white/20 text-white'
-                          : 'bg-[rgb(var(--primary-default))] text-white'
-                      }`}>
+                      <span
+                        className={`inline-flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-xs font-medium ${
+                          chatFilter === 'all'
+                            ? 'bg-white/20 text-white'
+                            : 'bg-[rgb(var(--primary-default))] text-white'
+                        }`}
+                      >
                         {totalContacts}
                       </span>
                     )}
@@ -1395,15 +1618,17 @@ export default function ChatPage() {
                     size="sm"
                     variant={chatFilter === 'unread' ? 'solid' : 'outline'}
                     onClick={() => setChatFilter('unread')}
-                    className="flex-1 flex items-center justify-center gap-2"
+                    className="flex flex-1 items-center justify-center gap-2"
                   >
                     <span>Unread</span>
                     {unreadCount > 0 && (
-                      <span className={`inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-xs font-medium ${
-                        chatFilter === 'unread'
-                          ? 'bg-white/20 text-white'
-                          : 'bg-[rgb(var(--primary-default))] text-white'
-                      }`}>
+                      <span
+                        className={`inline-flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-xs font-medium ${
+                          chatFilter === 'unread'
+                            ? 'bg-white/20 text-white'
+                            : 'bg-[rgb(var(--primary-default))] text-white'
+                        }`}
+                      >
                         {unreadCount}
                       </span>
                     )}
@@ -1412,15 +1637,17 @@ export default function ChatPage() {
                     size="sm"
                     variant={chatFilter === 'archived' ? 'solid' : 'outline'}
                     onClick={() => setChatFilter('archived')}
-                    className="flex-1 flex items-center justify-center gap-2"
+                    className="flex flex-1 items-center justify-center gap-2"
                   >
                     <span>Archived</span>
                     {archivedCount > 0 && (
-                      <span className={`inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-xs font-medium ${
-                        chatFilter === 'archived'
-                          ? 'bg-white/20 text-white'
-                          : 'bg-[rgb(var(--primary-default))] text-white'
-                      }`}>
+                      <span
+                        className={`inline-flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-xs font-medium ${
+                          chatFilter === 'archived'
+                            ? 'bg-white/20 text-white'
+                            : 'bg-[rgb(var(--primary-default))] text-white'
+                        }`}
+                      >
                         {archivedCount}
                       </span>
                     )}
@@ -1431,27 +1658,36 @@ export default function ChatPage() {
                 {chatFilter !== 'archived' && archivedCount > 0 && (
                   <button
                     onClick={() => setChatFilter('archived')}
-                    className="flex w-full items-center gap-3 border-b border-gray-200 bg-gray-50 px-4 py-3 text-left hover:bg-gray-100 transition-colors"
+                    className="flex w-full items-center gap-3 border-b border-gray-200 bg-gray-50 px-4 py-3 text-left transition-colors hover:bg-gray-100"
                   >
                     <PiArchive className="h-5 w-5 text-gray-500" />
-                    <span className="text-sm font-medium text-gray-700">Archived messages</span>
-                    <span className="ml-auto text-xs text-gray-500">({archivedCount})</span>
+                    <span className="text-sm font-medium text-gray-700">
+                      Archived messages
+                    </span>
+                    <span className="ml-auto text-xs text-gray-500">
+                      ({archivedCount})
+                    </span>
                   </button>
                 )}
 
-                {(loading && contacts.length === 0) ? (
+                {loading && contacts.length === 0 ? (
                   // Initial Loading Skeletons
                   Array.from({ length: 5 }).map((_, i) => (
-                    <div key={i} className="flex items-center gap-3 p-4 border-b border-gray-100 animate-pulse">
+                    <div
+                      key={i}
+                      className="flex animate-pulse items-center gap-3 border-b border-gray-100 p-4"
+                    >
                       <div className="h-10 w-10 rounded-full bg-gray-200" />
                       <div className="flex-1 space-y-2">
-                        <div className="h-4 w-3/4 bg-gray-200 rounded" />
-                        <div className="h-3 w-1/2 bg-gray-200 rounded" />
+                        <div className="h-4 w-3/4 rounded bg-gray-200" />
+                        <div className="h-3 w-1/2 rounded bg-gray-200" />
                       </div>
                     </div>
                   ))
                 ) : filteredContacts.length === 0 ? (
-                  <div className="p-4 text-center text-gray-500">No conversations</div>
+                  <div className="p-4 text-center text-gray-500">
+                    No conversations
+                  </div>
                 ) : (
                   filteredContacts.map((contact) => (
                     <div
@@ -1464,44 +1700,59 @@ export default function ChatPage() {
                           handleContactClick(contact);
                         }
                       }}
-                      className={`flex w-full items-center gap-2 border-b border-gray-100 p-2 text-left transition-colors hover:bg-gray-50 cursor-pointer ${
+                      className={`flex w-full cursor-pointer items-center gap-2 border-b border-gray-100 p-2 text-left transition-colors hover:bg-gray-50 ${
                         selectedContact?.id === contact.id ? 'bg-gray-50' : ''
                       }`}
                     >
                       <Avatar
-                        src={contact.profilePictureUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(contact.profileName || contact.phoneNumber)}`}
+                        src={
+                          contact.profilePictureUrl ||
+                          `https://ui-avatars.com/api/?name=${encodeURIComponent(contact.profileName || contact.phoneNumber)}`
+                        }
                         name={contact.profileName || contact.phoneNumber}
                         className="h-10 w-10"
                       />
-                      <div className="flex-1 min-w-0">
-                        <h6 className="text-xs font-semibold truncate">
+                      <div className="min-w-0 flex-1">
+                        <h6 className="truncate text-xs font-semibold">
                           {contact.profileName || contact.phoneNumber}
                         </h6>
-                        <p className="text-[10px] text-gray-500 truncate">
+                        <p className="truncate text-[10px] text-gray-500">
                           {contact.phoneNumber}
                         </p>
                         <p className="truncate text-[10px] text-gray-600">
-                          {contact.lastMessage?.textBody || `[${contact.lastMessage?.messageType}]` || 'No messages'}
+                          {contact.lastMessage?.textBody ||
+                            `[${contact.lastMessage?.messageType}]` ||
+                            'No messages'}
                         </p>
                       </div>
                       {/* Right side - timestamp, badges, and options */}
-                      <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                      <div className="flex flex-shrink-0 flex-col items-end gap-1">
                         {/* First row: timestamp + options button */}
                         <div className="flex items-center gap-1">
                           {contact.lastMessage && (
                             <span className="text-[10px] text-gray-500">
                               {(() => {
-                                const date = new Date(contact.lastMessage.timestamp);
+                                const date = new Date(
+                                  contact.lastMessage.timestamp
+                                );
                                 const now = new Date();
-                                const diff = differenceInCalendarDays(now, date);
-                                
+                                const diff = differenceInCalendarDays(
+                                  now,
+                                  date
+                                );
+
                                 if (diff >= 1) {
                                   return format(date, 'dd/MM/yyyy');
                                 }
-                                
-                                return formatDistanceToNow(date, { addSuffix: true })
+
+                                return formatDistanceToNow(date, {
+                                  addSuffix: true,
+                                })
                                   .replace('about ', '')
-                                  .replace('less than a minute ago', 'just now');
+                                  .replace(
+                                    'less than a minute ago',
+                                    'just now'
+                                  );
                               })()}
                             </span>
                           )}
@@ -1513,7 +1764,11 @@ export default function ChatPage() {
                               className="text-gray-400 hover:text-gray-600"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                setContactOptionsMenuId(contactOptionsMenuId === contact.id ? null : contact.id);
+                                setContactOptionsMenuId(
+                                  contactOptionsMenuId === contact.id
+                                    ? null
+                                    : contact.id
+                                );
                               }}
                               title="Options"
                             >
@@ -1523,12 +1778,12 @@ export default function ChatPage() {
                             {contactOptionsMenuId === contact.id && (
                               <div
                                 ref={contactOptionsMenuRef}
-                                className="absolute right-0 top-6 z-50 w-36 rounded-md border border-gray-200 bg-white py-1 shadow-lg"
+                                className="absolute top-6 right-0 z-50 w-36 rounded-md border border-gray-200 bg-white py-1 shadow-lg"
                               >
                                 <div
                                   role="button"
                                   tabIndex={0}
-                                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs hover:bg-gray-100 cursor-pointer"
+                                  className="flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-left text-xs hover:bg-gray-100"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     handlePinContact(contact.id);
@@ -1540,13 +1795,17 @@ export default function ChatPage() {
                                     }
                                   }}
                                 >
-                                  <PiPushPin className={`h-4 w-4 ${pinnedContacts.includes(contact.id) ? 'text-yellow-500' : ''}`} />
-                                  {pinnedContacts.includes(contact.id) ? 'Unpin chat' : 'Pin chat'}
+                                  <PiPushPin
+                                    className={`h-4 w-4 ${pinnedContacts.includes(contact.id) ? 'text-yellow-500' : ''}`}
+                                  />
+                                  {pinnedContacts.includes(contact.id)
+                                    ? 'Unpin chat'
+                                    : 'Pin chat'}
                                 </div>
                                 <div
                                   role="button"
                                   tabIndex={0}
-                                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs hover:bg-gray-100 cursor-pointer"
+                                  className="flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-left text-xs hover:bg-gray-100"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     setContactOptionsMenuId(null);
@@ -1585,12 +1844,19 @@ export default function ChatPage() {
                           )}
                           {contact.isSessionActive && (
                             <span className="text-[10px] text-green-600">
-                              ⏱ {Math.floor(contact.sessionRemainingSeconds / 3600)}h
+                              ⏱{' '}
+                              {Math.floor(
+                                contact.sessionRemainingSeconds / 3600
+                              )}
+                              h
                             </span>
                           )}
                           {/* Pinned indicator */}
                           {pinnedContacts.includes(contact.id) && (
-                            <PiPushPin className="h-3 w-3 text-yellow-500" title="Pinned" />
+                            <PiPushPin
+                              className="h-3 w-3 text-yellow-500"
+                              title="Pinned"
+                            />
                           )}
                         </div>
                       </div>
@@ -1603,13 +1869,13 @@ export default function ChatPage() {
 
           {/* Chat Area - Will continue in next part... */}
           <div
-            className={`col-span-12 @lg:col-span-8 @xl:col-span-9 h-full min-h-0 ${
+            className={`col-span-12 h-full min-h-0 @lg:col-span-8 @xl:col-span-9 ${
               !showChat && !selectedContact ? 'hidden @lg:flex' : 'flex'
             }`}
           >
             {selectedContact ? (
-              <div 
-                className="flex h-full w-full flex-col relative"
+              <div
+                className="relative flex h-full w-full flex-col"
                 onDragEnter={handleDragEnter}
                 onDragLeave={handleDragLeave}
                 onDragOver={handleDragOver}
@@ -1617,40 +1883,55 @@ export default function ChatPage() {
               >
                 {/* Drop Zone Overlay */}
                 {isDragging && (
-                  <div className="absolute inset-0 z-50 flex items-center justify-center bg-primary/20 backdrop-blur-sm border-4 border-dashed border-primary rounded-lg">
+                  <div className="bg-primary/20 border-primary absolute inset-0 z-50 flex items-center justify-center rounded-lg border-4 border-dashed backdrop-blur-sm">
                     <div className="text-center">
-                      <PiPaperclipHorizontal className="h-16 w-16 mx-auto text-primary mb-2" />
-                      <p className="text-lg font-semibold text-primary">Drop file here</p>
-                      <p className="text-sm text-gray-600">Image, Video, Audio, or Document</p>
+                      <PiPaperclipHorizontal className="text-primary mx-auto mb-2 h-16 w-16" />
+                      <p className="text-primary text-lg font-semibold">
+                        Drop file here
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        Image, Video, Audio, or Document
+                      </p>
                     </div>
                   </div>
                 )}
                 {/* Chat Header */}
-                <div className="flex items-center justify-between border-b border-gray-200 p-4 flex-shrink-0">
+                <div className="flex flex-shrink-0 items-center justify-between border-b border-gray-200 p-4">
                   <div className="flex items-center gap-3">
                     <Button
                       variant="text"
-                      className="@lg:hidden p-0 h-auto hover:bg-transparent"
+                      className="h-auto p-0 hover:bg-transparent @lg:hidden"
                       onClick={handleBackToList}
                     >
                       <PiArrowLeft className="h-6 w-6" />
                     </Button>
                     <Avatar
-                      src={selectedContact.profilePictureUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedContact.profileName || selectedContact.phoneNumber)}`}
-                      name={selectedContact.profileName || selectedContact.phoneNumber}
+                      src={
+                        selectedContact.profilePictureUrl ||
+                        `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedContact.profileName || selectedContact.phoneNumber)}`
+                      }
+                      name={
+                        selectedContact.profileName ||
+                        selectedContact.phoneNumber
+                      }
                       className="h-10 w-10"
                     />
                     <div>
                       <div className="flex items-center gap-2">
-                        <h6 className="text-sm font-semibold">{selectedContact.profileName || selectedContact.phoneNumber}</h6>
+                        <h6 className="text-sm font-semibold">
+                          {selectedContact.profileName ||
+                            selectedContact.phoneNumber}
+                        </h6>
                       </div>
                       <div className="flex items-center gap-1.5">
                         <p className="text-xs text-gray-600 dark:text-gray-400">
                           {selectedContact.phoneNumber}
                         </p>
                         <button
-                          onClick={() => copyPhoneNumber(selectedContact.phoneNumber)}
-                          className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                          onClick={() =>
+                            copyPhoneNumber(selectedContact.phoneNumber)
+                          }
+                          className="text-gray-400 transition-colors hover:text-gray-600 dark:hover:text-gray-300"
                           title={copiedPhone ? 'Copied!' : 'Copy phone number'}
                         >
                           {copiedPhone ? (
@@ -1660,14 +1941,20 @@ export default function ChatPage() {
                           )}
                         </button>
                       </div>
-                      <div className="flex items-center gap-2 mt-1">
+                      <div className="mt-1 flex items-center gap-2">
                         <p className="text-xs text-gray-500">
-                          {selectedContact.isSessionActive && selectedContact.sessionExpiresAt ? (
-                            <span className="text-green-600 font-bold tabular-nums">
-                              Session: <SessionTimer expiresAt={selectedContact.sessionExpiresAt} />
+                          {selectedContact.isSessionActive &&
+                          selectedContact.sessionExpiresAt ? (
+                            <span className="font-bold text-green-600 tabular-nums">
+                              Session:{' '}
+                              <SessionTimer
+                                expiresAt={selectedContact.sessionExpiresAt}
+                              />
                             </span>
                           ) : (
-                            <span className="text-red-600">Session expired</span>
+                            <span className="text-red-600">
+                              Session expired
+                            </span>
                           )}
                         </p>
                         <span className="text-gray-300">|</span>
@@ -1676,7 +1963,11 @@ export default function ChatPage() {
                           onUpdate={(updatedContact) => {
                             // Update local contact state and list
                             setSelectedContact(updatedContact);
-                            setContacts(prev => prev.map(c => c.id === updatedContact.id ? updatedContact : c));
+                            setContacts((prev) =>
+                              prev.map((c) =>
+                                c.id === updatedContact.id ? updatedContact : c
+                              )
+                            );
                           }}
                         />
                       </div>
@@ -1685,15 +1976,15 @@ export default function ChatPage() {
                 </div>
 
                 {/* Messages */}
-                <div 
+                <div
                   ref={chatContainerRef}
-                  className={`flex-1 overflow-y-auto p-4 min-h-0 custom-scrollbar-message relative ${messagesLoading ? 'invisible' : 'visible'}`}
+                  className={`custom-scrollbar-message relative min-h-0 flex-1 overflow-y-auto p-4 ${messagesLoading ? 'invisible' : 'visible'}`}
                   style={{ scrollBehavior: 'auto' }}
                 >
                   {/* Loading overlay - show while messages load */}
                   {messagesLoading && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/50 backdrop-blur-sm pointer-events-none">
-                       {/* This is a global overlay just in case, but rely on invisible class for container */}
+                    <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center bg-white/50 backdrop-blur-sm">
+                      {/* This is a global overlay just in case, but rely on invisible class for container */}
                     </div>
                   )}
 
@@ -1705,14 +1996,18 @@ export default function ChatPage() {
                           key={msg.id}
                           className={`group flex items-start gap-1 ${isOwn ? 'flex-row-reverse' : ''} ${!messagesLoading ? 'animate-fade-in-up' : ''}`}
                         >
-                          <div className={`max-w-[65%] ${isOwn ? 'items-end' : 'items-start'} flex flex-col`}>
+                          <div
+                            className={`max-w-[65%] ${isOwn ? 'items-end' : 'items-start'} flex flex-col`}
+                          >
                             {/* User name for outgoing messages */}
                             {isOwn && msg.user && (
-                              <div className={`text-[10px] font-medium mb-0.5 px-2 ${
-                                isOwn
-                                  ? 'text-blue-600 dark:text-blue-400 text-right'
-                                  : 'text-gray-600 dark:text-gray-400 text-left'
-                              }`}>
+                              <div
+                                className={`mb-0.5 px-2 text-[10px] font-medium ${
+                                  isOwn
+                                    ? 'text-right text-blue-600 dark:text-blue-400'
+                                    : 'text-left text-gray-600 dark:text-gray-400'
+                                }`}
+                              >
                                 {msg.user.username}
                               </div>
                             )}
@@ -1722,22 +2017,32 @@ export default function ChatPage() {
                               className={`rounded-2xl px-3 py-1.5 ${
                                 isOwn
                                   ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-md'
-                                  : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700 shadow-sm'
+                                  : 'border border-gray-200 bg-white text-gray-900 shadow-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100'
                               } relative transition-all hover:shadow-lg`}
                             >
                               {msg.messageType === 'reaction' ? (
                                 // Reaction message - just show the emoji
                                 <div className="flex items-center gap-2">
-                                  <span className="text-3xl">{msg.reactionEmoji || '👍'}</span>
+                                  <span className="text-3xl">
+                                    {msg.reactionEmoji || '👍'}
+                                  </span>
                                   <div className="flex items-center gap-1">
-                                    <span className={`text-[10px] ${isOwn ? 'text-blue-100' : 'text-gray-500'}`}>
+                                    <span
+                                      className={`text-[10px] ${isOwn ? 'text-blue-100' : 'text-gray-500'}`}
+                                    >
                                       {(() => {
                                         const date = new Date(msg.timestamp);
                                         const now = new Date();
-                                        const diff = differenceInCalendarDays(now, date);
+                                        const diff = differenceInCalendarDays(
+                                          now,
+                                          date
+                                        );
 
                                         if (diff >= 1) {
-                                          return format(date, 'dd/MM/yyyy HH:mm');
+                                          return format(
+                                            date,
+                                            'dd/MM/yyyy HH:mm'
+                                          );
                                         }
 
                                         return format(date, 'HH:mm');
@@ -1748,19 +2053,43 @@ export default function ChatPage() {
                               ) : msg.messageType === 'template' ? (
                                 // Template message - render from templateComponents
                                 (() => {
-                                  const components = msg.templateComponents || [];
-                                  const headerComp = components.find((c: any) => c.type?.toUpperCase() === 'HEADER');
-                                  const bodyComp = components.find((c: any) => c.type?.toUpperCase() === 'BODY');
-                                  const footerComp = components.find((c: any) => c.type?.toUpperCase() === 'FOOTER');
-                                  const buttonsComp = components.find((c: any) => c.type?.toUpperCase() === 'BUTTONS');
+                                  const components =
+                                    msg.templateComponents || [];
+                                  const headerComp = components.find(
+                                    (c: any) =>
+                                      c.type?.toUpperCase() === 'HEADER'
+                                  );
+                                  const bodyComp = components.find(
+                                    (c: any) => c.type?.toUpperCase() === 'BODY'
+                                  );
+                                  const footerComp = components.find(
+                                    (c: any) =>
+                                      c.type?.toUpperCase() === 'FOOTER'
+                                  );
+                                  const buttonsComp = components.find(
+                                    (c: any) =>
+                                      c.type?.toUpperCase() === 'BUTTONS'
+                                  );
 
                                   // Get header media from parameters
-                                  const headerParam = headerComp?.parameters?.[0];
-                                  const headerMediaUrl = headerParam?.image?.link || headerParam?.video?.link || headerParam?.document?.link || msg.mediaUrl;
-                                  const headerMediaType = headerParam?.type || (msg.mediaMimeType?.startsWith('image/') ? 'image' : msg.mediaMimeType?.startsWith('video/') ? 'video' : 'document');
+                                  const headerParam =
+                                    headerComp?.parameters?.[0];
+                                  const headerMediaUrl =
+                                    headerParam?.image?.link ||
+                                    headerParam?.video?.link ||
+                                    headerParam?.document?.link ||
+                                    msg.mediaUrl;
+                                  const headerMediaType =
+                                    headerParam?.type ||
+                                    (msg.mediaMimeType?.startsWith('image/')
+                                      ? 'image'
+                                      : msg.mediaMimeType?.startsWith('video/')
+                                        ? 'video'
+                                        : 'document');
 
                                   // Get body text - either from component text or textBody
-                                  const bodyText = bodyComp?.text || msg.textBody;
+                                  const bodyText =
+                                    bodyComp?.text || msg.textBody;
 
                                   // Get footer text
                                   const footerText = footerComp?.text;
@@ -1774,31 +2103,49 @@ export default function ChatPage() {
                                             <img
                                               src={headerMediaUrl}
                                               alt="Template header"
-                                              className="w-full max-w-[280px] sm:max-w-sm rounded cursor-pointer hover:opacity-90 transition-opacity"
+                                              className="w-full max-w-[280px] cursor-pointer rounded transition-opacity hover:opacity-90 sm:max-w-sm"
                                               onClick={() => {
-                                                setLightboxSlides([{ src: headerMediaUrl, alt: 'Template header' }]);
+                                                setLightboxSlides([
+                                                  {
+                                                    src: headerMediaUrl,
+                                                    alt: 'Template header',
+                                                  },
+                                                ]);
                                                 setLightboxOpen(true);
                                               }}
                                             />
                                           ) : headerMediaType === 'video' ? (
-                                            <video src={headerMediaUrl} controls className="w-full max-w-[280px] sm:max-w-sm rounded" />
+                                            <video
+                                              src={headerMediaUrl}
+                                              controls
+                                              className="w-full max-w-[280px] rounded sm:max-w-sm"
+                                            />
                                           ) : (
                                             <a
                                               href={headerMediaUrl}
                                               target="_blank"
                                               rel="noopener noreferrer"
-                                              className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${isOwn ? 'bg-blue-400/30 hover:bg-blue-400/40' : 'bg-gray-200/80 hover:bg-gray-300/80'}`}
+                                              className={`flex items-center gap-3 rounded-lg p-3 transition-colors ${isOwn ? 'bg-blue-400/30 hover:bg-blue-400/40' : 'bg-gray-200/80 hover:bg-gray-300/80'}`}
                                             >
-                                              <div className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center ${isOwn ? 'bg-blue-300/50' : 'bg-gray-300'}`}>
-                                                <PiFileText className="w-5 h-5 text-gray-700" />
+                                              <div
+                                                className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg ${isOwn ? 'bg-blue-300/50' : 'bg-gray-300'}`}
+                                              >
+                                                <PiFileText className="h-5 w-5 text-gray-700" />
                                               </div>
-                                              <div className="flex-1 min-w-0">
-                                                <p className={`text-sm font-medium truncate ${isOwn ? 'text-white' : 'text-gray-800'}`}>
-                                                  {headerParam?.document?.filename || msg.mediaFilename || 'Document'}
+                                              <div className="min-w-0 flex-1">
+                                                <p
+                                                  className={`truncate text-sm font-medium ${isOwn ? 'text-white' : 'text-gray-800'}`}
+                                                >
+                                                  {headerParam?.document
+                                                    ?.filename ||
+                                                    msg.mediaFilename ||
+                                                    'Document'}
                                                 </p>
                                               </div>
-                                              <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${isOwn ? 'bg-blue-300/50' : 'bg-gray-300'}`}>
-                                                <PiDownload className="w-4 h-4 text-gray-700" />
+                                              <div
+                                                className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full ${isOwn ? 'bg-blue-300/50' : 'bg-gray-300'}`}
+                                              >
+                                                <PiDownload className="h-4 w-4 text-gray-700" />
                                               </div>
                                             </a>
                                           )}
@@ -1806,211 +2153,352 @@ export default function ChatPage() {
                                       )}
                                       {/* Text Header */}
                                       {headerComp?.text && !headerMediaUrl && (
-                                        <p className={`text-sm font-semibold mb-1 ${isOwn ? 'text-white' : 'text-gray-900'}`}>{headerComp.text}</p>
+                                        <p
+                                          className={`mb-1 text-sm font-semibold ${isOwn ? 'text-white' : 'text-gray-900'}`}
+                                        >
+                                          {headerComp.text}
+                                        </p>
                                       )}
 
                                       {/* Template Body */}
                                       {bodyText && (
-                                        <p className="text-sm whitespace-pre-wrap leading-relaxed mb-1">{bodyText}</p>
+                                        <p className="mb-1 text-sm leading-relaxed whitespace-pre-wrap">
+                                          {bodyText}
+                                        </p>
                                       )}
 
                                       {/* Template Footer */}
                                       {footerText && (
-                                        <p className={`text-xs mt-1 ${isOwn ? 'text-blue-200' : 'text-gray-500'}`}>{footerText}</p>
+                                        <p
+                                          className={`mt-1 text-xs ${isOwn ? 'text-blue-200' : 'text-gray-500'}`}
+                                        >
+                                          {footerText}
+                                        </p>
                                       )}
 
                                       {/* Template Buttons */}
-                                      {buttonsComp?.parameters && buttonsComp.parameters.length > 0 && (
-                                        <div className="mt-2 flex flex-wrap gap-1">
-                                          {buttonsComp.parameters.map((btn: any, idx: number) => (
-                                            <span key={idx} className={`text-xs px-2 py-1 rounded ${isOwn ? 'bg-blue-400/30 text-blue-100' : 'bg-gray-200 text-gray-700'}`}>
-                                              {btn.text || btn.payload || `Button ${idx + 1}`}
-                                            </span>
-                                          ))}
-                                        </div>
-                                      )}
+                                      {buttonsComp?.parameters &&
+                                        buttonsComp.parameters.length > 0 && (
+                                          <div className="mt-2 flex flex-wrap gap-1">
+                                            {buttonsComp.parameters.map(
+                                              (btn: any, idx: number) => (
+                                                <span
+                                                  key={idx}
+                                                  className={`rounded px-2 py-1 text-xs ${isOwn ? 'bg-blue-400/30 text-blue-100' : 'bg-gray-200 text-gray-700'}`}
+                                                >
+                                                  {btn.text ||
+                                                    btn.payload ||
+                                                    `Button ${idx + 1}`}
+                                                </span>
+                                              )
+                                            )}
+                                          </div>
+                                        )}
 
                                       {/* Template indicator and timestamp */}
-                                      <div className="flex items-center justify-between gap-2 mt-2">
-                                        <span className={`text-[10px] px-1.5 py-0.5 rounded ${isOwn ? 'bg-blue-400/30 text-blue-100' : 'bg-gray-200 text-gray-600'}`}>
+                                      <div className="mt-2 flex items-center justify-between gap-2">
+                                        <span
+                                          className={`rounded px-1.5 py-0.5 text-[10px] ${isOwn ? 'bg-blue-400/30 text-blue-100' : 'bg-gray-200 text-gray-600'}`}
+                                        >
                                           {msg.templateName || 'Template'}
                                         </span>
                                         <div className="flex items-center gap-1.5">
-                                          <span className={`text-[10px] ${isOwn ? 'text-blue-100' : 'text-gray-500'}`}>
+                                          <span
+                                            className={`text-[10px] ${isOwn ? 'text-blue-100' : 'text-gray-500'}`}
+                                          >
                                             {(() => {
-                                              const date = new Date(msg.timestamp);
+                                              const date = new Date(
+                                                msg.timestamp
+                                              );
                                               const now = new Date();
-                                              const diff = differenceInCalendarDays(now, date);
-                                              if (diff >= 1) return format(date, 'dd/MM/yyyy HH:mm');
+                                              const diff =
+                                                differenceInCalendarDays(
+                                                  now,
+                                                  date
+                                                );
+                                              if (diff >= 1)
+                                                return format(
+                                                  date,
+                                                  'dd/MM/yyyy HH:mm'
+                                                );
                                               return format(date, 'HH:mm');
                                             })()}
                                           </span>
-                                          {isOwn && <span className={isOwn ? 'text-white' : ''}>{getStatusIcon(msg.status)}</span>}
+                                          {isOwn && (
+                                            <span
+                                              className={
+                                                isOwn ? 'text-white' : ''
+                                              }
+                                            >
+                                              {getStatusIcon(msg.status)}
+                                            </span>
+                                          )}
                                         </div>
                                       </div>
                                     </div>
                                   );
                                 })()
-                              ) : msg.messageType === 'contacts' && msg.contactsPayload?.length ? (
+                              ) : msg.messageType === 'contacts' &&
+                                msg.contactsPayload?.length ? (
                                 // Contact card(s) shared via WhatsApp
-                                <div className="flex flex-col gap-2 min-w-[200px]">
-                                  {(msg.contactsPayload as any[]).map((contact: any, idx: number) => {
-                                    const name = contact.name?.formatted_name || contact.name?.first_name || 'Kontak';
-                                    const phones: string[] = (contact.phones || []).map((p: any) => p.phone || p.wa_id).filter(Boolean);
-                                    const emails: string[] = (contact.emails || []).map((e: any) => e.email).filter(Boolean);
-                                    return (
-                                      <div
-                                        key={idx}
-                                        className={`flex items-center gap-3 px-3 py-2.5 rounded-xl ${
-                                          isOwn
-                                            ? 'bg-blue-400/25'
-                                            : 'bg-gray-100 dark:bg-gray-700'
-                                        }`}
-                                      >
-                                        {/* Avatar placeholder */}
-                                        <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-base font-semibold ${
-                                          isOwn ? 'bg-blue-300/50 text-white' : 'bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-200'
-                                        }`}>
-                                          {name.charAt(0).toUpperCase()}
+                                <div className="flex min-w-[200px] flex-col gap-2">
+                                  {(msg.contactsPayload as any[]).map(
+                                    (contact: any, idx: number) => {
+                                      const name =
+                                        contact.name?.formatted_name ||
+                                        contact.name?.first_name ||
+                                        'Kontak';
+                                      const phones: string[] = (
+                                        contact.phones || []
+                                      )
+                                        .map((p: any) => p.phone || p.wa_id)
+                                        .filter(Boolean);
+                                      const emails: string[] = (
+                                        contact.emails || []
+                                      )
+                                        .map((e: any) => e.email)
+                                        .filter(Boolean);
+                                      return (
+                                        <div
+                                          key={idx}
+                                          className={`flex items-center gap-3 rounded-xl px-3 py-2.5 ${
+                                            isOwn
+                                              ? 'bg-blue-400/25'
+                                              : 'bg-gray-100 dark:bg-gray-700'
+                                          }`}
+                                        >
+                                          {/* Avatar placeholder */}
+                                          <div
+                                            className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-base font-semibold ${
+                                              isOwn
+                                                ? 'bg-blue-300/50 text-white'
+                                                : 'bg-gray-300 text-gray-700 dark:bg-gray-600 dark:text-gray-200'
+                                            }`}
+                                          >
+                                            {name.charAt(0).toUpperCase()}
+                                          </div>
+                                          <div className="min-w-0 flex-1">
+                                            <p
+                                              className={`truncate text-sm font-semibold ${isOwn ? 'text-white' : 'text-gray-900 dark:text-gray-100'}`}
+                                            >
+                                              {name}
+                                            </p>
+                                            {phones[0] && (
+                                              <p
+                                                className={`truncate text-xs ${isOwn ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'}`}
+                                              >
+                                                {phones[0]}
+                                              </p>
+                                            )}
+                                            {!phones[0] && emails[0] && (
+                                              <p
+                                                className={`truncate text-xs ${isOwn ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'}`}
+                                              >
+                                                {emails[0]}
+                                              </p>
+                                            )}
+                                          </div>
                                         </div>
-                                        <div className="flex-1 min-w-0">
-                                          <p className={`text-sm font-semibold truncate ${isOwn ? 'text-white' : 'text-gray-900 dark:text-gray-100'}`}>{name}</p>
-                                          {phones[0] && (
-                                            <p className={`text-xs truncate ${isOwn ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'}`}>{phones[0]}</p>
-                                          )}
-                                          {!phones[0] && emails[0] && (
-                                            <p className={`text-xs truncate ${isOwn ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'}`}>{emails[0]}</p>
-                                          )}
-                                        </div>
-                                      </div>
-                                    );
-                                  })}
+                                      );
+                                    }
+                                  )}
                                   {/* Timestamp */}
-                                  <div className="flex justify-end items-center gap-1">
-                                    <span className={`text-[10px] ${isOwn ? 'text-blue-100' : 'text-gray-500'}`}>
+                                  <div className="flex items-center justify-end gap-1">
+                                    <span
+                                      className={`text-[10px] ${isOwn ? 'text-blue-100' : 'text-gray-500'}`}
+                                    >
                                       {(() => {
                                         const date = new Date(msg.timestamp);
                                         const now = new Date();
-                                        const diff = differenceInCalendarDays(now, date);
-                                        if (diff >= 1) return format(date, 'dd/MM/yyyy HH:mm');
+                                        const diff = differenceInCalendarDays(
+                                          now,
+                                          date
+                                        );
+                                        if (diff >= 1)
+                                          return format(
+                                            date,
+                                            'dd/MM/yyyy HH:mm'
+                                          );
                                         return format(date, 'HH:mm');
                                       })()}
                                     </span>
-                                    {isOwn && <span className={isOwn ? 'text-white' : ''}>{getStatusIcon(msg.status)}</span>}
+                                    {isOwn && (
+                                      <span
+                                        className={isOwn ? 'text-white' : ''}
+                                      >
+                                        {getStatusIcon(msg.status)}
+                                      </span>
+                                    )}
                                   </div>
                                 </div>
                               ) : msg.mediaUrl ? (
                                 <div className="flex flex-col">
                                   {msg.messageType === 'image' && (
-                                    <img 
-                                      src={msg.mediaUrl} 
-                                      alt="Image" 
-                                      className="w-full max-w-[280px] sm:max-w-sm rounded mb-2 cursor-pointer hover:opacity-90 transition-opacity" 
+                                    <img
+                                      src={msg.mediaUrl}
+                                      alt="Image"
+                                      className="mb-2 w-full max-w-[280px] cursor-pointer rounded transition-opacity hover:opacity-90 sm:max-w-sm"
                                       onClick={() => {
-                                        setLightboxSlides([{
-                                          src: msg.mediaUrl,
-                                          alt: 'Image',
-                                        }]);
+                                        setLightboxSlides([
+                                          {
+                                            src: msg.mediaUrl,
+                                            alt: 'Image',
+                                          },
+                                        ]);
                                         setLightboxOpen(true);
                                       }}
                                     />
                                   )}
                                   {msg.messageType === 'sticker' && (
-                                    <img src={msg.mediaUrl} alt="Sticker" className="w-full max-w-[150px] sm:max-w-[200px] mb-2" />
+                                    <img
+                                      src={msg.mediaUrl}
+                                      alt="Sticker"
+                                      className="mb-2 w-full max-w-[150px] sm:max-w-[200px]"
+                                    />
                                   )}
                                   {msg.messageType === 'video' && (
-                                    <video 
-                                      src={msg.mediaUrl} 
-                                      controls 
-                                      className="w-full max-w-[280px] sm:max-w-sm rounded mb-2 cursor-pointer"
+                                    <video
+                                      src={msg.mediaUrl}
+                                      controls
+                                      className="mb-2 w-full max-w-[280px] cursor-pointer rounded sm:max-w-sm"
                                       onClick={(e) => {
                                         // If clicking on video (not controls), open in lightbox
                                         if (e.target === e.currentTarget) {
-                                          setLightboxSlides([{
-                                            type: 'video',
-                                            sources: [{
-                                              src: msg.mediaUrl,
-                                              type: 'video/mp4',
-                                            }],
-                                          }]);
+                                          setLightboxSlides([
+                                            {
+                                              type: 'video',
+                                              sources: [
+                                                {
+                                                  src: msg.mediaUrl,
+                                                  type: 'video/mp4',
+                                                },
+                                              ],
+                                            },
+                                          ]);
                                           setLightboxOpen(true);
                                         }
                                       }}
                                     />
                                   )}
                                   {msg.messageType === 'audio' && (
-                                    <audio src={msg.mediaUrl} controls className="w-full max-w-[280px] sm:max-w-sm mb-2" />
+                                    <audio
+                                      src={msg.mediaUrl}
+                                      controls
+                                      className="mb-2 w-full max-w-[280px] sm:max-w-sm"
+                                    />
                                   )}
                                   {msg.messageType === 'document' && (
                                     <a
                                       href={msg.mediaUrl}
                                       target="_blank"
                                       rel="noopener noreferrer"
-                                      className={`flex items-center gap-3 p-3 rounded-lg mb-2 transition-colors ${
-                                        isOwn 
-                                          ? 'bg-blue-400/30 hover:bg-blue-400/40' 
+                                      className={`mb-2 flex items-center gap-3 rounded-lg p-3 transition-colors ${
+                                        isOwn
+                                          ? 'bg-blue-400/30 hover:bg-blue-400/40'
                                           : 'bg-gray-200/80 hover:bg-gray-300/80'
                                       }`}
                                     >
-                                      <div className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center ${
-                                        isOwn ? 'bg-blue-300/50' : 'bg-gray-300'
-                                      }`}>
-                                        <PiFileText className="w-5 h-5 text-gray-700" />
+                                      <div
+                                        className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg ${
+                                          isOwn
+                                            ? 'bg-blue-300/50'
+                                            : 'bg-gray-300'
+                                        }`}
+                                      >
+                                        <PiFileText className="h-5 w-5 text-gray-700" />
                                       </div>
-                                      <div className="flex-1 min-w-0">
-                                        <p className={`text-sm font-medium truncate ${
-                                          isOwn ? 'text-white' : 'text-gray-800'
-                                        }`}>
+                                      <div className="min-w-0 flex-1">
+                                        <p
+                                          className={`truncate text-sm font-medium ${
+                                            isOwn
+                                              ? 'text-white'
+                                              : 'text-gray-800'
+                                          }`}
+                                        >
                                           {msg.mediaFilename || 'Document'}
                                         </p>
-                                        <p className={`text-xs ${isOwn ? 'text-blue-100' : 'text-gray-500'}`}>
+                                        <p
+                                          className={`text-xs ${isOwn ? 'text-blue-100' : 'text-gray-500'}`}
+                                        >
                                           PDF • Tap to open
                                         </p>
                                       </div>
-                                      <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
-                                        isOwn ? 'bg-blue-300/50' : 'bg-gray-300'
-                                      }`}>
-                                        <PiDownload className="w-4 h-4 text-gray-700" />
+                                      <div
+                                        className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full ${
+                                          isOwn
+                                            ? 'bg-blue-300/50'
+                                            : 'bg-gray-300'
+                                        }`}
+                                      >
+                                        <PiDownload className="h-4 w-4 text-gray-700" />
                                       </div>
                                     </a>
                                   )}
-                                  {(msg.mediaCaption || msg.textBody) && <p className="text-sm mb-1 whitespace-pre-wrap">{msg.mediaCaption || msg.textBody}</p>}
-                                  
+                                  {(msg.mediaCaption || msg.textBody) && (
+                                    <p className="mb-1 text-sm whitespace-pre-wrap">
+                                      {msg.mediaCaption || msg.textBody}
+                                    </p>
+                                  )}
+
                                   {/* Timestamp & Status for Media */}
-                                  <div className="flex justify-end items-center gap-1 mt-1">
-                                     <span className={`text-[10px] ${isOwn ? 'text-blue-100' : 'text-gray-500'}`}>
+                                  <div className="mt-1 flex items-center justify-end gap-1">
+                                    <span
+                                      className={`text-[10px] ${isOwn ? 'text-blue-100' : 'text-gray-500'}`}
+                                    >
                                       {(() => {
                                         const date = new Date(msg.timestamp);
                                         const now = new Date();
-                                        const diff = differenceInCalendarDays(now, date);
+                                        const diff = differenceInCalendarDays(
+                                          now,
+                                          date
+                                        );
 
                                         if (diff >= 1) {
-                                          return format(date, 'dd/MM/yyyy HH:mm');
+                                          return format(
+                                            date,
+                                            'dd/MM/yyyy HH:mm'
+                                          );
                                         }
 
                                         return format(date, 'HH:mm');
                                       })()}
                                     </span>
-                                    {isOwn && <span className={isOwn ? 'text-white' : ''}>{getStatusIcon(msg.status)}</span>}
+                                    {isOwn && (
+                                      <span
+                                        className={isOwn ? 'text-white' : ''}
+                                      >
+                                        {getStatusIcon(msg.status)}
+                                      </span>
+                                    )}
                                   </div>
                                 </div>
                               ) : (
-                                <div className="flex items-end gap-2 flex-wrap">
-                                  <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.textBody}</p>
-                                  <div className="flex-1 min-w-[60px]" />
-                                  <div className="flex items-center gap-1.5 select-none flex-shrink-0">
-                                    <span className={`text-[10px] font-medium leading-none ${
-                                      isOwn
-                                        ? 'text-white opacity-90'
-                                        : 'text-gray-500 dark:text-gray-400'
-                                    }`}>
+                                <div className="flex flex-wrap items-end gap-2">
+                                  <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                                    {msg.textBody}
+                                  </p>
+                                  <div className="min-w-[60px] flex-1" />
+                                  <div className="flex flex-shrink-0 items-center gap-1.5 select-none">
+                                    <span
+                                      className={`text-[10px] leading-none font-medium ${
+                                        isOwn
+                                          ? 'text-white opacity-90'
+                                          : 'text-gray-500 dark:text-gray-400'
+                                      }`}
+                                    >
                                       {(() => {
                                         const date = new Date(msg.timestamp);
                                         const now = new Date();
-                                        const diff = differenceInCalendarDays(now, date);
+                                        const diff = differenceInCalendarDays(
+                                          now,
+                                          date
+                                        );
 
                                         if (diff >= 1) {
-                                          return format(date, 'dd/MM/yyyy HH:mm');
+                                          return format(
+                                            date,
+                                            'dd/MM/yyyy HH:mm'
+                                          );
                                         }
 
                                         return format(date, 'HH:mm');
@@ -2034,31 +2522,40 @@ export default function ChatPage() {
                 </div>
 
                 {/* Input Area */}
-                <div className="border-t border-gray-200 p-4 flex-shrink-0">
+                <div className="flex-shrink-0 border-t border-gray-200 p-4">
                   {!selectedContact.isSessionActive && (
-                    <div className="mb-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800">
-                      ⚠️ Sesi berakhir. Anda hanya dapat mengirim pesan template.
+                    <div className="mb-3 rounded-lg border border-yellow-200 bg-yellow-50 p-3 text-sm text-yellow-800">
+                      ⚠️ Sesi berakhir. Anda hanya dapat mengirim pesan
+                      template.
                     </div>
                   )}
 
                   {/* Attachment Preview */}
                   {pendingAttachment && (
-                    <div className="mb-3 p-3 bg-gray-50 border border-gray-200 rounded-lg flex items-center gap-3">
+                    <div className="mb-3 flex items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
                       {pendingAttachment.preview ? (
-                        <img 
-                          src={pendingAttachment.preview} 
-                          alt="Preview" 
-                          className="w-16 h-16 object-cover rounded"
+                        <img
+                          src={pendingAttachment.preview}
+                          alt="Preview"
+                          className="h-16 w-16 rounded object-cover"
                         />
                       ) : (
-                        <div className="w-16 h-16 bg-gray-200 rounded flex items-center justify-center">
-                          {pendingAttachment.type === 'video' && <PiVideoCamera className="h-6 w-6 text-gray-500" />}
-                          {pendingAttachment.type === 'audio' && <PiMicrophone className="h-6 w-6 text-gray-500" />}
-                          {pendingAttachment.type === 'document' && <PiFileText className="h-6 w-6 text-gray-500" />}
+                        <div className="flex h-16 w-16 items-center justify-center rounded bg-gray-200">
+                          {pendingAttachment.type === 'video' && (
+                            <PiVideoCamera className="h-6 w-6 text-gray-500" />
+                          )}
+                          {pendingAttachment.type === 'audio' && (
+                            <PiMicrophone className="h-6 w-6 text-gray-500" />
+                          )}
+                          {pendingAttachment.type === 'document' && (
+                            <PiFileText className="h-6 w-6 text-gray-500" />
+                          )}
                         </div>
                       )}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{pendingAttachment.file.name}</p>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium">
+                          {pendingAttachment.file.name}
+                        </p>
                         <p className="text-xs text-gray-500">
                           {(pendingAttachment.file.size / 1024).toFixed(1)} KB
                         </p>
@@ -2109,30 +2606,30 @@ export default function ChatPage() {
                       >
                         <PiPaperclipHorizontal className="h-6 w-6" />
                       </ActionIcon>
-                      
+
                       {showAttachmentMenu && (
-                        <div className="absolute bottom-full left-0 mb-2 w-40 bg-white border border-gray-200 rounded-lg shadow-lg py-1">
+                        <div className="absolute bottom-full left-0 mb-2 w-40 rounded-lg border border-gray-200 bg-white py-1 shadow-lg">
                           <button
                             onClick={() => imageInputRef.current?.click()}
-                            className="w-full px-4 py-2 text-sm text-left hover:bg-gray-100 flex items-center gap-2"
+                            className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm hover:bg-gray-100"
                           >
                             <PiImage className="h-4 w-4" /> Photo
                           </button>
                           <button
                             onClick={() => videoInputRef.current?.click()}
-                            className="w-full px-4 py-2 text-sm text-left hover:bg-gray-100 flex items-center gap-2"
+                            className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm hover:bg-gray-100"
                           >
                             <PiVideoCamera className="h-4 w-4" /> Video
                           </button>
                           <button
                             onClick={() => documentInputRef.current?.click()}
-                            className="w-full px-4 py-2 text-sm text-left hover:bg-gray-100 flex items-center gap-2"
+                            className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm hover:bg-gray-100"
                           >
                             <PiFileText className="h-4 w-4" /> Document
                           </button>
                           <button
                             onClick={() => audioInputRef.current?.click()}
-                            className="w-full px-4 py-2 text-sm text-left hover:bg-gray-100 flex items-center gap-2"
+                            className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm hover:bg-gray-100"
                           >
                             <PiMicrophone className="h-4 w-4" /> Audio
                           </button>
@@ -2140,32 +2637,42 @@ export default function ChatPage() {
                       )}
                     </div>
 
-                    <div className="flex-1 relative">
+                    <div className="relative flex-1">
                       {/* Suggestions Dropdown */}
                       {showSuggestions && filteredQuickReplies.length > 0 && (
-                        <div className="absolute bottom-full left-0 right-0 mb-2 max-h-48 overflow-y-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50">
+                        <div className="absolute right-0 bottom-full left-0 z-50 mb-2 max-h-48 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800">
                           {filteredQuickReplies.map((qr, index) => (
                             <button
                               key={qr.id}
                               onClick={() => handleQuickReply(qr)}
-                              className={`w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 border-b border-gray-100 dark:border-gray-700 last:border-b-0 ${
-                                index === selectedSuggestionIndex ? 'bg-gray-100 dark:bg-gray-700' : ''
+                              className={`w-full border-b border-gray-100 px-4 py-2 text-left last:border-b-0 hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-700 ${
+                                index === selectedSuggestionIndex
+                                  ? 'bg-gray-100 dark:bg-gray-700'
+                                  : ''
                               }`}
                             >
-                              <div className="font-medium text-sm">/{qr.shortcut}</div>
-                              <div className="text-xs text-gray-600 dark:text-gray-400 truncate">{qr.text}</div>
+                              <div className="text-sm font-medium">
+                                /{qr.shortcut}
+                              </div>
+                              <div className="truncate text-xs text-gray-600 dark:text-gray-400">
+                                {qr.text}
+                              </div>
                             </button>
                           ))}
                         </div>
                       )}
-                      
+
                       <Textarea
                         ref={textareaRef}
                         value={messageInput}
                         onChange={handleInputChange}
                         onKeyDown={handleInputKeyDown}
                         onPaste={handlePaste}
-                        placeholder={selectedContact.isSessionActive ? "Type a message..." : "Session expired. User must reply to open 24h window."}
+                        placeholder={
+                          selectedContact.isSessionActive
+                            ? 'Type a message...'
+                            : 'Session expired. User must reply to open 24h window.'
+                        }
                         disabled={sending || !selectedContact.isSessionActive}
                         className="w-full resize-none"
                         rows={1}
@@ -2181,14 +2688,14 @@ export default function ChatPage() {
                       >
                         <PiSmiley className="h-6 w-6" />
                       </ActionIcon>
-                      
+
                       {showEmojiPicker && (
-                        <div className="absolute bottom-full right-0 mb-2 w-64 max-h-48 overflow-y-auto bg-white border border-gray-200 rounded-lg shadow-lg p-2 grid grid-cols-8 gap-1">
+                        <div className="absolute right-0 bottom-full mb-2 grid max-h-48 w-64 grid-cols-8 gap-1 overflow-y-auto rounded-lg border border-gray-200 bg-white p-2 shadow-lg">
                           {defaultEmojis.map((emoji, index) => (
                             <button
                               key={index}
                               onClick={() => handleEmojiClick(emoji)}
-                              className="text-2xl hover:bg-gray-100 rounded p-1"
+                              className="rounded p-1 text-2xl hover:bg-gray-100"
                             >
                               {emoji}
                             </button>
@@ -2200,15 +2707,23 @@ export default function ChatPage() {
                     {/* Send Button */}
                     <Button
                       onClick={handleSendMessage}
-                      disabled={(!messageInput?.trim() && !pendingAttachment) || sending || !selectedContact.isSessionActive}
+                      disabled={
+                        (!messageInput?.trim() && !pendingAttachment) ||
+                        sending ||
+                        !selectedContact.isSessionActive
+                      }
                       size="sm"
                     >
-                      {sending ? 'Sending...' : <PiPaperPlaneTilt className="h-5 w-5" />}
+                      {sending ? (
+                        'Sending...'
+                      ) : (
+                        <PiPaperPlaneTilt className="h-5 w-5" />
+                      )}
                     </Button>
                   </div>
 
                   {/* Quick Replies */}
-                  <div className="mt-2 relative" ref={quickReplyRef}>
+                  <div className="relative mt-2" ref={quickReplyRef}>
                     <Button
                       variant="outline"
                       size="sm"
@@ -2221,12 +2736,12 @@ export default function ChatPage() {
                     </Button>
 
                     {showQuickReplies && (
-                      <div className="absolute bottom-full left-0 mb-2 w-full max-h-64 overflow-y-auto bg-white border border-gray-200 rounded-lg shadow-lg p-2 space-y-1">
+                      <div className="absolute bottom-full left-0 mb-2 max-h-64 w-full space-y-1 overflow-y-auto rounded-lg border border-gray-200 bg-white p-2 shadow-lg">
                         {quickReplies.map((reply) => (
                           <button
                             key={reply.id}
                             onClick={() => handleQuickReply(reply)}
-                            className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 rounded"
+                            className="w-full rounded px-3 py-2 text-left text-sm hover:bg-gray-100"
                           >
                             {reply.text}
                           </button>
@@ -2237,11 +2752,39 @@ export default function ChatPage() {
                 </div>
               </div>
             ) : (
-              <div className="flex-1 flex items-center justify-center text-gray-400">
+              <div className="flex flex-1 items-center justify-center text-gray-400">
                 <div className="text-center">
                   <PiEnvelope className="mx-auto h-12 w-12 text-gray-300" />
-                  <p className="mt-4 text-lg font-medium">Select a conversation</p>
-                  <p className="mt-1 text-sm">Choose a contact to start chatting</p>
+                  <p className="mt-4 text-lg font-medium">
+                    Select a conversation
+                  </p>
+                  <p className="mt-1 text-sm">
+                    Choose a contact to start chatting
+                  </p>
+                  <Button
+                    variant="outline"
+                    className="mt-4"
+                    onClick={() => {
+                      if (!selectedPhoneNumberId) return;
+                      openModal({
+                        view: (
+                          <SendTemplateModal
+                            phoneNumberId={selectedPhoneNumberId}
+                            contacts={contacts}
+                            onSuccess={(contactId) => {
+                              // Find the newly messaged contact and open
+                              // The websocket event will handle fetching, but here we trigger loadContacts to be sure
+                              loadContacts();
+                            }}
+                          />
+                        ),
+                        customSize: 1200,
+                      });
+                    }}
+                    disabled={!selectedPhoneNumberId}
+                  >
+                    Send Template Message
+                  </Button>
                 </div>
               </div>
             )}

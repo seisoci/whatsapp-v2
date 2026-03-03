@@ -10,9 +10,14 @@ import { Contact } from '../models/Contact';
 import { PhoneNumber } from '../models/PhoneNumber';
 import { WhatsAppMessagingService } from '../services/whatsapp-messaging.service';
 import { chatWebSocketManager } from '../services/chat-websocket.service';
-import { getMessagesSchema, sendMessageSchema } from '../validators/chat.validator';
+import {
+  getMessagesSchema,
+  sendMessageSchema,
+} from '../validators/chat.validator';
 import { withPermissions } from '../utils/controller.decorator';
 import { templateCacheService } from '../services/template-cache.service';
+import { cacheService } from '../services/cache.service';
+import { storageService } from '../services/storage.service';
 
 export class MessageController {
   /**
@@ -32,13 +37,16 @@ export class MessageController {
     try {
       const query = c.req.query();
       const validation = getMessagesSchema.safeParse(query);
-      
+
       if (!validation.success) {
-        return c.json({
-          success: false,
-          message: 'Invalid query parameters',
-          errors: validation.error.errors,
-        }, 400);
+        return c.json(
+          {
+            success: false,
+            message: 'Invalid query parameters',
+            errors: validation.error.errors,
+          },
+          400
+        );
       }
 
       const { contactId, page, limit } = validation.data;
@@ -65,13 +73,19 @@ export class MessageController {
       // Render template bodies for template messages that don't have textBody
       const processedMessages = await Promise.all(
         messages.map(async (msg) => {
-          if (msg.messageType === 'template' && !msg.textBody && msg.templateName && msg.templateLanguage) {
+          if (
+            msg.messageType === 'template' &&
+            !msg.textBody &&
+            msg.templateName &&
+            msg.templateLanguage
+          ) {
             try {
-              const templateDef = await templateCacheService.getTemplateByPhoneNumber(
-                msg.phoneNumberId,
-                msg.templateName,
-                msg.templateLanguage
-              );
+              const templateDef =
+                await templateCacheService.getTemplateByPhoneNumber(
+                  msg.phoneNumberId,
+                  msg.templateName,
+                  msg.templateLanguage
+                );
 
               if (templateDef) {
                 const rendered = templateCacheService.renderTemplateBody(
@@ -86,16 +100,66 @@ export class MessageController {
                 msg.textBody = parts.join('\n\n');
               }
             } catch (error) {
-              console.error(`[MessageController] Failed to render template for message ${msg.id}:`, error);
+              console.error(
+                `[MessageController] Failed to render template for message ${msg.id}:`,
+                error
+              );
             }
           }
           return msg;
         })
       );
 
+      // Presign media URLs (with Redis cache, TTL = 7 days)
+      const PRESIGN_TTL = 7 * 24 * 60 * 60; // 7 days in seconds
+      const finalMessages = await Promise.all(
+        processedMessages.map(async (msg) => {
+          if (!msg.mediaUrl) return msg;
+
+          const cacheKey = `presign:${msg.mediaUrl}`;
+          let presignedUrl = await cacheService.get<string>(cacheKey, false);
+
+          if (!presignedUrl) {
+            try {
+              // Extract object key from full URL
+              // stored URL: https://s3.itn.net.id/whatsapp/path/to/file.jpg
+              const bucket = process.env.MINIO_BUCKET || 'whatsapp';
+              let objectKey = msg.mediaUrl;
+              try {
+                const parsed = new URL(msg.mediaUrl);
+                const parts = parsed.pathname.split('/');
+                const bucketIdx = parts.indexOf(bucket);
+                objectKey =
+                  bucketIdx !== -1
+                    ? parts.slice(bucketIdx + 1).join('/')
+                    : parsed.pathname.replace(/^\//, '');
+              } catch {
+                // Already a plain key, use as-is
+              }
+
+              presignedUrl = await storageService.getFileUrl(
+                objectKey,
+                PRESIGN_TTL
+              );
+              await cacheService.set(cacheKey, presignedUrl, PRESIGN_TTL);
+              console.log(
+                `[MessageController] Presigned URL cached for message ${msg.id}`
+              );
+            } catch (err) {
+              console.warn(
+                `[MessageController] Failed to presign URL for message ${msg.id}:`,
+                err
+              );
+              presignedUrl = msg.mediaUrl; // fallback to stored URL
+            }
+          }
+
+          return { ...msg, mediaUrl: presignedUrl };
+        })
+      );
       return c.json({
         success: true,
-        data: processedMessages.reverse(), // Reverse to show oldest first in UI
+        data: finalMessages.reverse(), // Reverse to show oldest first in UI
         pagination: {
           page,
           limit,
@@ -105,11 +169,14 @@ export class MessageController {
       });
     } catch (error: any) {
       console.error('Error getting messages:', error);
-      return c.json({
-        success: false,
-        message: 'Failed to get messages',
-        error: error.message,
-      }, 500);
+      return c.json(
+        {
+          success: false,
+          message: 'Failed to get messages',
+          error: error.message,
+        },
+        500
+      );
     }
   }
 
@@ -123,14 +190,18 @@ export class MessageController {
       const validation = sendMessageSchema.safeParse(body);
 
       if (!validation.success) {
-        return c.json({
-          success: false,
-          message: 'Invalid request body',
-          errors: validation.error.errors,
-        }, 400);
+        return c.json(
+          {
+            success: false,
+            message: 'Invalid request body',
+            errors: validation.error.errors,
+          },
+          400
+        );
       }
 
-      const { contactId, phoneNumberId, type, text, template, media } = validation.data;
+      const { contactId, phoneNumberId, type, text, template, media } =
+        validation.data;
 
       // Get authenticated user ID from context
       // If wrapped with permissions, user is User entity (has .id)
@@ -142,21 +213,35 @@ export class MessageController {
       const contact = await contactRepo.findOne({ where: { id: contactId } });
 
       if (!contact) {
-        return c.json({
-          success: false,
-          message: 'Contact not found',
-        }, 404);
+        return c.json(
+          {
+            success: false,
+            message: 'Contact not found',
+          },
+          404
+        );
       }
 
       // Get phone number credentials
+      // The frontend may pass either the DB uuid (id) or the WA phone_number_id
       const phoneNumberRepo = AppDataSource.getRepository(PhoneNumber);
-      const phoneNumber = await phoneNumberRepo.findOne({ where: { id: phoneNumberId } });
+      let phoneNumber = await phoneNumberRepo
+        .findOne({ where: { id: phoneNumberId } })
+        .catch(() => null);
+      if (!phoneNumber) {
+        phoneNumber = await phoneNumberRepo.findOne({
+          where: { phoneNumberId },
+        });
+      }
 
       if (!phoneNumber) {
-        return c.json({
-          success: false,
-          message: 'Phone number not found',
-        }, 404);
+        return c.json(
+          {
+            success: false,
+            message: 'Phone number not found',
+          },
+          404
+        );
       }
 
       let result: any;
@@ -165,10 +250,13 @@ export class MessageController {
       switch (type) {
         case 'text':
           if (!text) {
-            return c.json({
-              success: false,
-              message: 'Text content is required for text messages',
-            }, 400);
+            return c.json(
+              {
+                success: false,
+                message: 'Text content is required for text messages',
+              },
+              400
+            );
           }
 
           result = await WhatsAppMessagingService.sendTextMessage({
@@ -184,20 +272,25 @@ export class MessageController {
 
         case 'template':
           if (!template) {
-            return c.json({
-              success: false,
-              message: 'Template content is required for template messages',
-            }, 400);
+            return c.json(
+              {
+                success: false,
+                message: 'Template content is required for template messages',
+              },
+              400
+            );
           }
 
           result = await WhatsAppMessagingService.sendTemplateMessage({
             phoneNumberId: phoneNumber.phoneNumberId,
+            internalPhoneNumberId: phoneNumber.id,
             accessToken: phoneNumber.accessToken,
             to: contact.waId,
             templateName: template.name,
             templateLanguage: template.language,
             components: template.components,
             contactId: contact.id,
+            userId: userId,
           });
           break;
 
@@ -206,10 +299,13 @@ export class MessageController {
         case 'document':
         case 'audio':
           if (!media) {
-            return c.json({
-              success: false,
-              message: 'Media content is required for media messages',
-            }, 400);
+            return c.json(
+              {
+                success: false,
+                message: 'Media content is required for media messages',
+              },
+              400
+            );
           }
 
           result = await WhatsAppMessagingService.sendMediaMessage({
@@ -228,16 +324,19 @@ export class MessageController {
           break;
 
         default:
-          return c.json({
-            success: false,
-            message: 'Unsupported message type',
-          }, 400);
+          return c.json(
+            {
+              success: false,
+              message: 'Unsupported message type',
+            },
+            400
+          );
       }
 
       // 📢 WEBSOCKET: Broadcast outgoing message to all clients subscribed to this phone number
       if (result.savedMessage) {
         const savedMessage = result.savedMessage;
-        
+
         chatWebSocketManager.broadcast(phoneNumber.id, {
           type: 'message:new',
           data: {
@@ -251,7 +350,10 @@ export class MessageController {
               mediaCaption: savedMessage.mediaCaption,
               mediaFilename: savedMessage.mediaFilename,
               direction: savedMessage.direction,
-              timestamp: savedMessage.timestamp instanceof Date ? savedMessage.timestamp.toISOString() : savedMessage.timestamp,
+              timestamp:
+                savedMessage.timestamp instanceof Date
+                  ? savedMessage.timestamp.toISOString()
+                  : savedMessage.timestamp,
               status: savedMessage.status,
               userId: savedMessage.userId,
               user: savedMessage.user,
@@ -270,11 +372,14 @@ export class MessageController {
       });
     } catch (error: any) {
       console.error('Error sending message:', error);
-      return c.json({
-        success: false,
-        message: 'Failed to send message',
-        error: error.message,
-      }, 500);
+      return c.json(
+        {
+          success: false,
+          message: 'Failed to send message',
+          error: error.message,
+        },
+        500
+      );
     }
   }
 
@@ -290,17 +395,23 @@ export class MessageController {
       const message = await messageRepo.findOne({ where: { id: messageId } });
 
       if (!message) {
-        return c.json({
-          success: false,
-          message: 'Message not found',
-        }, 404);
+        return c.json(
+          {
+            success: false,
+            message: 'Message not found',
+          },
+          404
+        );
       }
 
       if (message.direction !== 'incoming') {
-        return c.json({
-          success: false,
-          message: 'Can only mark incoming messages as read',
-        }, 400);
+        return c.json(
+          {
+            success: false,
+            message: 'Can only mark incoming messages as read',
+          },
+          400
+        );
       }
 
       message.readAt = new Date();
@@ -313,11 +424,14 @@ export class MessageController {
       });
     } catch (error: any) {
       console.error('Error marking message as read:', error);
-      return c.json({
-        success: false,
-        message: 'Failed to mark message as read',
-        error: error.message,
-      }, 500);
+      return c.json(
+        {
+          success: false,
+          message: 'Failed to mark message as read',
+          error: error.message,
+        },
+        500
+      );
     }
   }
 }
@@ -326,4 +440,3 @@ export const MessageControllerWithPermissions = withPermissions(
   MessageController,
   MessageController.permissions
 );
-
