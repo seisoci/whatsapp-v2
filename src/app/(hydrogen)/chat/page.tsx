@@ -2512,7 +2512,7 @@ export default function ChatPage() {
                 </div>
 
                 {/* Input Area */}
-                <div className="flex-shrink-0 border-t border-gray-200 p-4">
+                <div className="flex-shrink-0 p-4" style={{ backgroundImage: 'url(/background.png)', backgroundRepeat: 'repeat', backgroundSize: 'auto' }}>
 
                   {/* Attachment Preview */}
                   {pendingAttachment && (
@@ -2706,41 +2706,41 @@ export default function ChatPage() {
                     </Button>
                   </div>
 
-                  {/* Quick Replies & Session Warning */}
-                  <div className="mt-2 flex items-center gap-2">
-                    <div className="relative" ref={quickReplyRef}>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={toggleQuickReplies}
-                        disabled={!selectedContact.isSessionActive}
-                        className="gap-2"
-                      >
-                        <PiLightning className="h-4 w-4" />
-                        Quick Replies
-                      </Button>
+                </div>
+                {/* Quick Replies & Session Warning */}
+                <div className="flex items-center gap-2 bg-white px-4 py-2 dark:bg-gray-900">
+                  <div className="relative" ref={quickReplyRef}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={toggleQuickReplies}
+                      disabled={!selectedContact.isSessionActive}
+                      className="gap-2"
+                    >
+                      <PiLightning className="h-4 w-4" />
+                      Quick Replies
+                    </Button>
 
-                      {showQuickReplies && (
-                        <div className="absolute bottom-full left-0 mb-2 max-h-64 w-64 space-y-1 overflow-y-auto rounded-lg border border-gray-200 bg-white p-2 shadow-lg">
-                          {quickReplies.map((reply) => (
-                            <button
-                              key={reply.id}
-                              onClick={() => handleQuickReply(reply)}
-                              className="w-full rounded px-3 py-2 text-left text-sm hover:bg-gray-100"
-                            >
-                              {reply.text}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    {!selectedContact.isSessionActive && (
-                      <span className="rounded-md border border-yellow-200 bg-yellow-50 px-2 py-1 text-[10px] text-yellow-700">
-                        ⚠️ Sesi berakhir — hanya template
-                      </span>
+                    {showQuickReplies && (
+                      <div className="absolute bottom-full left-0 mb-2 max-h-64 w-64 space-y-1 overflow-y-auto rounded-lg border border-gray-200 bg-white p-2 shadow-lg">
+                        {quickReplies.map((reply) => (
+                          <button
+                            key={reply.id}
+                            onClick={() => handleQuickReply(reply)}
+                            className="w-full rounded px-3 py-2 text-left text-sm hover:bg-gray-100"
+                          >
+                            {reply.text}
+                          </button>
+                        ))}
+                      </div>
                     )}
                   </div>
+
+                  {!selectedContact.isSessionActive && (
+                    <span className="rounded-md border border-yellow-200 bg-yellow-50 px-2 py-1 text-[10px] text-yellow-700">
+                      ⚠️ Sesi berakhir — hanya template
+                    </span>
+                  )}
                 </div>
               </div>
             ) : (
