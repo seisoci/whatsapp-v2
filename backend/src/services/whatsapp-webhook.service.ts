@@ -13,6 +13,7 @@ import { ApiEndpoint } from '../models/ApiEndpoint';
 import { WhatsAppMessagingService } from './whatsapp-messaging.service';
 import { WhatsAppMediaService } from './whatsapp-media.service';
 import { chatWebSocketManager } from './chat-websocket.service';
+import { redisClient } from '../config/redis';
 
 interface WhatsAppWebhookPayload {
   object: string;
@@ -63,6 +64,17 @@ export class WhatsAppWebhookService {
 
     const webhookLogRepo = AppDataSource.getRepository(WebhookLog);
 
+    // Deduplication via Redis SETNX — atomic, zero PostgreSQL locking.
+    // ON CONFLICT was removed: that clause caused PostgreSQL speculative-insertion
+    // spinlocks (100% CPU, unkillable) when called concurrently.
+    // Redis SET NX EX is O(1) and never blocks other queries.
+    const redisKey = `webhook:idem:${idempotencyKey}`;
+    const claimed = await redisClient.set(redisKey, '1', 'NX', 'EX', 86400); // 24h TTL
+    if (!claimed) {
+      console.log(`[Webhook] Duplicate skipped (Redis gate): ${idempotencyKey}`);
+      return;
+    }
+
     const eventType = payload.entry[0]?.changes[0]?.field || 'unknown';
     const webhookPayload = {
       entry_count: payload.entry?.length ?? 0,
@@ -71,9 +83,7 @@ export class WhatsAppWebhookService {
         ?? null,
     };
 
-    // Step 1: INSERT — idempotency gate. No pre-SELECT (that was the slow query
-    // getting stuck in D-state). ON CONFLICT DO NOTHING handles duplicates for
-    // status=processing and status=success.
+    // Plain INSERT — no ON CONFLICT needed (Redis already ensured uniqueness).
     const insertedRows: { id: string }[] = await AppDataSource.query(
       `INSERT INTO webhook_logs
          (id, event_type, webhook_payload, processing_status,
@@ -81,7 +91,6 @@ export class WhatsAppWebhookService {
           received_at, retry_count, created_at)
        VALUES
          (gen_random_uuid(), $1, $2::jsonb, 'processing', $3, $4, $5, NOW(), 0, NOW())
-       ON CONFLICT (idempotency_key) DO NOTHING
        RETURNING id`,
       [
         eventType,
@@ -92,32 +101,7 @@ export class WhatsAppWebhookService {
       ],
     );
 
-    let webhookLogId: string;
-
-    if (insertedRows.length > 0) {
-      // New webhook — proceed normally
-      webhookLogId = insertedRows[0].id;
-    } else {
-      // Conflict: row already exists. Only reprocess if status='failed'
-      // (WhatsApp retry after our processing error). Skip if processing/success.
-      const retried: { id: string }[] = await AppDataSource.query(
-        `UPDATE webhook_logs
-         SET processing_status = 'processing',
-             retry_count       = retry_count + 1
-         WHERE idempotency_key = $1
-           AND processing_status = 'failed'
-         RETURNING id`,
-        [idempotencyKey],
-      );
-
-      if (retried.length === 0) {
-        console.log(`[Webhook] Skipped duplicate (processing/success): ${idempotencyKey}`);
-        return;
-      }
-
-      webhookLogId = retried[0].id;
-      console.log(`[Webhook] Retrying failed webhook: ${idempotencyKey}`);
-    }
+    const webhookLogId = insertedRows[0].id;
 
     try {
       // Process each entry
@@ -159,6 +143,9 @@ export class WhatsAppWebhookService {
         errorMessage: error.message,
         errorStack: error.stack,
       });
+
+      // Delete Redis key so WhatsApp retry can be processed again
+      await redisClient.del(redisKey);
 
       throw error;
     }

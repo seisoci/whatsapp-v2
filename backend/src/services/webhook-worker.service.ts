@@ -1,22 +1,19 @@
 /**
  * BullMQ Worker — Incoming WhatsApp Webhook Processor
  *
- * Concurrency is controlled here (default: 3).
- * Max 3 webhook jobs run simultaneously → max 3 concurrent PostgreSQL operations.
- *
- * Deduplication: the controller enqueues with jobId = idempotencyKey.
- * BullMQ rejects duplicate jobIds that are already waiting/active in Redis,
- * so concurrent identical webhooks never reach the DB simultaneously.
+ * Runs jobs one at a time (no concurrency option = BullMQ default: 1).
+ * This prevents PostgreSQL speculative insertion spinlock: two concurrent
+ * INSERTs with the same idempotency_key spin at 100% CPU indefinitely
+ * because the spinlock bypasses statement_timeout.
+ * Sequential processing eliminates that entirely.
  */
 
 import { Worker, Job } from 'bullmq';
 import { redisConnection } from '../config/queue';
 import { WhatsAppWebhookService } from './whatsapp-webhook.service';
 
-const CONCURRENCY = parseInt(process.env.WEBHOOK_WORKER_CONCURRENCY || '3');
-
 export interface WebhookJobData {
-  payload: any;           // WhatsAppWebhookPayload — plain object, JSON-safe for Redis
+  payload: any;
   ip: string;
   userAgent: string | null;
   idempotencyKey: string;
@@ -34,10 +31,7 @@ export class WebhookWorkerService {
         const { payload, ip, userAgent, idempotencyKey } = job.data;
         await WhatsAppWebhookService.doProcessWebhook(payload, ip, userAgent, idempotencyKey);
       },
-      {
-        connection: redisConnection,
-        concurrency: CONCURRENCY,
-      },
+      { connection: redisConnection },
     );
 
     this.worker.on('completed', (job) => {
@@ -52,7 +46,7 @@ export class WebhookWorkerService {
       console.error('[WebhookWorker] Worker error:', err.message);
     });
 
-    console.log(`[WebhookWorker] Started (concurrency: ${CONCURRENCY})`);
+    console.log('[WebhookWorker] Started (sequential — no concurrency)');
   }
 
   static async stop(): Promise<void> {
