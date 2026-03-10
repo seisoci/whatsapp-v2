@@ -85,19 +85,40 @@ const webhookLimiter = new ConcurrencyLimiter(
   parseInt(process.env.WEBHOOK_MAX_QUEUE || '50'),
 );
 
+/**
+ * In-memory set of idempotency keys currently being processed.
+ *
+ * WHY: PostgreSQL "speculative insertion" — when 2+ concurrent transactions
+ * INSERT the same unique key with ON CONFLICT DO NOTHING, they enter a
+ * spinlock on the index page that lock_timeout cannot interrupt (it only
+ * covers regular row locks). This in-memory gate stops duplicates BEFORE
+ * they touch the database, so the DB only ever sees one INSERT per key.
+ */
+const inFlightKeys = new Set<string>();
+
 export class WhatsAppWebhookService {
   /**
    * Process incoming webhook — enforces concurrency limit to prevent RAM exhaustion.
    */
   static async processWebhook(payload: WhatsAppWebhookPayload, headers: any, ip: string): Promise<void> {
-    await webhookLimiter.run(() => WhatsAppWebhookService.doProcessWebhook(payload, headers, ip));
+    const idempotencyKey = WhatsAppWebhookService.generateIdempotencyKey(payload);
+
+    // Block duplicates before they reach the DB (prevents speculative-insert spinlock)
+    if (inFlightKeys.has(idempotencyKey)) {
+      console.log(`[Webhook] Dropped in-flight duplicate (memory gate): ${idempotencyKey}`);
+      return;
+    }
+    inFlightKeys.add(idempotencyKey);
+
+    try {
+      await webhookLimiter.run(() => WhatsAppWebhookService.doProcessWebhook(payload, headers, ip, idempotencyKey));
+    } finally {
+      inFlightKeys.delete(idempotencyKey);
+    }
   }
 
-  private static async doProcessWebhook(payload: WhatsAppWebhookPayload, headers: any, ip: string): Promise<void> {
+  private static async doProcessWebhook(payload: WhatsAppWebhookPayload, headers: any, ip: string, idempotencyKey: string): Promise<void> {
     const startTime = Date.now();
-
-    // Generate idempotency key from payload
-    const idempotencyKey = this.generateIdempotencyKey(payload);
 
     const webhookLogRepo = AppDataSource.getRepository(WebhookLog);
 
