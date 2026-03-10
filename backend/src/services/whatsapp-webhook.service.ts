@@ -14,6 +14,7 @@ import { WhatsAppMessagingService } from './whatsapp-messaging.service';
 import { WhatsAppMediaService } from './whatsapp-media.service';
 import { chatWebSocketManager } from './chat-websocket.service';
 import { redisClient } from '../config/redis';
+import { storageService } from './storage.service';
 
 interface WhatsAppWebhookPayload {
   object: string;
@@ -356,6 +357,18 @@ export class WhatsAppWebhookService {
       ? Math.max(0, Math.floor((new Date(sessionExpiresAt).getTime() - now.getTime()) / 1000))
       : 0;
 
+    // Generate presigned URL for media so the frontend can display it immediately.
+    // message.mediaUrl stores a raw S3 object key (private bucket); without presigning,
+    // the browser cannot load the image until the user refreshes and the HTTP API presigns it.
+    let mediaPresignedUrl = message.mediaUrl;
+    if (message.mediaUrl) {
+      try {
+        mediaPresignedUrl = await storageService.getFileUrl(message.mediaUrl, 7 * 24 * 60 * 60);
+      } catch (err) {
+        console.warn('[WebSocket] Failed to presign media URL for broadcast:', err);
+      }
+    }
+
     chatWebSocketManager.broadcast(internalPhoneNumberId, {
       type: 'message:new',
       data: {
@@ -386,7 +399,7 @@ export class WhatsAppWebhookService {
           wamid: message.wamid,
           messageType: message.messageType,
           textBody: message.textBody,
-          mediaUrl: message.mediaUrl,
+          mediaUrl: mediaPresignedUrl,
           mediaCaption: message.mediaCaption,
           mediaFilename: message.mediaFilename,
           direction: message.direction,

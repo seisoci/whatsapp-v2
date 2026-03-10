@@ -1424,7 +1424,8 @@ export default function ChatPage() {
   // ESC key handler to exit chat room (like WhatsApp)
   useEffect(() => {
     const handleEscKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && selectedContact) {
+      // Don't close the chat if the lightbox is handling ESC itself
+      if (event.key === 'Escape' && selectedContact && !lightboxOpen) {
         handleBackToList();
       }
     };
@@ -1435,7 +1436,7 @@ export default function ChatPage() {
       document.removeEventListener('keydown', handleEscKey);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedContact]);
+  }, [selectedContact, lightboxOpen]);
 
   // Server-side filtering is now used, sort with pinned contacts first
   const filteredContacts = [...contacts].sort((a, b) => {
