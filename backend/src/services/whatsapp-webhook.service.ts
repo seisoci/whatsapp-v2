@@ -295,12 +295,6 @@ export class WhatsAppWebhookService {
     const messageTimestamp = new Date(parseInt(messageData.timestamp) * 1000);
     await WhatsAppMessagingService.updateCustomerSession(contact.id, messageTimestamp);
 
-    // Refresh contact to get updated session fields for WebSocket broadcast
-    const updatedContact = await contactRepo.findOne({ where: { id: contact.id } });
-    if (updatedContact) {
-      contact = updatedContact;
-    }
-
     // Store message
     const message = messageRepo.create({
       wamid: messageData.id,
@@ -335,11 +329,7 @@ export class WhatsAppWebhookService {
         // Auto-download media and upload to S3
         if (mediaData?.id) {
           try {
-            const phoneNumberRepo = AppDataSource.getRepository(PhoneNumber);
-            const phoneNumber = await phoneNumberRepo.findOne({
-              where: { phoneNumberId: metadata.phone_number_id },
-            });
-
+            // Reuse phoneNumber already fetched above — no duplicate query
             if (phoneNumber) {
               const mediaResult = await WhatsAppMediaService.downloadAndStoreMedia({
                 mediaId: mediaData.id,
@@ -398,38 +388,17 @@ export class WhatsAppWebhookService {
 
     await messageRepo.save(message);
 
-    // Update webhook log with message reference (use save instead of update for reliability)
-    console.log('[DEBUG] Final webhook log update:', {
-      webhookLogId,
-      phoneNumberId: internalPhoneNumberId,
-      messageId: message.id,
-      contactId: contact.id,
-      wamid: message.wamid,
-      waId: contact.waId,
-    });
-
-    // Load the webhook log entity and update it properly
-    const webhookLog = await webhookLogRepo.findOne({ where: { id: webhookLogId } });
-    if (webhookLog) {
-      webhookLog.phoneNumberId = internalPhoneNumberId;
-      webhookLog.messageId = message.id;
-      webhookLog.contactId = contact.id;
-      webhookLog.wamid = message.wamid;
-      webhookLog.waId = contact.waId;
-
-      await webhookLogRepo.save(webhookLog);
-
-      console.log('[DEBUG] Webhook log saved successfully:', {
-        id: webhookLog.id,
-        phoneNumberId: webhookLog.phoneNumberId,
-        messageId: webhookLog.messageId,
-        contactId: webhookLog.contactId,
-        wamid: webhookLog.wamid,
-        waId: webhookLog.waId,
-      });
-    } else {
-      console.error('[ERROR] Webhook log not found for update:', webhookLogId);
-    }
+    // Update webhook log with message reference — raw UPDATE by PK, no SELECT needed
+    await AppDataSource.query(
+      `UPDATE webhook_logs
+       SET phone_number_id = $1,
+           message_id      = $2,
+           contact_id      = $3,
+           wamid           = $4,
+           wa_id           = $5
+       WHERE id = $6`,
+      [internalPhoneNumberId, message.id, contact.id, message.wamid, contact.waId, webhookLogId],
+    );
 
     // 📢 WEBSOCKET: Broadcast new message to all clients subscribed to this phone number
     // Calculate session remaining seconds for frontend
