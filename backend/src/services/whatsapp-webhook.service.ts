@@ -213,7 +213,6 @@ export class WhatsAppWebhookService {
   ): Promise<void> {
     const contactRepo = AppDataSource.getRepository(Contact);
     const messageRepo = AppDataSource.getRepository(Message);
-    const webhookLogRepo = AppDataSource.getRepository(WebhookLog);
     const phoneNumberRepo = AppDataSource.getRepository(PhoneNumber);
 
     // Get WhatsApp phone_number_id from metadata
@@ -584,16 +583,19 @@ export class WhatsAppWebhookService {
               status: statusData.status
             };
 
-            // Fire and forget fetch
+            // Fire-and-forget — 5s timeout prevents hanging promises if user endpoint is down
+            const fwdController = new AbortController();
+            setTimeout(() => fwdController.abort(), 5_000);
             fetch(endpoint.webhookUrl, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(endpointPayload)
+              body: JSON.stringify(endpointPayload),
+              signal: fwdController.signal,
             })
               .then(res => {
                 if (!res.ok) console.warn(`[Webhook Forwarding] ${endpoint.webhookUrl} returned ${res.status}`);
               })
-              .catch(err => console.error(`[Webhook Forwarding] Failed to send to ${endpoint.webhookUrl}:`, err));
+              .catch(err => console.error(`[Webhook Forwarding] Failed to send to ${endpoint.webhookUrl}:`, err.name === 'AbortError' ? 'timeout (5s)' : err));
           }
         }
       } catch (error) {
@@ -610,7 +612,7 @@ export class WhatsAppWebhookService {
 
     if (contact?.phoneNumberId) {
       const wsPayload = {
-        type: 'message:status',
+        type: 'message:status' as const,
         data: {
           contactId: message.contactId,
           messageId: message.id,

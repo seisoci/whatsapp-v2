@@ -174,17 +174,24 @@ export class ChatWebSocketManager {
 
     let sentCount = 0;
 
-    this.clients.forEach((client) => {
-      // Send to clients subscribed to this phone number
+    const deadClients: string[] = [];
+
+    this.clients.forEach((client, clientId) => {
       if (client.rooms.has(phoneNumberId)) {
         try {
           client.ws.send(message);
           sentCount++;
         } catch (error: any) {
-          console.error(`❌ Failed to send to client:`, error);
+          console.error(`❌ Failed to send to client ${clientId}, removing:`, error);
+          deadClients.push(clientId);
         }
       }
     });
+
+    // Remove dead clients to prevent memory leak and future failed sends
+    for (const id of deadClients) {
+      this.clients.delete(id);
+    }
 
     if (sentCount > 0) {
       console.log(`📢 Broadcast ${event.type} to ${sentCount} client(s) in room ${phoneNumberId}`);

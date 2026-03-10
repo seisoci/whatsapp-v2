@@ -7,6 +7,13 @@ import { env } from '../config/env';
 
 const WHATSAPP_API_BASE_URL = `https://graph.facebook.com/${env.WHATSAPP_API_VERSION}`;
 
+/** Fetch with automatic 15s timeout — prevents hanging on slow WhatsApp API */
+function fetchWA(url: string, options: RequestInit = {}): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 15_000);
+  return fetch(url, { ...options, signal: controller.signal }).finally(() => clearTimeout(timer));
+}
+
 interface WhatsAppPhoneNumberInfo {
   id: string;
   display_phone_number: string;
@@ -32,7 +39,7 @@ export class WhatsAppService {
     accessToken: string
   ): Promise<WhatsAppPhoneNumberInfo> {
     try {
-      const response = await fetch(
+      const response = await fetchWA(
         `${WHATSAPP_API_BASE_URL}/${phoneNumberId}?fields=id,display_phone_number,verified_name,quality_rating,messaging_limit_tier,is_official_business_account`,
         {
           method: 'GET',
@@ -62,7 +69,7 @@ export class WhatsAppService {
     accessToken: string
   ): Promise<WhatsAppBusinessAccount> {
     try {
-      const response = await fetch(
+      const response = await fetchWA(
         `${WHATSAPP_API_BASE_URL}/${wabaId}?fields=id,name,timezone_id,message_template_namespace`,
         {
           method: 'GET',
@@ -108,7 +115,7 @@ export class WhatsAppService {
     pin: string
   ): Promise<any> {
     try {
-      const response = await fetch(
+      const response = await fetchWA(
         `${WHATSAPP_API_BASE_URL}/${phoneNumberId}/register`,
         {
           method: 'POST',
@@ -145,7 +152,7 @@ export class WhatsAppService {
     message: string
   ): Promise<any> {
     try {
-      const response = await fetch(
+      const response = await fetchWA(
         `${WHATSAPP_API_BASE_URL}/${phoneNumberId}/messages`,
         {
           method: 'POST',
@@ -184,7 +191,7 @@ export class WhatsAppService {
     accessToken: string
   ): Promise<any> {
     try {
-      const response = await fetch(
+      const response = await fetchWA(
         `${WHATSAPP_API_BASE_URL}/${phoneNumberId}?fields=messaging_limit_tier`,
         {
           method: 'GET',
@@ -217,7 +224,7 @@ export class WhatsAppService {
     language: string = 'en_US'
   ): Promise<any> {
     try {
-      const response = await fetch(
+      const response = await fetchWA(
         `${WHATSAPP_API_BASE_URL}/${phoneNumberId}/request_code`,
         {
           method: 'POST',
@@ -253,7 +260,7 @@ export class WhatsAppService {
     code: string
   ): Promise<any> {
     try {
-      const response = await fetch(
+      const response = await fetchWA(
         `${WHATSAPP_API_BASE_URL}/${phoneNumberId}/verify_code`,
         {
           method: 'POST',
@@ -289,7 +296,7 @@ export class WhatsAppService {
     pin: string
   ): Promise<any> {
     try {
-      const response = await fetch(
+      const response = await fetchWA(
         `${WHATSAPP_API_BASE_URL}/${phoneNumberId}`,
         {
           method: 'POST',
@@ -325,7 +332,7 @@ export class WhatsAppService {
   ): Promise<any> {
     try {
       const fields = 'about,address,description,email,profile_picture_url,websites,vertical,messaging_product';
-      const response = await fetch(
+      const response = await fetchWA(
         `${WHATSAPP_API_BASE_URL}/${phoneNumberId}/whatsapp_business_profile?fields=${fields}`,
         {
           method: 'GET',
@@ -365,7 +372,7 @@ export class WhatsAppService {
     }
   ): Promise<any> {
     try {
-      const response = await fetch(
+      const response = await fetchWA(
         `${WHATSAPP_API_BASE_URL}/${phoneNumberId}/whatsapp_business_profile`,
         {
           method: 'POST',
@@ -412,7 +419,7 @@ export class WhatsAppService {
         const blob = new Blob([fileBuffer], { type: mimeType });
         form.append('file', blob, fileName);
 
-        const response = await fetch(
+        const response = await fetchWA(
           `${WHATSAPP_API_BASE_URL}/${phoneNumberId}/media`,
           {
             method: 'POST',
@@ -441,7 +448,7 @@ export class WhatsAppService {
         contentType: mimeType,
       });
 
-      const response = await fetch(
+      const response = await fetchWA(
         `${WHATSAPP_API_BASE_URL}/${phoneNumberId}/media`,
         {
           method: 'POST',
@@ -480,7 +487,7 @@ export class WhatsAppService {
       // Using 'app' node allows Facebook to infer App ID from Access Token
       const startSessionUrl = `${WHATSAPP_API_BASE_URL}/app/uploads?file_length=${fileBuffer.length}&file_type=${mimeType}`;
       
-      const sessionResponse = await fetch(startSessionUrl, {
+      const sessionResponse = await fetchWA(startSessionUrl, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -502,7 +509,7 @@ export class WhatsAppService {
       // Step 2: Upload File Content
       const uploadUrl = `${WHATSAPP_API_BASE_URL}/${uploadSessionId}`;
       
-      const uploadResponse = await fetch(uploadUrl, {
+      const uploadResponse = await fetchWA(uploadUrl, {
         method: 'POST',
         headers: {
           Authorization: `OAuth ${accessToken}`, // OAuth prefix required for this endpoint
@@ -538,7 +545,7 @@ export class WhatsAppService {
     accessToken: string
   ): Promise<any> {
     try {
-      const response = await fetch(
+      const response = await fetchWA(
         `${WHATSAPP_API_BASE_URL}/${phoneNumberId}/whatsapp_business_profile`,
         {
           method: 'DELETE',
@@ -583,7 +590,7 @@ export class WhatsAppService {
         }
       }
 
-      const response = await fetch(url, {
+      const response = await fetchWA(url, {
         method: 'GET',
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -610,7 +617,7 @@ export class WhatsAppService {
     accessToken: string
   ): Promise<any> {
     try {
-      const response = await fetch(
+      const response = await fetchWA(
         `${WHATSAPP_API_BASE_URL}/${templateId}?fields=id,name,language,status,category,components`,
         {
           method: 'GET',
@@ -646,7 +653,7 @@ export class WhatsAppService {
     }
   ): Promise<any> {
     try {
-      const response = await fetch(
+      const response = await fetchWA(
         `${WHATSAPP_API_BASE_URL}/${wabaId}/message_templates`,
         {
           method: 'POST',
@@ -681,7 +688,7 @@ export class WhatsAppService {
   ): Promise<any> {
     try {
       console.log('DEBUG UPDATE TEMPLATE PAYLOAD:', JSON.stringify(templateData, null, 2));
-      const response = await fetch(
+      const response = await fetchWA(
         `${WHATSAPP_API_BASE_URL}/${templateId}`,
         {
           method: 'POST',
@@ -715,7 +722,7 @@ export class WhatsAppService {
     accessToken: string
   ): Promise<any> {
     try {
-      const response = await fetch(
+      const response = await fetchWA(
         `${WHATSAPP_API_BASE_URL}/${wabaId}/message_templates?name=${templateName}`,
         {
           method: 'DELETE',
