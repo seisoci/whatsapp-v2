@@ -94,12 +94,15 @@ export class WhatsAppWebhookController {
         },
       );
 
-      // Respond immediately so WhatsApp does not retry on timeout
+      // Job queued — respond 200 immediately so WhatsApp stops retrying
       return c.json({ success: true }, 200);
     } catch (error: any) {
       console.error('❌ Webhook receive error:', error);
-      // Still return 200 to prevent WhatsApp from retrying
-      return c.json({ success: true }, 200);
+
+      // If Redis is down, whatsappWebhookQueue.add() throws here.
+      // Return 500 so WhatsApp RETRIES — better than silently losing the webhook.
+      // For any other unexpected error, also retry.
+      return c.json({ success: false }, 500);
     }
   }
 }
