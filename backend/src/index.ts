@@ -27,6 +27,7 @@ import { handleWebSocketUpgrade } from './routes/websocket.routes';
 import { chatWebSocketManager } from './services/chat-websocket.service';
 import { QueueDispatcherService } from './services/queue-dispatcher.service';
 import { QueueWorkerService } from './services/queue-worker.service';
+import { WebhookWorkerService } from './services/webhook-worker.service';
 import {
   securityHeaders,
   corsMiddleware,
@@ -128,9 +129,10 @@ const startServer = async () => {
         )
       );
 
-    // Start BullMQ queue dispatcher & worker
+    // Start BullMQ queue dispatcher & workers
     QueueDispatcherService.start();
     QueueWorkerService.start();
+    WebhookWorkerService.start();
 
     // Start server with WebSocket support
     const port = parseInt(env.PORT);
@@ -213,6 +215,7 @@ const gracefulShutdown = async (signal: string) => {
   console.log(`\n${signal} received. Shutting down gracefully...`);
   QueueDispatcherService.stop();
   await QueueWorkerService.stop();
+  await WebhookWorkerService.stop();
   process.exit(0);
 };
 

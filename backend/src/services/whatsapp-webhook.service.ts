@@ -34,90 +34,31 @@ interface WhatsAppWebhookPayload {
   }>;
 }
 
-/**
- * Limits concurrent webhook processings to prevent RAM exhaustion from
- * unbounded parallel media downloads + DB operations. WhatsApp retries
- * any webhook that we drop, so dropping is safe.
- */
-class ConcurrencyLimiter {
-  private active = 0;
-  private readonly waiters: Array<() => void> = [];
-
-  constructor(
-    private readonly limit: number,
-    private readonly maxQueue: number,
-  ) { }
-
-  async run<T>(task: () => Promise<T>): Promise<T | null> {
-    if (this.waiters.length >= this.maxQueue) {
-      console.warn(`[WebhookQueue] Queue full (active=${this.active}, queued=${this.waiters.length}), dropping webhook — WhatsApp will retry`);
-      return null;
-    }
-    await this.acquire();
-    console.log(`[WebhookQueue] Start (active=${this.active}, queued=${this.waiters.length})`);
-    try {
-      return await task();
-    } finally {
-      this.release();
-      console.log(`[WebhookQueue] Done  (active=${this.active}, queued=${this.waiters.length})`);
-    }
-  }
-
-  private acquire(): Promise<void> {
-    if (this.active < this.limit) {
-      this.active++;
-      return Promise.resolve();
-    }
-    return new Promise(resolve => this.waiters.push(resolve));
-  }
-
-  private release(): void {
-    if (this.waiters.length > 0) {
-      this.waiters.shift()!(); // pass slot directly to next waiter (active stays the same)
-    } else {
-      this.active--;
-    }
-  }
-}
-
-const webhookLimiter = new ConcurrencyLimiter(
-  parseInt(process.env.WEBHOOK_MAX_CONCURRENT || '5'),
-  parseInt(process.env.WEBHOOK_MAX_QUEUE || '50'),
-);
-
-/**
- * In-memory set of idempotency keys currently being processed.
- *
- * WHY: PostgreSQL "speculative insertion" — when 2+ concurrent transactions
- * INSERT the same unique key with ON CONFLICT DO NOTHING, they enter a
- * spinlock on the index page that lock_timeout cannot interrupt (it only
- * covers regular row locks). This in-memory gate stops duplicates BEFORE
- * they touch the database, so the DB only ever sees one INSERT per key.
- */
-const inFlightKeys = new Set<string>();
-
 export class WhatsAppWebhookService {
   /**
-   * Process incoming webhook — enforces concurrency limit to prevent RAM exhaustion.
+   * Generate idempotency key from payload — called by controller before enqueuing.
    */
-  static async processWebhook(payload: WhatsAppWebhookPayload, headers: any, ip: string): Promise<void> {
-    const idempotencyKey = WhatsAppWebhookService.generateIdempotencyKey(payload);
+  static generateIdempotencyKey(payload: WhatsAppWebhookPayload): string {
+    const entry = payload.entry[0];
+    const change = entry?.changes[0];
+    const value = change?.value;
 
-    // Block duplicates before they reach the DB (prevents speculative-insert spinlock)
-    if (inFlightKeys.has(idempotencyKey)) {
-      console.log(`[Webhook] Dropped in-flight duplicate (memory gate): ${idempotencyKey}`);
-      return;
-    }
-    inFlightKeys.add(idempotencyKey);
+    let key = `${entry?.id}_${change?.field}`;
 
-    try {
-      await webhookLimiter.run(() => WhatsAppWebhookService.doProcessWebhook(payload, headers, ip, idempotencyKey));
-    } finally {
-      inFlightKeys.delete(idempotencyKey);
+    if (value?.messages && value.messages.length > 0) {
+      key += `_${value.messages[0].id}`;
+    } else if (value?.statuses && value.statuses.length > 0) {
+      key += `_${value.statuses[0].id}_${value.statuses[0].status}`;
     }
+
+    return key;
   }
 
-  private static async doProcessWebhook(payload: WhatsAppWebhookPayload, headers: any, ip: string, idempotencyKey: string): Promise<void> {
+  /**
+   * Process one webhook job — called by BullMQ worker (concurrency controlled there).
+   * userAgent replaces full headers to keep Redis payload small.
+   */
+  static async doProcessWebhook(payload: WhatsAppWebhookPayload, ip: string, userAgent: string | null, idempotencyKey: string): Promise<void> {
     const startTime = Date.now();
 
     const webhookLogRepo = AppDataSource.getRepository(WebhookLog);
@@ -146,7 +87,7 @@ export class WhatsAppWebhookService {
         eventType,
         JSON.stringify(webhookPayload),
         ip ?? null,
-        headers['user-agent'] ?? null,
+        userAgent ?? null,
         idempotencyKey,
       ],
     );
@@ -648,26 +589,6 @@ export class WhatsAppWebhookService {
     } else {
       console.warn(`⚠️ Cannot broadcast status update - contact not found or missing phoneNumberId for contactId: ${message.contactId}`);
     }
-  }
-
-  /**
-   * Generate idempotency key from payload
-   */
-  private static generateIdempotencyKey(payload: WhatsAppWebhookPayload): string {
-    // Use first message/status ID + timestamp as idempotency key
-    const entry = payload.entry[0];
-    const change = entry?.changes[0];
-    const value = change?.value;
-
-    let key = `${entry?.id}_${change?.field}`;
-
-    if (value?.messages && value.messages.length > 0) {
-      key += `_${value.messages[0].id}`;
-    } else if (value?.statuses && value.statuses.length > 0) {
-      key += `_${value.statuses[0].id}_${value.statuses[0].status}`;
-    }
-
-    return key;
   }
 
   /**

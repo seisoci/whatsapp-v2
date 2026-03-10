@@ -23,3 +23,18 @@ const queueOptions: QueueOptions = {
  * Jobs contain { queueId: string } referencing message_queues.id
  */
 export const whatsappTemplateQueue = new Queue('whatsapp-template', queueOptions);
+
+/**
+ * BullMQ queue for incoming WhatsApp webhooks.
+ * jobId = idempotencyKey → BullMQ deduplicates automatically.
+ * Worker runs with concurrency:3 so max 3 concurrent DB operations.
+ */
+export const whatsappWebhookQueue = new Queue('whatsapp-webhook', {
+  connection: redisConnection,
+  defaultJobOptions: {
+    attempts: 3,
+    backoff: { type: 'exponential', delay: 3000 },
+    removeOnComplete: 500,
+    removeOnFail: 200,
+  },
+});

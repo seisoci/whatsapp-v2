@@ -6,6 +6,7 @@
 import { Context } from 'hono';
 import { WhatsAppWebhookService } from '../services/whatsapp-webhook.service';
 import { validateWebhookPayload } from '../validators/webhook.validator';
+import { whatsappWebhookQueue } from '../config/queue';
 
 export class WhatsAppWebhookController {
   /**
@@ -59,8 +60,8 @@ export class WhatsAppWebhookController {
         }, 400);
       }
 
-      const headers = c.req.header();
       const ip = c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || 'unknown';
+      const userAgent = c.req.header('user-agent') || null;
 
       // Optional: Verify webhook signature for security
       // const signature = c.req.header('x-hub-signature-256');
@@ -77,12 +78,23 @@ export class WhatsAppWebhookController {
       //   }
       // }
 
-      // Process webhook asynchronously (don't block response)
-      WhatsAppWebhookService.processWebhook(validation.data!, headers, ip).catch((error: any) => {
-        console.error('❌ Failed to process webhook:', error);
-      });
+      const idempotencyKey = WhatsAppWebhookService.generateIdempotencyKey(validation.data!);
 
-      // Respond immediately to acknowledge receipt
+      // Enqueue to BullMQ — returns 200 immediately.
+      // jobId = idempotencyKey: BullMQ automatically drops duplicate jobs
+      // with the same ID that are already queued/active → no concurrent DB contention.
+      await whatsappWebhookQueue.add(
+        'process',
+        { payload: validation.data!, ip, userAgent, idempotencyKey },
+        {
+          jobId: idempotencyKey,
+          // Don't retry for on-purpose skips (duplicate/success) — only real errors retry
+          attempts: 3,
+          backoff: { type: 'exponential', delay: 3000 },
+        },
+      );
+
+      // Respond immediately so WhatsApp does not retry on timeout
       return c.json({ success: true }, 200);
     } catch (error: any) {
       console.error('❌ Webhook receive error:', error);
