@@ -99,73 +99,63 @@ export class WhatsAppWebhookService {
     // Generate idempotency key from payload
     const idempotencyKey = this.generateIdempotencyKey(payload);
 
-    // Check if webhook already processed
     const webhookLogRepo = AppDataSource.getRepository(WebhookLog);
-    const existingLog = await webhookLogRepo.findOne({ where: { idempotencyKey } });
 
-    if (existingLog) {
-      if (existingLog.processingStatus === 'success') {
-        console.log(`Webhook already processed: ${idempotencyKey}`);
-        return;
-      }
-      // Bug fix: also skip if still processing to prevent duplicate INSERT lock wait
-      if (existingLog.processingStatus === 'processing') {
-        console.log(`Webhook already being processed: ${idempotencyKey}`);
-        return;
-      }
-      // If 'failed', allow retry - fall through to reprocess
-    }
-
-    // Create webhook log — use INSERT ... ON CONFLICT DO NOTHING to prevent
-    // race condition lock waits when concurrent requests pass the findOne check
-    const webhookLogData = {
-      eventType: payload.entry[0]?.changes[0]?.field || 'unknown',
-      // Store minimal summary — full payload is only ~700 bytes but storing it
-      // as JSONB adds unnecessary write amplification across 9 B-tree indexes.
-      webhookPayload: {
-        entry_count: payload.entry?.length ?? 0,
-        wamid: payload.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.id
-          ?? payload.entry?.[0]?.changes?.[0]?.value?.statuses?.[0]?.id
-          ?? null,
-      },
-      processingStatus: 'processing',
-      // requestHeaders omitted — requestIp + requestUserAgent already store
-      // the essentials; full headers add ~2-5KB per row unnecessarily.
-      requestIp: ip,
-      requestUserAgent: headers['user-agent'],
-      idempotencyKey,
-      receivedAt: new Date(),
+    const eventType = payload.entry[0]?.changes[0]?.field || 'unknown';
+    const webhookPayload = {
+      entry_count: payload.entry?.length ?? 0,
+      wamid: payload.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.id
+        ?? payload.entry?.[0]?.changes?.[0]?.value?.statuses?.[0]?.id
+        ?? null,
     };
 
-    // Raw SQL INSERT with explicit conflict target — PostgreSQL only locks
-    // the idempotency_key index, not all 9 table indexes (prevents CPU spin).
+    // Step 1: INSERT — idempotency gate. No pre-SELECT (that was the slow query
+    // getting stuck in D-state). ON CONFLICT DO NOTHING handles duplicates for
+    // status=processing and status=success.
     const insertedRows: { id: string }[] = await AppDataSource.query(
       `INSERT INTO webhook_logs
          (id, event_type, webhook_payload, processing_status,
           request_ip, request_user_agent, idempotency_key,
           received_at, retry_count, created_at)
        VALUES
-         (gen_random_uuid(), $1, $2::jsonb, $3, $4, $5, $6, $7, 0, NOW())
+         (gen_random_uuid(), $1, $2::jsonb, 'processing', $3, $4, $5, NOW(), 0, NOW())
        ON CONFLICT (idempotency_key) DO NOTHING
        RETURNING id`,
       [
-        webhookLogData.eventType,
-        JSON.stringify(webhookLogData.webhookPayload),
-        webhookLogData.processingStatus,
-        webhookLogData.requestIp ?? null,
-        webhookLogData.requestUserAgent ?? null,
-        webhookLogData.idempotencyKey,
-        webhookLogData.receivedAt,
+        eventType,
+        JSON.stringify(webhookPayload),
+        ip ?? null,
+        headers['user-agent'] ?? null,
+        idempotencyKey,
       ],
     );
 
-    // If no row inserted, a concurrent request beat us — skip (WhatsApp will not retry)
-    if (insertedRows.length === 0) {
-      console.log(`Webhook insert skipped due to concurrent processing: ${idempotencyKey}`);
-      return;
-    }
+    let webhookLogId: string;
 
-    const webhookLogId = insertedRows[0].id;
+    if (insertedRows.length > 0) {
+      // New webhook — proceed normally
+      webhookLogId = insertedRows[0].id;
+    } else {
+      // Conflict: row already exists. Only reprocess if status='failed'
+      // (WhatsApp retry after our processing error). Skip if processing/success.
+      const retried: { id: string }[] = await AppDataSource.query(
+        `UPDATE webhook_logs
+         SET processing_status = 'processing',
+             retry_count       = retry_count + 1
+         WHERE idempotency_key = $1
+           AND processing_status = 'failed'
+         RETURNING id`,
+        [idempotencyKey],
+      );
+
+      if (retried.length === 0) {
+        console.log(`[Webhook] Skipped duplicate (processing/success): ${idempotencyKey}`);
+        return;
+      }
+
+      webhookLogId = retried[0].id;
+      console.log(`[Webhook] Retrying failed webhook: ${idempotencyKey}`);
+    }
 
     try {
       // Process each entry
