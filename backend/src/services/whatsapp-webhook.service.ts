@@ -6,7 +6,6 @@
 import { AppDataSource } from '../config/database';
 import { Contact } from '../models/Contact';
 import { Message } from '../models/Message';
-import { WebhookLog } from '../models/WebhookLog';
 import { MessageStatusUpdate } from '../models/MessageStatusUpdate';
 import { PhoneNumber } from '../models/PhoneNumber';
 import { ApiEndpoint } from '../models/ApiEndpoint';
@@ -63,14 +62,12 @@ export class WhatsAppWebhookService {
   static async doProcessWebhook(payload: WhatsAppWebhookPayload, ip: string, userAgent: string | null, idempotencyKey: string): Promise<void> {
     const startTime = Date.now();
 
-    const webhookLogRepo = AppDataSource.getRepository(WebhookLog);
-
     // Deduplication via Redis SETNX — atomic, zero PostgreSQL locking.
     // ON CONFLICT was removed: that clause caused PostgreSQL speculative-insertion
     // spinlocks (100% CPU, unkillable) when called concurrently.
     // Redis SET NX EX is O(1) and never blocks other queries.
     const redisKey = `webhook:idem:${idempotencyKey}`;
-    const claimed = await redisClient.set(redisKey, '1', 'NX', 'EX', 86400); // 24h TTL
+    const claimed = await redisClient.set(redisKey, '1', 'EX', 86400, 'NX'); // 24h TTL
     if (!claimed) {
       console.log(`[Webhook] Duplicate skipped (Redis gate): ${idempotencyKey}`);
       return;
@@ -129,21 +126,27 @@ export class WhatsAppWebhookService {
         }
       }
 
-      // Mark as success
-      await webhookLogRepo.update(webhookLogId, {
-        processingStatus: 'success',
-        processedAt: new Date(),
-        processingDurationMs: Date.now() - startTime,
-      });
+      // Mark as success — raw UPDATE, no ORM overhead
+      await AppDataSource.query(
+        `UPDATE webhook_logs
+         SET processing_status      = 'success',
+             processed_at           = NOW(),
+             processing_duration_ms = $1
+         WHERE id = $2`,
+        [Date.now() - startTime, webhookLogId],
+      );
 
     } catch (error: any) {
-      await webhookLogRepo.update(webhookLogId, {
-        processingStatus: 'failed',
-        processedAt: new Date(),
-        processingDurationMs: Date.now() - startTime,
-        errorMessage: error.message,
-        errorStack: error.stack,
-      });
+      await AppDataSource.query(
+        `UPDATE webhook_logs
+         SET processing_status      = 'failed',
+             processed_at           = NOW(),
+             processing_duration_ms = $1,
+             error_message          = $2,
+             error_stack            = $3
+         WHERE id = $4`,
+        [Date.now() - startTime, error.message, error.stack, webhookLogId],
+      );
 
       // Delete Redis key so WhatsApp retry can be processed again
       await redisClient.del(redisKey);
@@ -402,8 +405,9 @@ export class WhatsAppWebhookService {
           mediaUrl: mediaPresignedUrl,
           mediaCaption: message.mediaCaption,
           mediaFilename: message.mediaFilename,
+          contactsPayload: message.contactsPayload || null,
           direction: message.direction,
-          timestamp: message.timestamp.toISOString(), // Convert to ISO string
+          timestamp: message.timestamp.toISOString(),
           status: message.status,
         },
       },
@@ -419,7 +423,6 @@ export class WhatsAppWebhookService {
   ): Promise<void> {
     const messageRepo = AppDataSource.getRepository(Message);
     const statusUpdateRepo = AppDataSource.getRepository(MessageStatusUpdate);
-    const webhookLogRepo = AppDataSource.getRepository(WebhookLog);
     const phoneNumberRepo = AppDataSource.getRepository(PhoneNumber);
 
     // Get WhatsApp phone_number_id from metadata (if available in status)
@@ -500,27 +503,26 @@ export class WhatsAppWebhookService {
 
     console.log(`Status updated for message ${message.wamid}: ${statusData.status}`);
 
-    // Update webhook log with status information (use save instead of update for reliability)
-    const webhookLog = await webhookLogRepo.findOne({ where: { id: webhookLogId } });
-    if (webhookLog) {
-      webhookLog.phoneNumberId = internalPhoneNumberId || message.phoneNumberId;
-      webhookLog.messageId = message.id;
-      webhookLog.contactId = message.contactId;
-      webhookLog.wamid = statusData.id;
-      webhookLog.statusEventType = statusData.status;
-      webhookLog.statusTimestamp = statusTimestamp;
-
-      await webhookLogRepo.save(webhookLog);
-
-      console.log('[DEBUG] Webhook log updated for status:', {
-        id: webhookLog.id,
-        messageId: webhookLog.messageId,
-        contactId: webhookLog.contactId,
-        wamid: webhookLog.wamid,
-        statusEventType: webhookLog.statusEventType,
-        statusTimestamp: webhookLog.statusTimestamp,
-      });
-    }
+    // Raw UPDATE — no SELECT before write, no ORM overhead, no lock contention
+    await AppDataSource.query(
+      `UPDATE webhook_logs
+       SET phone_number_id    = $1,
+           message_id         = $2,
+           contact_id         = $3,
+           wamid              = $4,
+           status_event_type  = $5,
+           status_timestamp   = $6
+       WHERE id = $7`,
+      [
+        internalPhoneNumberId || message.phoneNumberId,
+        message.id,
+        message.contactId,
+        statusData.id,
+        statusData.status,
+        statusTimestamp,
+        webhookLogId,
+      ],
+    );
 
     // 📢 WEBHOOK FORWARDING: If message sent via API (has userId), forward status to user's webhook
     if (message.userId) {
