@@ -31,7 +31,12 @@ export class WebhookWorkerService {
         const { payload, ip, userAgent, idempotencyKey } = job.data;
         await WhatsAppWebhookService.doProcessWebhook(payload, ip, userAgent, idempotencyKey);
       },
-      { connection: redisConnection },
+      {
+        connection: redisConnection,
+        // Lock must be renewed before this expires — each job must finish < 60s.
+        // Default is 30s which is too short if DB/HTTP calls are slow.
+        lockDuration: 60000,
+      },
     );
 
     this.worker.on('completed', (job) => {
@@ -44,6 +49,12 @@ export class WebhookWorkerService {
 
     this.worker.on('error', (err) => {
       console.error('[WebhookWorker] Worker error:', err.message);
+      // Auto-restart worker on error (e.g. Redis connection drop)
+      this.worker = null;
+      setTimeout(() => {
+        console.log('[WebhookWorker] Restarting after error...');
+        this.start();
+      }, 5000);
     });
 
     console.log('[WebhookWorker] Started (sequential — no concurrency)');
