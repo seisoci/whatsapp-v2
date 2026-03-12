@@ -80,6 +80,16 @@ export class WhatsAppWebhookController {
 
       const idempotencyKey = WhatsAppWebhookService.generateIdempotencyKey(validation.data!);
 
+      // Status-only webhooks (delivered/read/sent/failed) are lightweight DB updates.
+      // Process them inline — no need to queue, avoids clogging the worker with
+      // high-volume status updates while real incoming messages wait.
+      const isStatusOnly = WhatsAppWebhookService.isStatusOnlyWebhook(validation.data!);
+      if (isStatusOnly) {
+        WhatsAppWebhookService.doProcessWebhook(validation.data!, ip, userAgent, idempotencyKey, 0)
+          .catch((err) => console.error('[Webhook] Status update inline error:', err.message));
+        return c.json({ success: true }, 200);
+      }
+
       // Enqueue to BullMQ — returns 200 immediately.
       // jobId = idempotencyKey: BullMQ automatically drops duplicate jobs
       // with the same ID that are already queued/active → no concurrent DB contention.

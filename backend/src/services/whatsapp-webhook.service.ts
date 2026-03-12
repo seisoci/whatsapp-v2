@@ -56,10 +56,22 @@ export class WhatsAppWebhookService {
   }
 
   /**
+   * Returns true if the webhook contains ONLY status updates (delivered/read/sent/failed).
+   * These are processed inline (not queued) to avoid clogging the BullMQ worker.
+   */
+  static isStatusOnlyWebhook(payload: WhatsAppWebhookPayload): boolean {
+    const changes = payload.entry[0]?.changes ?? [];
+    return changes.every((change) => {
+      const value = change.value;
+      return value?.statuses && value.statuses.length > 0 && !value.messages?.length;
+    });
+  }
+
+  /**
    * Process one webhook job — called by BullMQ worker (concurrency controlled there).
    * userAgent replaces full headers to keep Redis payload small.
    */
-  static async doProcessWebhook(payload: WhatsAppWebhookPayload, ip: string, userAgent: string | null, idempotencyKey: string): Promise<void> {
+  static async doProcessWebhook(payload: WhatsAppWebhookPayload, ip: string, userAgent: string | null, idempotencyKey: string, attemptsMade = 0): Promise<void> {
     const startTime = Date.now();
 
     // Deduplication via Redis SETNX — atomic, zero PostgreSQL locking.
@@ -67,6 +79,15 @@ export class WhatsAppWebhookService {
     // spinlocks (100% CPU, unkillable) when called concurrently.
     // Redis SET NX EX is O(1) and never blocks other queries.
     const redisKey = `webhook:idem:${idempotencyKey}`;
+
+    // On retry: the previous attempt may have claimed the key but was killed
+    // mid-processing (e.g. process restart during putObject). Clear the stale
+    // key so this retry is not silently skipped.
+    if (attemptsMade > 0) {
+      await redisClient.del(redisKey);
+      console.log(`[Webhook] Cleared stale idem key for retry (attempt ${attemptsMade}): ${idempotencyKey}`);
+    }
+
     const claimed = await redisClient.set(redisKey, '1', 'EX', 86400, 'NX'); // 24h TTL
     if (!claimed) {
       console.log(`[Webhook] Duplicate skipped (Redis gate): ${idempotencyKey}`);
@@ -448,8 +469,7 @@ export class WhatsAppWebhookService {
     });
 
     if (!message) {
-      console.error('❌ Message not found for status update:', statusData.id);
-      console.error('Status data:', JSON.stringify(statusData, null, 2));
+      console.warn(`[Webhook] Status update skipped — message not found (wamid: ${statusData.id})`);
       return;
     }
 

@@ -29,7 +29,10 @@ export class WebhookWorkerService {
       'whatsapp-webhook',
       async (job: Job<WebhookJobData>) => {
         const { payload, ip, userAgent, idempotencyKey } = job.data;
-        await WhatsAppWebhookService.doProcessWebhook(payload, ip, userAgent, idempotencyKey);
+        // On retry (stalled job after restart): clear the idem key so the job
+        // is not silently skipped. The previous attempt may have set the key
+        // but never completed (process was killed mid-putObject).
+        await WhatsAppWebhookService.doProcessWebhook(payload, ip, userAgent, idempotencyKey, job.attemptsMade);
       },
       {
         connection: redisConnection,

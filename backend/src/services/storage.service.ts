@@ -116,13 +116,18 @@ class StorageService {
       const timestamp = Date.now();
       const fullPath = `${path}/${timestamp}-${fileName}`;
 
-      await this.client.putObject(
+      const UPLOAD_TIMEOUT_MS = 120_000; // 2 minutes max per upload
+      const uploadPromise = this.client.putObject(
         this.defaultBucket,
         fullPath,
         stream,
         size,
         { 'Content-Type': contentType, ...metadata }
       );
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error(`MinIO upload timed out after ${UPLOAD_TIMEOUT_MS / 1000}s`)), UPLOAD_TIMEOUT_MS)
+      );
+      await Promise.race([uploadPromise, timeoutPromise]);
 
       const url = await this.getFileUrl(fullPath);
       return {
