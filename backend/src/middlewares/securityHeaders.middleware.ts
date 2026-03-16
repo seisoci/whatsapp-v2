@@ -38,6 +38,7 @@ export const securityHeaders = async (c: Context, next: Next) => {
       "img-src 'self' data: https:",
       "font-src 'self'",
       "connect-src 'self'",
+      "media-src 'self' *.itn.net.id itn.net.id",
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",
