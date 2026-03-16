@@ -9,6 +9,7 @@ import { Message } from '../models/Message';
 import { MessageStatusUpdate } from '../models/MessageStatusUpdate';
 import { PhoneNumber } from '../models/PhoneNumber';
 import { ApiEndpoint } from '../models/ApiEndpoint';
+import { MessageQueue } from '../models/MessageQueue';
 import { WhatsAppMessagingService } from './whatsapp-messaging.service';
 import { WhatsAppMediaService } from './whatsapp-media.service';
 import { chatWebSocketManager } from './chat-websocket.service';
@@ -561,10 +562,15 @@ export class WhatsAppWebhookService {
         if (validEndpoints.length > 0) {
           console.log(`[Webhook Forwarding] Found ${validEndpoints.length} endpoints for user ${message.userId}`);
 
+          // Lookup MessageQueue by message.id to get queue_id
+          const mqRepo = AppDataSource.getRepository(MessageQueue);
+          const mqRecord = await mqRepo.findOne({ where: { messageId: message.id } });
+
           for (const endpoint of validEndpoints) {
             const endpointPayload = {
               webhook_id: endpoint.id,
-              status: statusData.status
+              queue_id: mqRecord?.id || null,
+              status: statusData.status,
             };
 
             // Fire-and-forget — 5s timeout prevents hanging promises if user endpoint is down
