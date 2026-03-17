@@ -2084,8 +2084,20 @@ export default function ChatPage() {
                                       ?.map((p: any) => p.text)
                                       .filter(Boolean)
                                       .join(' | ') || null;
-                                  const bodyText =
+                                  const rawBodyText =
                                     msg.textBody || bodyComp?.text || bodyParamsFallback;
+                                  // Substitute {{n}} placeholders with actual parameter values from templateComponents
+                                  const bodyText = (() => {
+                                    if (!rawBodyText) return rawBodyText;
+                                    const params: any[] = bodyComp?.parameters || [];
+                                    if (params.length === 0) return rawBodyText;
+                                    let result = rawBodyText;
+                                    params.forEach((param: any, index: number) => {
+                                      const value = param.text || '';
+                                      result = result.split(`{{${index + 1}}}`).join(value);
+                                    });
+                                    return result;
+                                  })();
 
                                   // Get footer text
                                   const footerText = footerComp?.text;
