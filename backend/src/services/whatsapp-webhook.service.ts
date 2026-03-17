@@ -545,52 +545,45 @@ export class WhatsAppWebhookService {
       ],
     );
 
-    // 📢 WEBHOOK FORWARDING: If message sent via API (has userId), forward status to user's webhook
-    if (message.userId) {
-      try {
-        const apiEndpointRepo = AppDataSource.getRepository(ApiEndpoint);
-        const userEndpoints = await apiEndpointRepo.find({
-          where: {
-            createdBy: message.userId,
-            isActive: true,
-          }
-        });
+    // 📢 WEBHOOK FORWARDING: Forward status to API endpoint's webhook URL
+    try {
+      const mqRepo = AppDataSource.getRepository(MessageQueue);
+      const mqRecord = await mqRepo.findOne({
+        where: { messageId: message.id },
+        relations: ['apiEndpoint'],
+      });
 
-        // Filter for endpoints that have a webhookUrl
-        const validEndpoints = userEndpoints.filter(ep => ep.webhookUrl);
+      const endpoint = mqRecord?.apiEndpoint;
 
-        if (validEndpoints.length > 0) {
-          console.log(`[Webhook Forwarding] Found ${validEndpoints.length} endpoints for user ${message.userId}`);
+      if (endpoint?.webhookUrl && endpoint.isActive) {
+        const endpointPayload = {
+          webhook_id: endpoint.id,
+          queue_id: mqRecord!.id,
+          status: statusData.status,
+        };
 
-          // Lookup MessageQueue by message.id to get queue_id
-          const mqRepo = AppDataSource.getRepository(MessageQueue);
-          const mqRecord = await mqRepo.findOne({ where: { messageId: message.id } });
+        console.log(`[Webhook Forwarding] Sending ${statusData.status} for queue ${mqRecord!.id} to ${endpoint.webhookUrl}`);
 
-          for (const endpoint of validEndpoints) {
-            const endpointPayload = {
-              webhook_id: endpoint.id,
-              queue_id: mqRecord?.id || null,
-              status: statusData.status,
-            };
-
-            // Fire-and-forget — 5s timeout prevents hanging promises if user endpoint is down
-            const fwdController = new AbortController();
-            setTimeout(() => fwdController.abort(), 5_000);
-            fetch(endpoint.webhookUrl, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(endpointPayload),
-              signal: fwdController.signal,
-            })
-              .then(res => {
-                if (!res.ok) console.warn(`[Webhook Forwarding] ${endpoint.webhookUrl} returned ${res.status}`);
-              })
-              .catch(err => console.error(`[Webhook Forwarding] Failed to send to ${endpoint.webhookUrl}:`, err.name === 'AbortError' ? 'timeout (5s)' : err));
-          }
-        }
-      } catch (error) {
-        console.error('[Webhook Forwarding] Error processing forwarding:', error);
+        // Fire-and-forget — 5s timeout prevents hanging promises if user endpoint is down
+        const fwdController = new AbortController();
+        setTimeout(() => fwdController.abort(), 5_000);
+        fetch(endpoint.webhookUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            ...(endpoint.apiKey ? { 'X-API-Key': endpoint.apiKey } : {}),
+          },
+          body: JSON.stringify(endpointPayload),
+          signal: fwdController.signal,
+        })
+          .then(res => {
+            if (!res.ok) console.warn(`[Webhook Forwarding] ${endpoint.webhookUrl} returned ${res.status}`);
+          })
+          .catch(err => console.error(`[Webhook Forwarding] Failed to send to ${endpoint.webhookUrl}:`, err.name === 'AbortError' ? 'timeout (5s)' : err));
       }
+    } catch (error) {
+      console.error('[Webhook Forwarding] Error processing forwarding:', error);
     }
 
     // 📢 WEBSOCKET: Broadcast status change to all clients subscribed to this phone number
