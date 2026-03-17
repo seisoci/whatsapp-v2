@@ -63,6 +63,7 @@ export const routes = {
   contacts: "/contacts",
   apiManagement: "/api-management",
   messageQueues: "/message-queues",
+  analytics: "/analytics",
 
   users: "/users",
 

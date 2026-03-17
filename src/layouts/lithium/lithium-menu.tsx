@@ -266,6 +266,13 @@ export default function HeaderMenuLeft() {
             </NavMenu.Trigger>
           </NavMenu.Item>
         )}
+        {canAccessLink('analytics') && (
+          <NavMenu.Item>
+            <NavMenu.Trigger className="flex items-center gap-1 duration-200">
+              <MenuTriggerButton name="analytics" />
+            </NavMenu.Trigger>
+          </NavMenu.Item>
+        )}
         {hasAccessibleItems('settings') && (
           <NavMenu.Item>
             <NavMenu.Trigger className="flex items-center gap-1 duration-200">
@@ -385,7 +392,7 @@ function MenuTriggerButton({ name }: { name: LithiumMenuItemsKeys }) {
   const menuItem = lithiumMenuItems[name];
 
   // Check if this is a direct link (unconfigured/configured)
-  const isDirectLink = name === 'unconfigured' || name === 'configured';
+  const isDirectLink = name === 'unconfigured' || name === 'configured' || name === 'analytics';
   const directLinkHref = menuItem.dropdownItems?.[0]?.href;
   const isDirectLinkActive = pathname === directLinkHref;
 

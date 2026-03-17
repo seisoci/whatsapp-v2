@@ -12,6 +12,7 @@ import {
   PiFileTextDuotone,
   PiAddressBookDuotone,
   PiListChecksDuotone,
+  PiChartBarDuotone,
 } from 'react-icons/pi';
 
 export const menuItems = [
@@ -48,6 +49,11 @@ export const menuItems = [
         href: routes.templates.dashboard,
       },
     ],
+  },
+  {
+    name: 'Analytics',
+    href: routes.analytics,
+    icon: <PiChartBarDuotone />,
   },
   {
     name: 'Management',

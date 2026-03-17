@@ -15,6 +15,7 @@ import {
   PiWebhooksLogoDuotone,
   PiAddressBookDuotone,
   PiListChecksDuotone,
+  PiChartBarDuotone,
 } from 'react-icons/pi';
 
 export type SubMenuItemType = {
@@ -84,6 +85,17 @@ export const lithiumMenuItems: LithiumMenuItem = {
       },
     ],
   },
+  analytics: {
+    name: 'Analytics',
+    type: 'link',
+    dropdownItems: [
+      {
+        name: 'Analytics & Laporan',
+        href: routes.analytics,
+        icon: PiChartBarDuotone,
+      },
+    ],
+  },
   settings: {
     name: 'WhatsApp',
     type: 'link',
@@ -98,7 +110,6 @@ export const lithiumMenuItems: LithiumMenuItem = {
         href: routes.contacts,
         icon: PiAddressBookDuotone,
       },
-
       {
         name: 'Quick Replies',
         href: routes.quickReplies,
@@ -125,7 +136,6 @@ export const lithiumMenuItems: LithiumMenuItem = {
         href: routes.contacts,
         icon: PiAddressBookDuotone,
       },
-
       {
         name: 'Quick Replies',
         href: routes.quickReplies,

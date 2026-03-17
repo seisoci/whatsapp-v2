@@ -13,6 +13,7 @@ import {
   PiLockKeyDuotone,
   PiFileTextDuotone,
   PiAddressBookDuotone,
+  PiChartBarDuotone,
 } from 'react-icons/pi';
 
 export interface SubMenuItemType {
@@ -57,6 +58,11 @@ export const berylliumMenuItems: MenuItemsType[] = [
         icon: PiChatsDuotone,
       },
       {
+        name: 'Analytics',
+        href: routes.analytics,
+        icon: PiChartBarDuotone,
+      },
+      {
         name: 'WhatsApp',
         description: 'WhatsApp Business',
         icon: PiWhatsappLogoDuotone,
@@ -69,7 +75,6 @@ export const berylliumMenuItems: MenuItemsType[] = [
             name: 'Contacts',
             href: routes.contacts,
           },
-
           {
             name: 'Quick Replies',
             href: routes.quickReplies,

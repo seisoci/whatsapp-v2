@@ -13,6 +13,7 @@ import {
   PiCodeDuotone,
   PiAddressBookDuotone,
   PiListChecksDuotone,
+  PiChartBarDuotone,
 } from 'react-icons/pi';
 
 export const menuItems = [
@@ -35,6 +36,15 @@ export const menuItems = [
     },
   },
   {
+    name: 'Analytics',
+    href: routes.analytics,
+    icon: PiChartBarDuotone,
+    shortcut: {
+      modifiers: 'alt',
+      key: '3',
+    },
+  },
+  {
     name: 'WhatsApp',
     href: '#',
     icon: PiWhatsappLogoDuotone,
@@ -49,7 +59,6 @@ export const menuItems = [
         href: routes.contacts,
         icon: PiAddressBookDuotone,
       },
-
       {
         name: 'Quick Replies',
         href: routes.quickReplies,

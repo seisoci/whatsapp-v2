@@ -13,6 +13,7 @@ import {
   PiCodeDuotone,
   PiAddressBookDuotone,
   PiListChecksDuotone,
+  PiChartBarDuotone,
 } from 'react-icons/pi';
 
 export const berylliumSidebarMenuItems = [
@@ -25,6 +26,11 @@ export const berylliumSidebarMenuItems = [
     name: 'Chat',
     href: routes.chat,
     icon: <PiChatsDuotone />,
+  },
+  {
+    name: 'Analytics',
+    href: routes.analytics,
+    icon: <PiChartBarDuotone />,
   },
   {
     name: 'WhatsApp',
@@ -41,7 +47,6 @@ export const berylliumSidebarMenuItems = [
         href: routes.contacts,
         icon: <PiAddressBookDuotone />,
       },
-
       {
         name: 'Quick Replies',
         href: routes.quickReplies,
