@@ -2078,9 +2078,14 @@ export default function ChatPage() {
                                         ? 'video'
                                         : 'document');
 
-                                  // Get body text - either from component text or textBody
+                                  // Get body text - from component text, textBody, or fallback to parameter values
+                                  const bodyParamsFallback =
+                                    bodyComp?.parameters
+                                      ?.map((p: any) => p.text)
+                                      .filter(Boolean)
+                                      .join(' | ') || null;
                                   const bodyText =
-                                    bodyComp?.text || msg.textBody;
+                                    msg.textBody || bodyComp?.text || bodyParamsFallback;
 
                                   // Get footer text
                                   const footerText = footerComp?.text;

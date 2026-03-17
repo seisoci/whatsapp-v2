@@ -98,6 +98,19 @@ export class MessageController {
                 if (rendered.body) parts.push(rendered.body);
                 if (rendered.footer) parts.push(rendered.footer);
                 msg.textBody = parts.join('\n\n');
+              } else {
+                // Template definition not available — extract parameter values as fallback
+                const components: any[] = msg.templateComponents || [];
+                const bodyComp = components.find(
+                  (c) => c.type?.toUpperCase() === 'BODY'
+                );
+                const params: any[] = bodyComp?.parameters || [];
+                if (params.length > 0) {
+                  msg.textBody = `[${msg.templateName}] ` + params
+                    .map((p: any) => p.text)
+                    .filter(Boolean)
+                    .join(', ');
+                }
               }
             } catch (error) {
               console.error(

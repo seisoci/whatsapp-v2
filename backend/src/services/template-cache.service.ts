@@ -178,7 +178,7 @@ class TemplateCacheService {
       let bodyText = bodyDef.text;
       const params = bodyParams?.parameters || [];
 
-      // Replace placeholders {{1}}, {{2}}, etc.
+      // Replace placeholders {{1}}, {{2}}, etc. using split/join (literal, not regex)
       params.forEach((param: any, index: number) => {
         const placeholder = `{{${index + 1}}}`;
         const value =
@@ -186,7 +186,7 @@ class TemplateCacheService {
           param.currency?.fallback_value ||
           param.date_time?.fallback_value ||
           '';
-        bodyText = bodyText.replace(new RegExp(placeholder, 'g'), value);
+        bodyText = bodyText.split(placeholder).join(value);
       });
 
       result.body = bodyText;
@@ -205,7 +205,7 @@ class TemplateCacheService {
       params.forEach((param: any, index: number) => {
         const placeholder = `{{${index + 1}}}`;
         const value = param.text || '';
-        headerText = headerText.replace(new RegExp(placeholder, 'g'), value);
+        headerText = headerText.split(placeholder).join(value);
       });
 
       result.header = headerText;
@@ -219,7 +219,7 @@ class TemplateCacheService {
       params.forEach((param: any, index: number) => {
         const placeholder = `{{${index + 1}}}`;
         const value = param.text || '';
-        footerText = footerText.replace(new RegExp(placeholder, 'g'), value);
+        footerText = footerText.split(placeholder).join(value);
       });
 
       result.footer = footerText;
