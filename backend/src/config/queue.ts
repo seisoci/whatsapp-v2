@@ -38,3 +38,17 @@ export const whatsappWebhookQueue = new Queue('whatsapp-webhook', {
     removeOnFail: 200,
   },
 });
+
+/**
+ * BullMQ queue for forwarding status updates to external webhook URLs (e.g. ERP/Loli).
+ * Replaces fire-and-forget to ensure delivery with retry on timeout/error.
+ */
+export const webhookForwardingQueue = new Queue('webhook-forwarding', {
+  connection: redisConnection,
+  defaultJobOptions: {
+    attempts: 5,
+    backoff: { type: 'exponential', delay: 5000 },
+    removeOnComplete: 200,
+    removeOnFail: 100,
+  },
+});

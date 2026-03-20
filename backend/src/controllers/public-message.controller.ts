@@ -9,8 +9,46 @@ import { getClientIP } from '../middlewares/ipFilter.middleware';
 import { whatsappTemplateQueue } from '../config/queue';
 import { sendTemplateSchema } from '../validators/public-message.validator';
 import { UAParser } from 'ua-parser-js';
+import { In } from 'typeorm';
 
 export class PublicMessageController {
+
+  /**
+   * POST /api/v1/message-queues/bulk-status
+   * Returns current queue_status and message_status for a list of queue_ids.
+   * Used by Loli ERP reconciliation to detect stuck "queued" items.
+   */
+  static async bulkStatus(c: Context) {
+    try {
+      const body = await c.req.json();
+      const queueIds: string[] = body?.queue_ids;
+
+      if (!Array.isArray(queueIds) || queueIds.length === 0) {
+        return c.json({ success: false, message: 'queue_ids must be a non-empty array' }, 400);
+      }
+
+      if (queueIds.length > 100) {
+        return c.json({ success: false, message: 'queue_ids max 100 items per request' }, 400);
+      }
+
+      const apiEndpoint = c.get('apiEndpoint') as ApiEndpoint;
+      const repo = AppDataSource.getRepository(MessageQueue);
+      const items = await repo.find({ where: { id: In(queueIds), apiEndpointId: apiEndpoint.id } });
+
+      return c.json({
+        success: true,
+        data: items.map((item) => ({
+          queue_id: item.id,
+          queue_status: item.queueStatus,
+          message_status: item.messageStatus,
+          wamid: item.wamid,
+        })),
+      });
+    } catch (error: any) {
+      console.error('[BulkStatus] Error:', error);
+      return c.json({ success: false, message: 'Failed to fetch statuses' }, 500);
+    }
+  }
 
   static async sendTemplate(c: Context) {
     // Capture request metadata early

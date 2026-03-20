@@ -15,6 +15,7 @@ import { WhatsAppMediaService } from './whatsapp-media.service';
 import { chatWebSocketManager } from './chat-websocket.service';
 import { redisClient } from '../config/redis';
 import { storageService } from './storage.service';
+import { webhookForwardingQueue } from '../config/queue';
 
 interface WhatsAppWebhookPayload {
   object: string;
@@ -546,6 +547,7 @@ export class WhatsAppWebhookService {
     );
 
     // 📢 WEBHOOK FORWARDING: Forward status to API endpoint's webhook URL
+    // Uses BullMQ queue with retry instead of fire-and-forget to ensure delivery.
     try {
       const mqRepo = AppDataSource.getRepository(MessageQueue);
       const mqRecord = await mqRepo.findOne({
@@ -562,28 +564,23 @@ export class WhatsAppWebhookService {
           status: statusData.status,
         };
 
-        console.log(`[Webhook Forwarding] Sending ${statusData.status} for queue ${mqRecord!.id} to ${endpoint.webhookUrl}`);
+        console.log(`[Webhook Forwarding] Queuing ${statusData.status} for queue ${mqRecord!.id} to ${endpoint.webhookUrl}`);
 
-        // Fire-and-forget — 5s timeout prevents hanging promises if user endpoint is down
-        const fwdController = new AbortController();
-        setTimeout(() => fwdController.abort(), 5_000);
-        fetch(endpoint.webhookUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            ...(endpoint.apiKey ? { 'X-API-Key': endpoint.apiKey } : {}),
+        // Enqueue with retry — jobId is idempotent per (queue_id + status)
+        await webhookForwardingQueue.add(
+          'forward',
+          {
+            webhookUrl: endpoint.webhookUrl,
+            apiKey: endpoint.apiKey || null,
+            payload: endpointPayload,
           },
-          body: JSON.stringify(endpointPayload),
-          signal: fwdController.signal,
-        })
-          .then(res => {
-            if (!res.ok) console.warn(`[Webhook Forwarding] ${endpoint.webhookUrl} returned ${res.status}`);
-          })
-          .catch(err => console.error(`[Webhook Forwarding] Failed to send to ${endpoint.webhookUrl}:`, err.name === 'AbortError' ? 'timeout (5s)' : err));
+          {
+            jobId: `fwd-${mqRecord!.id}-${statusData.status}`,
+          }
+        );
       }
     } catch (error) {
-      console.error('[Webhook Forwarding] Error processing forwarding:', error);
+      console.error('[Webhook Forwarding] Error queuing forwarding job:', error);
     }
 
     // 📢 WEBSOCKET: Broadcast status change to all clients subscribed to this phone number

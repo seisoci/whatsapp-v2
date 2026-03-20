@@ -29,6 +29,7 @@ import { chatWebSocketManager } from './services/chat-websocket.service';
 import { QueueDispatcherService } from './services/queue-dispatcher.service';
 import { QueueWorkerService } from './services/queue-worker.service';
 import { WebhookWorkerService } from './services/webhook-worker.service';
+import { WebhookForwardingWorkerService } from './services/webhook-forwarding-worker.service';
 import {
   securityHeaders,
   corsMiddleware,
@@ -135,6 +136,7 @@ const startServer = async () => {
     QueueDispatcherService.start();
     QueueWorkerService.start();
     WebhookWorkerService.start();
+    WebhookForwardingWorkerService.start();
 
     // Start server with WebSocket support
     const port = parseInt(env.PORT);
@@ -218,6 +220,7 @@ const gracefulShutdown = async (signal: string) => {
   QueueDispatcherService.stop();
   await QueueWorkerService.stop();
   await WebhookWorkerService.stop();
+  await WebhookForwardingWorkerService.stop();
   process.exit(0);
 };
 
