@@ -17,7 +17,7 @@ const BLOCKED_HOSTNAME_PATTERNS = [
   /^0\.0\.0\.0$/,
 ];
 
-function assertSafeWebhookUrl(webhookUrl: string): void {
+export function assertSafeWebhookUrl(webhookUrl: string): void {
   let parsed: URL;
   try {
     parsed = new URL(webhookUrl);

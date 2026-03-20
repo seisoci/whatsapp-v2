@@ -31,6 +31,11 @@ export class PublicMessageController {
         return c.json({ success: false, message: 'queue_ids max 100 items per request' }, 400);
       }
 
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!queueIds.every((id) => typeof id === 'string' && uuidRegex.test(id))) {
+        return c.json({ success: false, message: 'queue_ids must contain valid UUIDs' }, 400);
+      }
+
       const apiEndpoint = c.get('apiEndpoint') as ApiEndpoint;
       const repo = AppDataSource.getRepository(MessageQueue);
       const items = await repo.find({ where: { id: In(queueIds), apiEndpointId: apiEndpoint.id } });

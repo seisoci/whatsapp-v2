@@ -3,6 +3,7 @@ import { AppDataSource } from '../config/database';
 import { ApiEndpoint } from '../models/ApiEndpoint';
 import { withPermissions } from '../utils/controller.decorator';
 import { z } from 'zod';
+import { assertSafeWebhookUrl } from '../services/webhook-forwarding-worker.service';
 
 // Validation schemas
 const createApiEndpointSchema = z.object({
@@ -137,6 +138,12 @@ class ApiEndpointController {
       const { name, description, webhookUrl, apiKey, isActive } = validation.data;
       const user = c.get('user');
 
+      try {
+        assertSafeWebhookUrl(webhookUrl);
+      } catch (e: any) {
+        return c.json({ success: false, message: e.message }, 422);
+      }
+
       const apiEndpointRepo = AppDataSource.getRepository(ApiEndpoint);
 
       const newEndpoint = apiEndpointRepo.create({
@@ -212,6 +219,14 @@ class ApiEndpointController {
       }
 
       const { name, description, webhookUrl, apiKey, isActive } = validation.data;
+
+      if (webhookUrl !== undefined) {
+        try {
+          assertSafeWebhookUrl(webhookUrl);
+        } catch (e: any) {
+          return c.json({ success: false, message: e.message }, 422);
+        }
+      }
 
       if (name !== undefined) endpoint.name = name;
       if (description !== undefined) endpoint.description = description;
