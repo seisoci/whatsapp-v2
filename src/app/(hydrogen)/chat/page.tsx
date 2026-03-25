@@ -231,6 +231,7 @@ export default function ChatPage() {
     string | null
   >(null);
   const contactOptionsMenuRef = useRef<HTMLDivElement>(null);
+  const closingViaUI = useRef(false);
 
   // Load pinned contacts from localStorage on mount
   useEffect(() => {
@@ -1438,6 +1439,54 @@ export default function ChatPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedContact, lightboxOpen]);
 
+  // Android back button: push history state when entering mobile chat view
+  useEffect(() => {
+    if (showChat) {
+      window.history.pushState({ overlay: 'chat' }, '');
+    }
+  }, [showChat]);
+
+  // Android back button: push history state when opening lightbox
+  useEffect(() => {
+    if (lightboxOpen) {
+      window.history.pushState({ overlay: 'lightbox' }, '');
+    }
+  }, [lightboxOpen]);
+
+  // Android back button: handle popstate (hardware back button)
+  useEffect(() => {
+    const handlePopState = () => {
+      if (closingViaUI.current) {
+        // Was closed via UI button, history.back() already called — ignore
+        closingViaUI.current = false;
+        return;
+      }
+      if (lightboxOpen) {
+        setLightboxOpen(false);
+      } else if (showChat) {
+        handleBackToList();
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lightboxOpen, showChat]);
+
+  // Close lightbox via UI (X button / swipe) — syncs history
+  const closeLightboxViaUI = () => {
+    closingViaUI.current = true;
+    setLightboxOpen(false);
+    window.history.back();
+  };
+
+  // Close chat via UI (back arrow) — syncs history
+  const handleBackToListViaUI = () => {
+    closingViaUI.current = true;
+    handleBackToList();
+    window.history.back();
+  };
+
   // Server-side filtering is now used, sort with pinned contacts first
   const filteredContacts = [...contacts].sort((a, b) => {
     const aIsPinned = pinnedContacts.includes(a.id);
@@ -1902,7 +1951,7 @@ export default function ChatPage() {
                     <Button
                       variant="text"
                       className="h-auto p-0 hover:bg-transparent @lg:hidden"
-                      onClick={handleBackToList}
+                      onClick={handleBackToListViaUI}
                     >
                       <PiArrowLeft className="h-5 w-5" />
                     </Button>
@@ -2805,7 +2854,7 @@ export default function ChatPage() {
       {/* Lightbox for images/videos */}
       <Lightbox
         open={lightboxOpen}
-        close={() => setLightboxOpen(false)}
+        close={closeLightboxViaUI}
         slides={lightboxSlides}
         plugins={[Video, Zoom]}
       />
