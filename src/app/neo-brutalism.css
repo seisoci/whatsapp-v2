@@ -378,6 +378,14 @@ body.neo-brutalism button[class*="primary-default"]:not(.nb-theme-btn):hover {
   background: #FFFFFF !important;
 }
 
+/* ── Audio Elements ── */
+.neo-brutalism audio {
+  min-width: 240px !important;
+  width: 100% !important;
+  border-radius: 0 !important;
+  border: 2px solid #1F1F1F !important;
+}
+
 /* ── Scrollbars ── */
 .neo-brutalism .custom-scrollbar::-webkit-scrollbar-thumb,
 .neo-brutalism .custom-scrollbar-message::-webkit-scrollbar-thumb {

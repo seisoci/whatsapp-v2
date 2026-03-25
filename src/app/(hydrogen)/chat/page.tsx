@@ -1671,13 +1671,9 @@ export default function ChatPage() {
                 className="custom-scrollbar min-h-0 flex-1 overflow-y-auto"
                 onScroll={(e) => {
                   const target = e.currentTarget;
-                  // Trigger when within 10px of bottom
-                  const isNearBottom =
-                    target.scrollHeight -
-                      target.scrollTop -
-                      target.clientHeight <
-                    10;
-                  if (isNearBottom && hasMoreContacts && !loading) {
+                  const scrollable = target.scrollHeight - target.clientHeight;
+                  const scrollPercent = scrollable > 0 ? target.scrollTop / scrollable : 0;
+                  if (scrollPercent >= 0.8 && hasMoreContacts && !loading) {
                     loadContacts(contactPage + 1, true);
                   }
                 }}
