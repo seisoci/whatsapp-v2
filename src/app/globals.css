@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import './react-big-calendar.css';
+@import './neo-brutalism.css';
 @import 'react-calendar/dist/Calendar.css';
 
 @plugin "@tailwindcss/forms";
@@ -185,7 +186,7 @@
     --gray-500: 102 102 102;
     /* For rgb(72 72 72 / <alpha-value>) = #484848 */
     --gray-600: 72 72 72;
-    /* For rgb(51 51 51 / <alpha-value>) = #333333 */
+    /* For rgb(51 51 51 / <alpha-value>) = #2E2E2E */
     --gray-700: 51 51 51;
     /* For rgb(34 34 34 / <alpha-value>) = #222222 */
     --gray-800: 34 34 34;
@@ -291,7 +292,7 @@
     --gray-50: 17 17 17;
     /* For rgb(31 31 31 / <alpha-value>) = #1f1f1f */
     --gray-100: 31 31 31;
-    /* For rgb(51 51 51 / <alpha-value>) = #333333 */
+    /* For rgb(51 51 51 / <alpha-value>) = #2E2E2E */
     --gray-200: 51 51 51;
     /* For rgb(72 72 72 / <alpha-value>) = #484848 */
     --gray-300: 72 72 72;
@@ -315,7 +316,7 @@
     --foreground: 223 223 223;
     /* #dfdfdf */
     --muted: 51 51 51;
-    /* #333333 */
+    /* #2E2E2E */
     --muted-foreground: 102 102 102;
     /* #666666 */
 
@@ -2029,6 +2030,13 @@ div[style='z-index: 1000001;'],
 }
 
 /* --------------------------------------------------- */
+/* Toaster always on top (above chat z-[9999] overlay) */
+/* --------------------------------------------------- */
+[data-rht-toaster] {
+  z-index: 100000 !important;
+}
+
+/* --------------------------------------------------- */
 /* Chat Page Animations & Scrollbars */
 /* --------------------------------------------------- */
 @keyframes fadeInUp {
@@ -2070,3 +2078,6 @@ div[style='z-index: 1000001;'],
 .custom-scrollbar-message::-webkit-scrollbar-thumb:hover {
   background-color: rgb(var(--primary-dark));
 }
+
+
+

@@ -1,0 +1,647 @@
+/* ================================================================ */
+/*  NEO BRUTALISM CHAT THEME — Midnight Palette                    */
+/*  #1F1F1F · #0D47A1 · #016B61 · #B0BEC5 · #FFFFFF               */
+/* ================================================================ */
+
+/* ── Override theme CSS variables for NB Midnight mode ── */
+body.neo-brutalism,
+.neo-brutalism {
+  --primary-default: 13 71 161;    /* #0D47A1 — replaces default black */
+  --primary-dark: 9 52 115;
+  --primary-lighter: 219 234 254;
+  --primary-foreground: 255 255 255;
+  --ring: 13 71 161;               /* blue focus ring, not black */
+  --border: 176 190 197;           /* #B0BEC5 — visible but subtle */
+  --input: 176 190 197;
+  --muted-foreground: 120 134 142; /* darker gray, readable on white */
+  --foreground: 31 31 31;          /* #1F1F1F */
+  --background: 255 255 255;
+}
+
+/* ── Reset: square corners + Public Sans font for ALL ── */
+.neo-brutalism,
+.neo-brutalism * {
+  border-radius: 0 !important;
+  font-family: var(--font-public-sans), 'Public Sans', sans-serif !important;
+}
+
+/* ── Main grid container ── */
+.neo-brutalism > div {
+  background: #FFFFFF !important;
+}
+
+/* ── Sidebar column ── */
+.neo-brutalism > div > div:first-child {
+  background: #FFFFFF !important;
+  border-right: 2px solid #B0BEC5 !important;
+}
+
+/* ── Sidebar header (nb-sidebar-hdr) ── */
+.neo-brutalism .nb-sidebar-hdr {
+  background: #0D47A1 !important;
+  border-bottom: 2px solid #1F1F1F !important;
+  padding: 12px !important;
+}
+.neo-brutalism .nb-sidebar-hdr label,
+.neo-brutalism .nb-sidebar-hdr p {
+  color: #fff !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.03em !important;
+}
+
+/* ── Filter tabs row (All / Unread / Archived) ── */
+.neo-brutalism > div > div:first-child .flex.gap-2.border-b {
+  background: #FFFFFF !important;
+  border-bottom: 1px solid #B0BEC5 !important;
+  padding: 8px 12px !important;
+  gap: 6px !important;
+}
+
+/* ── Contact list item ── */
+.neo-brutalism [role="button"] {
+  border-bottom: 1px solid #B0BEC530 !important;
+  border-left: 3px solid transparent !important;
+  background: #FFFFFF !important;
+  transition: background 0.1s, border-left-color 0.1s !important;
+}
+.neo-brutalism [role="button"]:hover {
+  background: #B0BEC520 !important;
+  border-left-color: #016B61 !important;
+}
+
+/* ── Active / selected contact ── */
+.neo-brutalism [role="button"].bg-gray-50,
+.neo-brutalism .bg-gray-50[role="button"] {
+  background: #B0BEC530 !important;
+  border-left: 3px solid #016B61 !important;
+  font-weight: 700 !important;
+}
+
+/* ── Chat column (right side) ── */
+.neo-brutalism > div > div:last-child {
+  background: #FFFFFF !important;
+}
+
+/* ── Chat header (nb-chat-hdr) ── */
+.neo-brutalism .nb-chat-hdr {
+  background: #0D47A1 !important;
+  border-bottom: 2px solid #1F1F1F !important;
+  padding: 10px 12px !important;
+}
+.neo-brutalism .nb-chat-hdr * {
+  color: #fff !important;
+}
+.neo-brutalism .nb-chat-hdr .text-red-600 {
+  color: #FFD54F !important;
+  font-weight: 700 !important;
+}
+.neo-brutalism .nb-chat-hdr .text-green-600 {
+  color: #B0BEC5 !important;
+}
+
+/* ── Chat header buttons — no border/shadow on blue bg ── */
+.neo-brutalism .nb-chat-hdr button:not(.nb-theme-btn) {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: #fff !important;
+  transform: none !important;
+}
+.neo-brutalism .nb-chat-hdr button:not(.nb-theme-btn):hover {
+  background: rgba(255, 255, 255, 0.15) !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+.neo-brutalism .nb-chat-hdr button:not(.nb-theme-btn):active {
+  background: rgba(255, 255, 255, 0.25) !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* ── Textarea (message input) ── */
+.neo-brutalism textarea {
+  border: 1px solid #0D47A140 !important;
+  box-shadow: none !important;
+  background: #fff !important;
+  color: #1F1F1F !important;
+}
+.neo-brutalism textarea:focus {
+  outline: none !important;
+  border-color: #0D47A1 !important;
+  box-shadow: 0 0 0 2px #0D47A120 !important;
+}
+
+/* ── rizzui inner input/textarea fields ── */
+.neo-brutalism .rizzui-input-field,
+.neo-brutalism .rizzui-textarea-field {
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  color: #1F1F1F !important;
+}
+.neo-brutalism .rizzui-input-field::placeholder,
+.neo-brutalism .rizzui-textarea-field::placeholder {
+  color: #B0BEC5 !important;
+  opacity: 1 !important;
+}
+
+/* ── rizzui Input wrapper span ── */
+.neo-brutalism span[class*="focus-within\:border-primary"],
+.neo-brutalism span[class*="hover\:border-primary"] {
+  background: #fff !important;
+  border: 1px solid #0D47A140 !important;
+  box-shadow: none !important;
+  color: #1F1F1F !important;
+}
+.neo-brutalism span[class*="focus-within\:border-primary"]:focus-within,
+.neo-brutalism span[class*="hover\:border-primary"]:focus-within {
+  border-color: #0D47A1 !important;
+  box-shadow: 0 0 0 2px #0D47A120 !important;
+}
+
+/* ── rizzui Select trigger button ── */
+.neo-brutalism [aria-haspopup="listbox"] {
+  background: #fff !important;
+  border: 1px solid #0D47A140 !important;
+  box-shadow: none !important;
+  color: #1F1F1F !important;
+  --tw-ring-shadow: none !important;
+  --tw-ring-color: transparent !important;
+  outline: none !important;
+}
+.neo-brutalism [aria-haspopup="listbox"] span,
+.neo-brutalism [aria-haspopup="listbox"] svg {
+  color: #1F1F1F !important;
+  stroke: #1F1F1F !important;
+}
+
+/* ── rizzui Select dropdown list ── */
+.neo-brutalism [role="listbox"],
+.neo-brutalism [class*="rizzui-select-options"] {
+  background: #fff !important;
+  border: 2px solid #1F1F1F !important;
+  box-shadow: 4px 4px 0 #1F1F1F !important;
+  color: #1F1F1F !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+}
+/* search wrapper */
+.neo-brutalism [role="listbox"] > div:first-child {
+  background: #fff !important;
+  border-bottom: 2px solid #1F1F1F !important;
+  margin: 0 !important;
+  padding: 4px !important;
+}
+/* search icon */
+.neo-brutalism [role="listbox"] span[class*="rizzui-select-prefix"] {
+  color: #1F1F1F !important;
+  left: 12px !important;
+}
+.neo-brutalism [role="listbox"] span[class*="rizzui-select-prefix"] svg {
+  stroke: #1F1F1F !important;
+}
+/* search input */
+.neo-brutalism [role="listbox"] input {
+  background: #fff !important;
+  color: #1F1F1F !important;
+  border: 2px solid #1F1F1F !important;
+  box-shadow: 2px 2px 0 #1F1F1F !important;
+  border-radius: 0 !important;
+  outline: none !important;
+  height: 40px !important;
+  padding-left: 40px !important;
+  --tw-ring-shadow: none !important;
+  --tw-ring-color: transparent !important;
+}
+.neo-brutalism [role="listbox"] input:focus {
+  background: #fff !important;
+  box-shadow: 2px 2px 0 #1F1F1F !important;
+  --tw-ring-shadow: none !important;
+  --tw-ring-color: transparent !important;
+}
+.neo-brutalism [role="listbox"] input::placeholder {
+  color: #1F1F1F80 !important;
+}
+/* options */
+.neo-brutalism [role="option"],
+.neo-brutalism [role="option"] *,
+.neo-brutalism [role="listbox"] .text-foreground {
+  color: #1F1F1F !important;
+  background: transparent !important;
+}
+.neo-brutalism [role="option"]:hover,
+.neo-brutalism [role="option"]:hover * {
+  background: #0D47A1 !important;
+  color: #fff !important;
+}
+.neo-brutalism [role="option"][data-headlessui-state*="active"],
+.neo-brutalism [role="option"][data-headlessui-state*="active"] * {
+  background: #0D47A1 !important;
+  color: #fff !important;
+  font-weight: 600 !important;
+}
+.neo-brutalism [role="option"][aria-selected="true"],
+.neo-brutalism [role="option"][aria-selected="true"] * {
+  background: #016B61 !important;
+  color: #fff !important;
+  font-weight: 700 !important;
+}
+
+/* ── Action for Theme Button ── */
+.neo-brutalism .nb-theme-btn {
+  background: #FFD54F !important;
+}
+
+/* ── All buttons (base treatment) ── */
+.neo-brutalism button:not(.nb-theme-btn):not([aria-haspopup]),
+.neo-brutalism [class*="rizzui-button"]:not(.nb-theme-btn) {
+  border: 1px solid #0D47A130 !important;
+  color: #0D47A1 !important;
+  box-shadow: none !important;
+  transition: background 0.1s, border-color 0.1s !important;
+}
+
+/* ── rizzui Button component — white background ── */
+.neo-brutalism [class*="rizzui-button"]:not(.nb-theme-btn) {
+  background: #fff !important;
+}
+.neo-brutalism button:not(.nb-theme-btn):not([aria-haspopup]):hover,
+.neo-brutalism [class*="rizzui-button"]:not(.nb-theme-btn):hover {
+  border-color: #0D47A1 !important;
+  background: #0D47A108 !important;
+}
+.neo-brutalism button:not(.nb-theme-btn):not([aria-haspopup]):active,
+.neo-brutalism [class*="rizzui-button"]:not(.nb-theme-btn):active {
+  transform: translate(1px, 1px) !important;
+}
+
+/* ── Active filter tabs ── */
+.neo-brutalism .nb-filter-active,
+.neo-brutalism .nb-filter-active span,
+.neo-brutalism .nb-filter-active * {
+  color: #fff !important;
+  background: #016B61 !important;
+}
+.neo-brutalism .nb-filter-active:hover,
+.neo-brutalism .nb-filter-active:hover span,
+.neo-brutalism .nb-filter-active:hover * {
+  background: #016B61 !important;
+  color: rgba(255,255,255,0.75) !important;
+}
+.neo-brutalism .nb-filter-btn,
+.neo-brutalism .nb-filter-btn span {
+  color: #1F1F1F !important;
+}
+
+/* ── Outline/ghost buttons ── */
+.neo-brutalism button[class*="bg-transparent"]:not(.nb-theme-btn):not([aria-haspopup]) {
+  background: #fff !important;
+  color: #0D47A1 !important;
+}
+
+/* ── bg-primary buttons → orange CTA ── */
+.neo-brutalism button[class*="bg-primary"]:not(.nb-theme-btn),
+body.neo-brutalism button[class*="bg-primary"]:not(.nb-theme-btn) {
+  background: #016B61 !important;
+  color: #fff !important;
+  border: 1px solid #016B61 !important;
+  box-shadow: none !important;
+}
+.neo-brutalism button[class*="bg-primary"]:not(.nb-theme-btn):hover,
+body.neo-brutalism button[class*="bg-primary"]:not(.nb-theme-btn):hover {
+  background: #015A52 !important;
+  border-color: #015A52 !important;
+}
+
+/* ── bg-[rgb(var(--primary-default))] ActionIcon → white/blue ── */
+.neo-brutalism button[class*="primary-default"]:not(.nb-theme-btn),
+body.neo-brutalism button[class*="primary-default"]:not(.nb-theme-btn) {
+  background: #fff !important;
+  color: #0D47A1 !important;
+  border: 1px solid #0D47A140 !important;
+  box-shadow: none !important;
+}
+.neo-brutalism button[class*="primary-default"]:not(.nb-theme-btn):hover,
+body.neo-brutalism button[class*="primary-default"]:not(.nb-theme-btn):hover {
+  background: #E8F4FF !important;
+  border-color: #0D47A1 !important;
+}
+
+/* ── Send button (in chat area) → orange ── */
+.neo-brutalism .nb-chat-inner button[class*="border-transparent"]:not(.nb-theme-btn) {
+  background: #016B61 !important;
+  color: #fff !important;
+  border: 1px solid #016B61 !important;
+}
+
+/* ── ActionIcon (icon-only buttons) ── */
+.neo-brutalism [class*="rizzui-action-icon"] {
+  border: 1px solid #0D47A120 !important;
+  box-shadow: none !important;
+  background: #fff !important;
+  color: #0D47A1 !important;
+}
+.neo-brutalism [class*="rizzui-action-icon"]:hover {
+  background: #0D47A108 !important;
+  border-color: #0D47A1 !important;
+}
+.neo-brutalism [class*="rizzui-action-icon"]:active {
+  transform: translate(1px, 1px) !important;
+}
+
+/* ── Avatar ── */
+.neo-brutalism [class*="rizzui-avatar"] {
+  border: 1px solid #B0BEC540 !important;
+  box-shadow: none !important;
+}
+
+/* ── Unread badge ── */
+.neo-brutalism .rounded-full {
+  border: none !important;
+}
+
+/* ── Attachment preview box ── */
+.neo-brutalism .border.border-gray-200.bg-gray-50 {
+  border: 1px solid #0D47A140 !important;
+  background: #B0BEC515 !important;
+  box-shadow: none !important;
+}
+
+/* ── Quick replies / session bar ── */
+.neo-brutalism .nb-chat-inner .bg-white.px-4.py-2 {
+  background: #FFFFFF !important;
+  border-top: 1px solid #B0BEC5 !important;
+}
+
+/* ── Empty state ── */
+.neo-brutalism .flex.flex-1.items-center.justify-center {
+  background: #FFFFFF !important;
+}
+
+/* ── Scrollbars ── */
+.neo-brutalism .custom-scrollbar::-webkit-scrollbar-thumb,
+.neo-brutalism .custom-scrollbar-message::-webkit-scrollbar-thumb {
+  background-color: #B0BEC5 !important;
+  border-radius: 0 !important;
+}
+.neo-brutalism .custom-scrollbar::-webkit-scrollbar-track,
+.neo-brutalism .custom-scrollbar-message::-webkit-scrollbar-track {
+  background: #F5F5F5 !important;
+}
+
+/* ── Dropdown popups (emoji, attachment menu) ── */
+.neo-brutalism .absolute.bottom-full,
+.neo-brutalism .absolute.top-full {
+  border: 1px solid #0D47A140 !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
+  background: #fff !important;
+}
+.neo-brutalism .absolute.bottom-full button,
+.neo-brutalism .absolute.top-full button {
+  border: none !important;
+  box-shadow: none !important;
+}
+.neo-brutalism .absolute.bottom-full button:hover,
+.neo-brutalism .absolute.top-full button:hover {
+  background: #B0BEC520 !important;
+  transform: none !important;
+}
+
+/* ── Quick replies popup ── */
+.neo-brutalism .absolute.right-0.bottom-full {
+  border: 1px solid #0D47A140 !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
+}
+
+/* ── Session expired bar ── */
+.neo-brutalism .border-yellow-200.bg-yellow-50 {
+  background: #FFD54F !important;
+  border: 2px solid #1F1F1F !important;
+  color: #1F1F1F !important;
+  font-weight: 700 !important;
+  box-shadow: 4px 4px 0 #1F1F1F !important;
+  margin-bottom: 8px !important;
+}
+.neo-brutalism .border-yellow-200.bg-yellow-50 * {
+  color: #1F1F1F !important;
+}
+
+/* ── Divider lines ── */
+.neo-brutalism .border-gray-200,
+.neo-brutalism .border-gray-100,
+.neo-brutalism .border-gray-300 {
+  border-color: #B0BEC5 !important;
+}
+
+/* ── Pinned / archived row ── */
+.neo-brutalism .bg-gray-50:not([role="button"]) {
+  background: #FFFFFF !important;
+  border-bottom: 1px solid #B0BEC530 !important;
+}
+.neo-brutalism .bg-gray-50:not([role="button"]):hover {
+  background: #B0BEC520 !important;
+}
+
+/* ── Message timestamps ── */
+.neo-brutalism .text-gray-500 {
+  color: #1F2937 !important;
+}
+
+/* ── text-gray-500 inside blue headers → white ── */
+.neo-brutalism .nb-chat-hdr .text-gray-500,
+.neo-brutalism .nb-sidebar-hdr .text-gray-500 {
+  color: #fff !important;
+}
+.neo-brutalism .nb-chat-hdr .text-gray-400,
+.neo-brutalism .nb-chat-hdr .text-gray-300,
+.neo-brutalism .nb-sidebar-hdr .text-gray-400,
+.neo-brutalism .nb-sidebar-hdr .text-gray-300 {
+  color: rgba(255,255,255,0.7) !important;
+}
+
+/* ── User name in outgoing bubble ── */
+.neo-brutalism .text-green-700 {
+  color: #0D47A1 !important;
+}
+
+/* ================================================================ */
+/*  NEO BRUTALISM — MODAL                                           */
+/*  (portal outside .neo-brutalism, scoped via body.neo-brutalism)  */
+/* ================================================================ */
+
+body.neo-brutalism [role="dialog"] * {
+  border-radius: 0 !important;
+  font-family: var(--font-public-sans), 'Public Sans', sans-serif !important;
+}
+
+/* ── Modal panel ── */
+body.neo-brutalism [role="dialog"] [data-headlessui-state] {
+  background: #fff !important;
+  border: 2px solid #1F1F1F !important;
+  box-shadow: 6px 6px 0 #1F1F1F !important;
+}
+
+/* ── Modal header ── */
+body.neo-brutalism [role="dialog"] .border-b,
+body.neo-brutalism [role="dialog"] header,
+body.neo-brutalism [role="dialog"] [class~="border-b"] {
+  border-bottom: 2px solid #1F1F1F !important;
+  background: #0D47A1 !important;
+}
+body.neo-brutalism [role="dialog"] .border-b *,
+body.neo-brutalism [role="dialog"] header *,
+body.neo-brutalism [role="dialog"] [class~="border-b"] * {
+  color: #fff !important;
+}
+
+/* ── Inputs inside modal ── */
+body.neo-brutalism [role="dialog"] span[class*="focus-within\:border-primary"],
+body.neo-brutalism [role="dialog"] span[class*="hover\:border-primary"] {
+  background: #fff !important;
+  border: 1px solid #0D47A140 !important;
+  box-shadow: none !important;
+}
+body.neo-brutalism [role="dialog"] .rizzui-input-field,
+body.neo-brutalism [role="dialog"] .rizzui-textarea-field {
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  color: #1F1F1F !important;
+}
+body.neo-brutalism [role="dialog"] textarea {
+  border: 1px solid #0D47A140 !important;
+  background: #fff !important;
+  box-shadow: none !important;
+  color: #1F1F1F !important;
+}
+
+/* ── Select inside modal ── */
+body.neo-brutalism [role="dialog"] [aria-haspopup="listbox"] {
+  background: #fff !important;
+  border: 1px solid #0D47A140 !important;
+  box-shadow: none !important;
+  color: #1F1F1F !important;
+  --tw-ring-shadow: none !important;
+  --tw-ring-color: transparent !important;
+  outline: none !important;
+}
+body.neo-brutalism [role="dialog"] [aria-haspopup="listbox"] span,
+body.neo-brutalism [role="dialog"] [aria-haspopup="listbox"] svg {
+  color: #1F1F1F !important;
+  stroke: #1F1F1F !important;
+}
+
+/* ── Buttons inside modal ── */
+body.neo-brutalism [role="dialog"] button[class*="border-transparent"]:not(.nb-theme-btn) {
+  background: #016B61 !important;
+  color: #fff !important;
+  border: 1px solid #016B61 !important;
+  box-shadow: none !important;
+}
+body.neo-brutalism [role="dialog"] button:not([class*="border-transparent"]):not(.nb-theme-btn):not([aria-haspopup]) {
+  border: 1px solid #0D47A140 !important;
+  box-shadow: none !important;
+  background: #fff !important;
+  color: #1F1F1F !important;
+}
+body.neo-brutalism [role="dialog"] button:not(.nb-theme-btn):active {
+  transform: translate(1px, 1px) !important;
+}
+
+/* ── Table inside modal ── */
+body.neo-brutalism [role="dialog"] [class*="border-gray"] {
+  border-color: #B0BEC5 !important;
+}
+body.neo-brutalism [role="dialog"] thead,
+body.neo-brutalism [role="dialog"] th {
+  background: #B0BEC520 !important;
+  color: #1F1F1F !important;
+  border: 1px solid #0D47A140 !important;
+}
+body.neo-brutalism [role="dialog"] tr:hover td {
+  background: #B0BEC510 !important;
+}
+
+/* ── Select options dropdown portal ── */
+body.neo-brutalism [role="listbox"] {
+  background: #fff !important;
+  border: 2px solid #1F1F1F !important;
+  box-shadow: 4px 4px 0 #1F1F1F !important;
+  color: #1F1F1F !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+}
+
+/* reset border-radius on all children */
+body.neo-brutalism [role="listbox"] * {
+  border-radius: 0 !important;
+  font-family: var(--font-public-sans), 'Public Sans', sans-serif !important;
+}
+
+/* search wrapper — keep natural padding, only add separator */
+body.neo-brutalism [role="listbox"] > div:first-child {
+  background: #fff !important;
+  border-bottom: 2px solid #1F1F1F !important;
+  margin: 0 !important;
+  padding: 4px !important;
+}
+
+/* search icon — centered, dark color */
+body.neo-brutalism [role="listbox"] span[class*="rizzui-select-prefix"] {
+  color: #1F1F1F !important;
+  left: 14px !important;
+}
+body.neo-brutalism [role="listbox"] span[class*="rizzui-select-prefix"] svg {
+  stroke: #1F1F1F !important;
+}
+
+/* search input */
+body.neo-brutalism [role="listbox"] input {
+  background: #fff !important;
+  color: #1F1F1F !important;
+  border: 2px solid #1F1F1F !important;
+  box-shadow: 2px 2px 0 #1F1F1F !important;
+  border-radius: 0 !important;
+  outline: none !important;
+  height: 40px !important;
+  padding-left: 40px !important;
+  --tw-ring-shadow: none !important;
+  --tw-ring-color: transparent !important;
+  --tw-ring-offset-shadow: none !important;
+}
+body.neo-brutalism [role="listbox"] input:focus {
+  background: #fff !important;
+  box-shadow: 2px 2px 0 #1F1F1F !important;
+  outline: none !important;
+  --tw-ring-shadow: none !important;
+  --tw-ring-color: transparent !important;
+}
+body.neo-brutalism [role="listbox"] input::placeholder {
+  color: #1F1F1F80 !important;
+  opacity: 1 !important;
+}
+
+/* option items */
+body.neo-brutalism [role="option"],
+body.neo-brutalism [role="option"] *,
+body.neo-brutalism [role="listbox"] .text-foreground {
+  color: #1F1F1F !important;
+  background: transparent !important;
+}
+body.neo-brutalism [role="option"]:hover,
+body.neo-brutalism [role="option"]:hover * {
+  background: #0D47A1 !important;
+  color: #fff !important;
+}
+body.neo-brutalism [role="option"][data-headlessui-state*="active"],
+body.neo-brutalism [role="option"][data-headlessui-state*="active"] * {
+  background: #0D47A1 !important;
+  color: #fff !important;
+  font-weight: 600 !important;
+}
+body.neo-brutalism [role="option"][aria-selected="true"],
+body.neo-brutalism [role="option"][aria-selected="true"] * {
+  background: #016B61 !important;
+  color: #fff !important;
+  font-weight: 700 !important;
+}

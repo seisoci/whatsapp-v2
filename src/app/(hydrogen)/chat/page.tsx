@@ -28,6 +28,7 @@ import {
   PiDotsThreeVertical,
   PiPushPin,
   PiHouse,
+  PiPalette,
 } from 'react-icons/pi';
 import Link from 'next/link';
 import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
@@ -232,6 +233,12 @@ export default function ChatPage() {
   >(null);
   const contactOptionsMenuRef = useRef<HTMLDivElement>(null);
   const closingViaUI = useRef(false);
+  const [isNeoBrutalism, setIsNeoBrutalism] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('chat-theme') === 'neo-brutalism';
+    }
+    return false;
+  });
 
   // Load pinned contacts from localStorage on mount
   useEffect(() => {
@@ -1473,6 +1480,26 @@ export default function ChatPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lightboxOpen, showChat]);
 
+  // Sync neo-brutalism class on <body> so modal portal (outside .neo-brutalism div) also gets styled
+  useEffect(() => {
+    if (isNeoBrutalism) {
+      document.body.classList.add('neo-brutalism');
+    } else {
+      document.body.classList.remove('neo-brutalism');
+    }
+    return () => {
+      document.body.classList.remove('neo-brutalism');
+    };
+  }, [isNeoBrutalism]);
+
+  const toggleNeoBrutalism = () => {
+    setIsNeoBrutalism((prev) => {
+      const next = !prev;
+      localStorage.setItem('chat-theme', next ? 'neo-brutalism' : 'default');
+      return next;
+    });
+  };
+
   // Close lightbox via UI (X button / swipe) — syncs history
   const closeLightboxViaUI = () => {
     closingViaUI.current = true;
@@ -1518,7 +1545,7 @@ export default function ChatPage() {
     <>
       {/* Fullscreen Chat Layout: z-[9999] and top-0 to cover the global header */}
       <div
-        className={`@container fixed inset-0 top-0 z-[9999] ${getSidebarOffset()}`}
+        className={`@container fixed inset-0 top-0 z-[9999] ${getSidebarOffset()}${isNeoBrutalism ? ' neo-brutalism' : ''}`}
       >
         <div className="grid h-full grid-cols-12 gap-0 overflow-hidden bg-white dark:bg-gray-50">
           {/* Sidebar - Contact List */}
@@ -1529,7 +1556,7 @@ export default function ChatPage() {
           >
             <div className="flex h-full flex-col">
               {/* Header with Phone Number Selector */}
-              <div className="border-b border-gray-200 p-4">
+              <div className="nb-sidebar-hdr border-b border-gray-200 p-4">
                 <div className="mb-4 flex items-end gap-2">
                   <Link href="/">
                     <ActionIcon
@@ -1539,6 +1566,17 @@ export default function ChatPage() {
                       <PiHouse className="h-5 w-5" />
                     </ActionIcon>
                   </Link>
+                  <button
+                    onClick={toggleNeoBrutalism}
+                    title={isNeoBrutalism ? 'Switch to Default Theme' : 'Switch to Neo Brutalism'}
+                    className={`nb-theme-btn flex h-10 w-10 shrink-0 items-center justify-center border-2 transition-all ${
+                      isNeoBrutalism
+                        ? 'rounded-none border-[#1F1F1F] bg-[#B0BEC520] shadow-[3px_3px_0_#1F1F1F] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none'
+                        : 'rounded-lg border-gray-300 bg-white text-gray-600 hover:border-gray-400 hover:bg-gray-50'
+                    }`}
+                  >
+                    <PiPalette className={`h-5 w-5 ${isNeoBrutalism ? 'text-[#1F1F1F]' : 'text-gray-600'}`} />
+                  </button>
                   <div className="min-w-0 flex-1">
                     <label className="mb-1 block text-xs font-medium text-gray-700">
                       WhatsApp Number
@@ -1645,63 +1683,43 @@ export default function ChatPage() {
                 }}
               >
                 <div className="flex gap-2 border-b border-gray-200 px-4 py-3">
-                  <Button
-                    size="sm"
-                    variant={chatFilter === 'all' ? 'solid' : 'outline'}
-                    onClick={() => setChatFilter('all')}
-                    className="flex flex-1 items-center justify-center gap-2"
-                  >
-                    <span>All</span>
-                    {totalContacts > 0 && (
-                      <span
-                        className={`inline-flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-xs font-medium ${
-                          chatFilter === 'all'
-                            ? 'bg-white/20 text-white'
-                            : 'bg-[rgb(var(--primary-default))] text-white'
-                        }`}
+                  {(['all', 'unread', 'archived'] as const).map((filter) => {
+                    const isActive = chatFilter === filter;
+                    const count = filter === 'all' ? totalContacts : filter === 'unread' ? unreadCount : archivedCount;
+                    const label = filter === 'all' ? 'All' : filter === 'unread' ? 'Unread' : 'Archived';
+                    return (
+                      <button
+                        key={filter}
+                        type="button"
+                        onClick={() => setChatFilter(filter)}
+                        style={isNeoBrutalism ? {
+                          background: isActive ? '#016B61' : '#fff',
+                          color: isActive ? '#fff' : '#1F1F1F',
+                          border: isActive ? '1.5px solid #016B61' : '1px solid #1F1F1F30',
+                          fontWeight: isActive ? 700 : 500,
+                          padding: '4px 10px',
+                          fontSize: '12px',
+                          height: '32px',
+                          flex: 1,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '6px',
+                          cursor: 'pointer',
+                          borderRadius: 0,
+                        } : undefined}
+                        className={isNeoBrutalism ? (isActive ? 'nb-filter-active' : 'nb-filter-btn') : `font-medium cursor-pointer focus:outline-none transition-colors duration-200 rounded-(--border-radius) px-2.5 py-1 text-xs h-8 flex flex-1 items-center justify-center gap-2 ${isActive ? 'bg-primary text-primary-foreground border-(length:--border-width) border-transparent' : 'bg-transparent border-(length:--border-width) border-border hover:border-primary hover:text-primary'}`}
                       >
-                        {totalContacts}
-                      </span>
-                    )}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant={chatFilter === 'unread' ? 'solid' : 'outline'}
-                    onClick={() => setChatFilter('unread')}
-                    className="flex flex-1 items-center justify-center gap-2"
-                  >
-                    <span>Unread</span>
-                    {unreadCount > 0 && (
-                      <span
-                        className={`inline-flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-xs font-medium ${
-                          chatFilter === 'unread'
-                            ? 'bg-white/20 text-white'
-                            : 'bg-[rgb(var(--primary-default))] text-white'
-                        }`}
-                      >
-                        {unreadCount}
-                      </span>
-                    )}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant={chatFilter === 'archived' ? 'solid' : 'outline'}
-                    onClick={() => setChatFilter('archived')}
-                    className="flex flex-1 items-center justify-center gap-2"
-                  >
-                    <span>Archived</span>
-                    {archivedCount > 0 && (
-                      <span
-                        className={`inline-flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-xs font-medium ${
-                          chatFilter === 'archived'
-                            ? 'bg-white/20 text-white'
-                            : 'bg-[rgb(var(--primary-default))] text-white'
-                        }`}
-                      >
-                        {archivedCount}
-                      </span>
-                    )}
-                  </Button>
+                        <span>{label}</span>
+                        {count > 0 && (
+                          <span style={isNeoBrutalism ? { background: isActive ? 'rgba(255,255,255,0.2)' : '#1F1F1F15', color: isActive ? '#fff' : '#1F1F1F', borderRadius: 0, padding: '0 5px', fontSize: '11px', fontWeight: 600 } : undefined}
+                            className={isNeoBrutalism ? 'inline-flex h-5 min-w-[20px] items-center justify-center' : `inline-flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-xs font-medium ${isActive ? 'bg-white/20 text-white' : 'bg-[rgb(var(--primary-default))] text-white'}`}>
+                            {count}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
 
                 {/* Archived messages header - shown when not in archived filter and there are archived contacts */}
@@ -1925,7 +1943,7 @@ export default function ChatPage() {
           >
             {selectedContact ? (
               <div
-                className="relative flex h-full w-full flex-col"
+                className="nb-chat-inner relative flex h-full w-full flex-col"
                 onDragEnter={handleDragEnter}
                 onDragLeave={handleDragLeave}
                 onDragOver={handleDragOver}
@@ -1946,7 +1964,7 @@ export default function ChatPage() {
                   </div>
                 )}
                 {/* Chat Header */}
-                <div className="flex flex-shrink-0 items-center justify-between border-b border-gray-200 px-3 py-2">
+                <div className="nb-chat-hdr flex flex-shrink-0 items-center justify-between border-b border-gray-200 px-3 py-2">
                   <div className="flex items-center gap-2">
                     <Button
                       variant="text"
@@ -2026,7 +2044,7 @@ export default function ChatPage() {
                 <div
                   ref={chatContainerRef}
                   className={`custom-scrollbar-message relative min-h-0 flex-1 overflow-y-auto p-4 ${messagesLoading ? 'invisible' : 'visible'}`}
-                  style={{ scrollBehavior: 'auto', backgroundImage: 'url(/background.png)', backgroundRepeat: 'repeat', backgroundSize: 'auto' }}
+                  style={isNeoBrutalism ? { scrollBehavior: 'auto', background: '#FFFFFF', borderBottom: '2px solid #1F1F1F' } : { scrollBehavior: 'auto', backgroundImage: 'url(/background.png)', backgroundRepeat: 'repeat', backgroundSize: 'auto' }}
                 >
                   {/* Loading overlay - show while messages load */}
                   {messagesLoading && (
@@ -2035,7 +2053,7 @@ export default function ChatPage() {
                     </div>
                   )}
 
-                  <div className="space-y-1">
+                  <div className="space-y-3">
                     {messages.map((msg) => {
                       const isOwn = msg.direction === 'outgoing';
                       return (
@@ -2048,11 +2066,11 @@ export default function ChatPage() {
                           >
                             {/* Message Content */}
                             <div
-                              className={`rounded-lg px-2.5 py-1 ${
-                                isOwn
-                                  ? 'bg-[#d9fdd3] text-gray-900 shadow-sm dark:bg-[#005c4b] dark:text-gray-100'
-                                  : 'bg-white text-gray-900 shadow-sm dark:bg-[#202c33] dark:text-gray-100'
-                              } relative transition-all`}
+                              className={`px-2.5 py-1 relative transition-all ${
+                                isNeoBrutalism
+                                  ? `border border-[#1F1F1F]/30 text-[#1F1F1F] ${isOwn ? 'bg-[#B0BEC520] shadow-[2px_2px_0_#1F1F1F]/20' : 'bg-white shadow-[2px_2px_0_#1F1F1F]/20'}`
+                                  : `rounded-lg ${isOwn ? 'bg-[#d9fdd3] text-gray-900 shadow-sm dark:bg-[#005c4b] dark:text-gray-100' : 'bg-white text-gray-900 shadow-sm dark:bg-[#202c33] dark:text-gray-100'}`
+                              }`}
                             >
                               {/* Username inside bubble */}
                               {isOwn && msg.user && (
@@ -2579,7 +2597,7 @@ export default function ChatPage() {
                 </div>
 
                 {/* Input Area */}
-                <div className="flex-shrink-0 p-4" style={{ backgroundImage: 'url(/background.png)', backgroundRepeat: 'repeat', backgroundSize: 'auto' }}>
+                <div className="flex-shrink-0 p-4" style={isNeoBrutalism ? { background: '#FFFFFF', borderTop: '3px solid #1F1F1F' } : { backgroundImage: 'url(/background.png)', backgroundRepeat: 'repeat', backgroundSize: 'auto' }}>
 
                   {/* Attachment Preview */}
                   {pendingAttachment && (
