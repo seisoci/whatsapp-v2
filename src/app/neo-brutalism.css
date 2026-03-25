@@ -131,13 +131,26 @@ body.neo-brutalism,
   box-shadow: 0 0 0 2px #0D47A120 !important;
 }
 
-/* ── rizzui inner input/textarea fields ── */
-.neo-brutalism .rizzui-input-field,
-.neo-brutalism .rizzui-textarea-field {
+/* ── rizzui inner input field (border on wrapper span, not field) ── */
+.neo-brutalism .rizzui-input-field {
   border: none !important;
   box-shadow: none !important;
   background: transparent !important;
   color: #1F1F1F !important;
+}
+/* ── rizzui textarea field (border directly on element) ── */
+.neo-brutalism .rizzui-textarea-field {
+  border: 1px solid #B0BEC5 !important;
+  box-shadow: none !important;
+  background: #fff !important;
+  color: #1F1F1F !important;
+}
+.neo-brutalism .rizzui-textarea-field:focus {
+  border-color: #0D47A1 !important;
+  box-shadow: none !important;
+  outline: none !important;
+  --tw-ring-shadow: none !important;
+  --tw-ring-color: transparent !important;
 }
 .neo-brutalism .rizzui-input-field::placeholder,
 .neo-brutalism .rizzui-textarea-field::placeholder {

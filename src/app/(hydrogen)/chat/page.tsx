@@ -292,6 +292,10 @@ export default function ChatPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const isMobileRef = useRef(false);
+  useEffect(() => {
+    isMobileRef.current = /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  }, []);
 
   // Load phone numbers on mount
   useEffect(() => {
@@ -1203,6 +1207,11 @@ export default function ChatPage() {
     const value = e.target.value;
     setMessageInput(value);
 
+    // Auto-grow textarea height (max 200px)
+    const el = e.target;
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 200) + 'px';
+
     // Check if user typed "/" to trigger suggestions
     if (value.startsWith('/')) {
       const searchTerm = value.slice(1).toLowerCase();
@@ -1250,8 +1259,8 @@ export default function ChatPage() {
       }
     }
 
-    // Handle Enter key to send message (when suggestions are not shown)
-    if (e.key === 'Enter' && !e.shiftKey) {
+    // Handle Enter key to send message (desktop only — on mobile use send button)
+    if (e.key === 'Enter' && !e.shiftKey && !isMobileRef.current) {
       e.preventDefault();
       handleSendMessage();
     }
@@ -2705,12 +2714,12 @@ export default function ChatPage() {
                     <div className="relative flex-1">
                       {/* Suggestions Dropdown */}
                       {showSuggestions && filteredQuickReplies.length > 0 && (
-                        <div className="absolute right-0 bottom-full left-0 z-50 mb-2 max-h-48 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800">
+                        <div className="absolute bottom-full left-0 right-0 z-50 mb-2 max-h-64 min-w-[480px] overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800">
                           {filteredQuickReplies.map((qr, index) => (
                             <button
                               key={qr.id}
                               onClick={() => handleQuickReply(qr)}
-                              className={`w-full border-b border-gray-100 px-4 py-2 text-left last:border-b-0 hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-700 ${
+                              className={`w-full border-b border-gray-100 px-4 py-2.5 text-left last:border-b-0 hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-700 ${
                                 index === selectedSuggestionIndex
                                   ? 'bg-gray-100 dark:bg-gray-700'
                                   : ''
@@ -2719,7 +2728,7 @@ export default function ChatPage() {
                               <div className="text-sm font-medium">
                                 /{qr.shortcut}
                               </div>
-                              <div className="truncate text-xs text-gray-600 dark:text-gray-400">
+                              <div className="text-xs text-gray-600 dark:text-gray-400">
                                 {qr.text}
                               </div>
                             </button>

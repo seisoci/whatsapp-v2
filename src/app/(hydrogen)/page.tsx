@@ -132,7 +132,7 @@ export default function DashboardPage() {
 
   return (
     <div className="@container">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col gap-4 mb-6 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <Title as="h2" className="text-2xl lg:text-3xl font-bold mb-2">
             Command Center
@@ -141,7 +141,7 @@ export default function DashboardPage() {
             Overview of your WhatsApp Business api activity & performance.
           </Text>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
             <Select
               options={phoneNumberOptions}
               value={selectedPhoneNumberId}
@@ -151,11 +151,11 @@ export default function DashboardPage() {
                 phoneNumberOptions.find((o) => o.value === selected)?.label || 'Semua Nomor'
               }
               placeholder="Filter nomor..."
-              className="w-72"
+              className="w-full sm:w-56"
               inPortal={false}
             />
-            <Link href="/chat">
-              <Button className="gap-2">
+            <Link href="/chat" className="w-full sm:w-auto">
+              <Button className="gap-2 w-full sm:w-auto">
                 Go to Chat <PiArrowRight />
               </Button>
             </Link>
