@@ -135,11 +135,19 @@ export class UploadController {
       const arrayBuffer = await file.arrayBuffer();
       const buffer = Buffer.from(arrayBuffer);
 
-      // Upload to storage
-      const result = await storageService.uploadFile(file.name, buffer, file.type, {
-        uploadedBy: user.userId,
-        originalName: file.name,
-      });
+      // Get optional folder from request body
+      const folder = body['folder'] as string | undefined;
+
+      // Upload to storage — use subfolder if provided
+      const result = folder
+        ? await storageService.uploadFileToPath(folder, file.name, buffer, file.type, {
+            uploadedBy: user.userId,
+            originalName: file.name,
+          })
+        : await storageService.uploadFile(file.name, buffer, file.type, {
+            uploadedBy: user.userId,
+            originalName: file.name,
+          });
 
       return c.json(
         {
