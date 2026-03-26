@@ -1094,7 +1094,8 @@ export default function ChatPage() {
         setUploadingAttachment(true);
         try {
           const uploadResult = await uploadApi.uploadFile(
-            attachmentToSend.file
+            attachmentToSend.file,
+            'internal'
           );
           if (!uploadResult.success || !uploadResult.data) {
             throw new Error('Upload failed');
@@ -1332,17 +1333,19 @@ export default function ChatPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Create preview for images
-    let preview: string | undefined;
-    if (type === 'image' && file.type.startsWith('image/')) {
-      preview = URL.createObjectURL(file);
-    }
-
-    setPendingAttachment({ file, preview, type });
     setShowAttachmentMenu(false);
-
     // Clear input value to allow re-selecting same file
     e.target.value = '';
+
+    if (type === 'image' && file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        setPendingAttachment({ file, preview: ev.target?.result as string, type });
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setPendingAttachment({ file, preview: undefined, type });
+    }
   };
 
   // Handle paste event for images
@@ -1355,8 +1358,11 @@ export default function ChatPage() {
         e.preventDefault();
         const file = item.getAsFile();
         if (file) {
-          const preview = URL.createObjectURL(file);
-          setPendingAttachment({ file, preview, type: 'image' });
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            setPendingAttachment({ file, preview: ev.target?.result as string, type: 'image' });
+          };
+          reader.readAsDataURL(file);
         }
         break;
       }
@@ -1365,9 +1371,6 @@ export default function ChatPage() {
 
   // Cancel pending attachment
   const cancelAttachment = () => {
-    if (pendingAttachment?.preview) {
-      URL.revokeObjectURL(pendingAttachment.preview);
-    }
     setPendingAttachment(null);
   };
 
@@ -1422,13 +1425,15 @@ export default function ChatPage() {
       type = 'document';
     }
 
-    // Create preview for images
-    let preview: string | undefined;
     if (type === 'image') {
-      preview = URL.createObjectURL(file);
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        setPendingAttachment({ file, preview: ev.target?.result as string, type });
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setPendingAttachment({ file, preview: undefined, type });
     }
-
-    setPendingAttachment({ file, preview, type });
   };
 
   // Toggle attachment menu

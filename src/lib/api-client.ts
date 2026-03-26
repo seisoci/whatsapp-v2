@@ -272,9 +272,12 @@ export const authApi = {
 
 // Upload API endpoints
 export const uploadApi = {
-  uploadFile: (file: File, metadata?: any) => {
+  uploadFile: (file: File, folder?: string, metadata?: any) => {
     const formData = new FormData();
     formData.append('file', file);
+    if (folder) {
+      formData.append('folder', folder);
+    }
     if (metadata) {
       formData.append('metadata', JSON.stringify(metadata));
     }
