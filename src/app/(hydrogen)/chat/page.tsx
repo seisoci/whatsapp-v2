@@ -232,6 +232,7 @@ export default function ChatPage() {
     string | null
   >(null);
   const contactOptionsMenuRef = useRef<HTMLDivElement>(null);
+  const contactListRef = useRef<HTMLDivElement>(null);
   const closingViaUI = useRef(false);
   const [isNeoBrutalism, setIsNeoBrutalism] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -266,7 +267,12 @@ export default function ChatPage() {
     if (isPinned) {
       savePinnedContacts(pinnedContacts.filter((id) => id !== contactId));
     } else {
-      savePinnedContacts([...pinnedContacts, contactId]);
+      // Prepend so newly pinned contact appears at top of pinned group
+      savePinnedContacts([contactId, ...pinnedContacts]);
+      // Scroll contact list to top so pinned contact is visible
+      setTimeout(() => {
+        contactListRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+      }, 0);
     }
     setContactOptionsMenuId(null);
   };
@@ -1528,12 +1534,15 @@ export default function ChatPage() {
     window.history.back();
   };
 
-  // Server-side filtering is now used, sort with pinned contacts first
+  // Server-side filtering is now used, sort with pinned contacts first (by pin order)
   const filteredContacts = [...contacts].sort((a, b) => {
-    const aIsPinned = pinnedContacts.includes(a.id);
-    const bIsPinned = pinnedContacts.includes(b.id);
+    const aPinIdx = pinnedContacts.indexOf(a.id);
+    const bPinIdx = pinnedContacts.indexOf(b.id);
+    const aIsPinned = aPinIdx !== -1;
+    const bIsPinned = bPinIdx !== -1;
     if (aIsPinned && !bIsPinned) return -1;
     if (!aIsPinned && bIsPinned) return 1;
+    if (aIsPinned && bIsPinned) return aPinIdx - bPinIdx;
     return 0;
   });
 
@@ -1682,6 +1691,7 @@ export default function ChatPage() {
 
               {/* Contact List */}
               <div
+                ref={contactListRef}
                 className="custom-scrollbar min-h-0 flex-1 overflow-y-auto"
                 onScroll={(e) => {
                   const target = e.currentTarget;
