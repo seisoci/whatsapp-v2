@@ -352,19 +352,14 @@ export default function ChatPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPhoneNumberId, selectedContact?.id]);
 
-  // Trigger search when debounced query changes
+  // Trigger search when debounced query changes (not on phone number change — that's handled separately)
   useEffect(() => {
     if (selectedPhoneNumberId) {
-      // Don't trigger on initial empty search if already handled by phone number selection
-      // But we generally want to reload when search changes.
-      // If search becomes empty, we reload all.
       setContactPage(1);
-      // Pass the specific search query to ensure we use the debounced value
-      // Note: loadContacts currently uses searchQuery state (closure), which matches debounced value at this point
       loadContacts(1, false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearchQuery, selectedPhoneNumberId]);
+  }, [debouncedSearchQuery]);
 
   // Refetch contacts when filter changes
   useEffect(() => {
