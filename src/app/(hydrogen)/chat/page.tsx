@@ -1829,8 +1829,9 @@ export default function ChatPage() {
                         </p>
                         <p className="truncate text-[10px] text-gray-600">
                           {contact.lastMessage?.textBody ||
-                            `[${contact.lastMessage?.messageType}]` ||
-                            'No messages'}
+                            (contact.lastMessage?.messageType
+                              ? `[${contact.lastMessage.messageType}]`
+                              : 'No messages')}
                         </p>
                       </div>
                       {/* Right side - timestamp, badges, and options */}

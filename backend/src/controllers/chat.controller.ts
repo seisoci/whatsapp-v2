@@ -384,11 +384,22 @@ export class ChatController {
         }, 404);
       }
 
+      // Fetch last message for this contact
+      const lastMessageResult = await AppDataSource.query(
+        `SELECT id, message_type, text_body, media_caption, direction, timestamp, status
+         FROM messages
+         WHERE contact_id = $1
+         ORDER BY timestamp DESC
+         LIMIT 1`,
+        [contactId]
+      );
+      const lastMessageData = lastMessageResult[0] || null;
+
       // Calculate session info
       const now = new Date();
       const sessionExpiresAt = contact.sessionExpiresAt;
       const isSessionActive = sessionExpiresAt ? now < new Date(sessionExpiresAt) : false;
-      const sessionRemainingSeconds = sessionExpiresAt 
+      const sessionRemainingSeconds = sessionExpiresAt
         ? Math.max(0, Math.floor((new Date(sessionExpiresAt).getTime() - now.getTime()) / 1000))
         : 0;
 
@@ -413,6 +424,15 @@ export class ChatController {
           lastCustomerMessageAt: contact.lastCustomerMessageAt,
           createdAt: contact.createdAt,
           updatedAt: contact.updatedAt,
+          lastMessage: lastMessageData ? {
+            id: lastMessageData.id,
+            messageType: lastMessageData.message_type,
+            textBody: lastMessageData.text_body,
+            mediaCaption: lastMessageData.media_caption,
+            direction: lastMessageData.direction,
+            timestamp: lastMessageData.timestamp,
+            status: lastMessageData.status,
+          } : null,
         },
       });
     } catch (error: any) {
