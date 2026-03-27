@@ -822,7 +822,27 @@ export default function ChatPage() {
       if (append) {
         setContacts((prev) => [...prev, ...newContacts]);
       } else {
-        setContacts(newContacts);
+        // Fetch any pinned contacts not in the loaded list and prepend them
+        const saved = localStorage.getItem('pinnedContacts');
+        const pinnedIds: string[] = saved ? (JSON.parse(saved) as string[]) : [];
+        const missingPinnedIds = pinnedIds.filter(
+          (id) => !newContacts.find((c: Contact) => c.id === id)
+        );
+        if (missingPinnedIds.length > 0) {
+          const fetched = await Promise.allSettled(
+            missingPinnedIds.map((id) => chatApi.getContact(id))
+          );
+          const fetchedContacts = fetched
+            .filter((r): r is PromiseFulfilledResult<Contact> => r.status === 'fulfilled')
+            .map((r) => r.value);
+          // Prepend fetched pinned contacts (preserving pin order) before the rest
+          const orderedPinned = pinnedIds
+            .map((id) => fetchedContacts.find((c) => c.id === id))
+            .filter((c): c is Contact => c !== undefined);
+          setContacts([...orderedPinned, ...newContacts]);
+        } else {
+          setContacts(newContacts);
+        }
       }
 
       // Check if there are more contacts
