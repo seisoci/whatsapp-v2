@@ -37,9 +37,19 @@ const envSchema = z.object({
   TURNSTILE_SECRET_KEY: z.string().optional(),
 });
 
+// Additional production requirements
+const _validateProductionEnv = (parsed: ReturnType<typeof envSchema.parse>) => {
+  if (parsed.NODE_ENV === 'production' && !parsed.TURNSTILE_SECRET_KEY) {
+    console.error('❌ TURNSTILE_SECRET_KEY wajib dikonfigurasi di production.');
+    process.exit(1);
+  }
+};
+
 export const validateEnv = () => {
   try {
-    return envSchema.parse(process.env);
+    const parsed = envSchema.parse(process.env);
+    _validateProductionEnv(parsed);
+    return parsed;
   } catch (error) {
     console.error('❌ Invalid environment variables:', error);
     process.exit(1);

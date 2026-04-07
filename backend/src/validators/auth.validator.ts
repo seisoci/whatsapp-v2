@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { emailSchema, passwordSchema, usernameSchema } from './common.validator';
+import { emailSchema, passwordSchema } from './common.validator';
 
 /**
  * Auth Validators
@@ -12,7 +12,7 @@ import { emailSchema, passwordSchema, usernameSchema } from './common.validator'
 export const loginSchema = z.object({
   email: emailSchema,
   password: z.string().min(1, 'Password harus diisi'),
-  turnstile_token: z.string().optional(),
+  turnstile_token: z.string().max(2048).optional(),
 });
 
 export type LoginInput = z.infer<typeof loginSchema>;

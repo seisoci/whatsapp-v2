@@ -1,9 +1,11 @@
 import { Context } from 'hono';
+import { getCookie, deleteCookie } from 'hono/cookie';
+import { logger } from '../utils/logger';
 import { AppDataSource } from '../config/database';
 import { User } from '../models/User';
 import { RefreshToken } from '../models/RefreshToken';
 import { JWTService } from '../utils/jwt';
-import { loginSchema, refreshTokenSchema } from '../validators';
+import { loginSchema } from '../validators';
 import { LoginResponse } from '../types';
 import { randomBytes } from 'crypto';
 import { env } from '../config/env';
@@ -16,7 +18,7 @@ export class AuthController {
    */
   private static async verifyTurnstile(token: string, remoteip?: string | null): Promise<boolean> {
     const secretKey = env.TURNSTILE_SECRET_KEY;
-    if (!secretKey) return true; // Skip verification if not configured
+    if (!secretKey) return false; // Fail-closed: tidak ada konfigurasi = tolak
 
     const formData = new FormData();
     formData.append('secret', secretKey);
@@ -200,7 +202,7 @@ export class AuthController {
         );
       }
 
-      console.error('Login error:', error);
+      logger.error('AuthController.login', 'Login gagal', error);
       return c.json(
         {
           success: false,
@@ -213,19 +215,35 @@ export class AuthController {
 
   static async refreshToken(c: Context) {
     try {
-      const body = c.get('sanitizedBody') || (await c.req.json());
+      // Ambil refresh token dari body ATAU httpOnly cookie
+      let refreshTokenValue: string | undefined;
 
-      // Validasi input
-      const validatedData = refreshTokenSchema.parse(body);
+      try {
+        const body = c.get('sanitizedBody') || (await c.req.json());
+        refreshTokenValue = body?.refreshToken;
+      } catch {
+        // Body kosong atau bukan JSON, lanjut cek cookie
+      }
+
+      if (!refreshTokenValue) {
+        refreshTokenValue = getCookie(c, 'refreshToken');
+      }
+
+      if (!refreshTokenValue) {
+        return c.json(
+          { success: false, message: 'Refresh token tidak valid.' },
+          401
+        );
+      }
 
       // Verifikasi refresh token
-      const decoded = await JWTService.verifyRefreshToken(validatedData.refreshToken);
+      await JWTService.verifyRefreshToken(refreshTokenValue);
 
       const refreshTokenRepository = AppDataSource.getRepository(RefreshToken);
 
       // Cari refresh token di database
       const refreshToken = await refreshTokenRepository.findOne({
-        where: { token: validatedData.refreshToken },
+        where: { token: refreshTokenValue },
         relations: ['user'],
       });
 
@@ -278,7 +296,7 @@ export class AuthController {
         );
       }
 
-      console.error('Refresh token error:', error);
+      logger.error('AuthController.refreshToken', 'Refresh token gagal', error);
       return c.json(
         {
           success: false,
@@ -290,51 +308,42 @@ export class AuthController {
   }
 
   static async logout(c: Context) {
-    try {
-      const body = c.get('sanitizedBody') || (await c.req.json());
+    // Selalu clear httpOnly cookie terlebih dahulu
+    deleteCookie(c, 'refreshToken', { path: '/' });
 
-      const { refreshToken: refreshTokenString } = body;
+    try {
+      // Ambil refresh token dari body ATAU httpOnly cookie (sebelum dihapus dari header response)
+      let refreshTokenString: string | undefined;
+
+      try {
+        const body = c.get('sanitizedBody') || (await c.req.json());
+        refreshTokenString = body?.refreshToken;
+      } catch {
+        // Body kosong, tidak apa-apa
+      }
 
       if (!refreshTokenString) {
-        return c.json(
-          {
-            success: false,
-            message: 'Refresh token harus disediakan.',
-          },
-          400
-        );
+        refreshTokenString = getCookie(c, 'refreshToken');
       }
 
-      const refreshTokenRepository = AppDataSource.getRepository(RefreshToken);
+      if (refreshTokenString) {
+        const refreshTokenRepository = AppDataSource.getRepository(RefreshToken);
+        const refreshToken = await refreshTokenRepository.findOne({
+          where: { token: refreshTokenString },
+        });
 
-      // Cari refresh token di database
-      const refreshToken = await refreshTokenRepository.findOne({
-        where: { token: refreshTokenString },
-      });
-
-      if (refreshToken) {
-        // Revoke refresh token
-        refreshToken.isRevoked = true;
-        refreshToken.revokedAt = new Date();
-        await refreshTokenRepository.save(refreshToken);
+        if (refreshToken) {
+          refreshToken.isRevoked = true;
+          refreshToken.revokedAt = new Date();
+          await refreshTokenRepository.save(refreshToken);
+        }
       }
 
-      return c.json(
-        {
-          success: true,
-          message: 'Logout berhasil.',
-        },
-        200
-      );
+      return c.json({ success: true, message: 'Logout berhasil.' }, 200);
     } catch (error: any) {
-      console.error('Logout error:', error);
-      return c.json(
-        {
-          success: false,
-          message: 'Terjadi kesalahan pada server.',
-        },
-        500
-      );
+      logger.error('AuthController.logout', 'Logout gagal', error);
+      // Tetap return success — cookie sudah dihapus
+      return c.json({ success: true, message: 'Logout berhasil.' }, 200);
     }
   }
 
@@ -381,7 +390,7 @@ export class AuthController {
         200
       );
     } catch (error: any) {
-      console.error('Me error:', error);
+      logger.error('AuthController.me', 'Gagal mengambil data user', error);
       return c.json(
         {
           success: false,

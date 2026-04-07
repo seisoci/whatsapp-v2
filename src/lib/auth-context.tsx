@@ -112,7 +112,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Save tokens
         setTokens(tokens.accessToken, tokens.refreshToken);
 
-        // Save user data
+        // Simpan user di sessionStorage untuk UI cache
         setUser(userData);
         saveUser(userData);
 

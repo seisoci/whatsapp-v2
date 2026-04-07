@@ -26,9 +26,10 @@ export const setTokens = (accessToken: string, refreshToken: string) => {
     localStorage.setItem('accessToken', accessToken);
     localStorage.setItem('refreshToken', refreshToken);
 
-    // Also set cookies for middleware authentication with SameSite
-    document.cookie = `accessToken=${accessToken}; path=/; max-age=${15 * 60}; SameSite=Lax`; // 15 minutes
-    document.cookie = `refreshToken=${refreshToken}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`; // 7 days
+    // Also set cookies for middleware authentication
+    const isSecure = window.location.protocol === 'https:' ? '; Secure' : '';
+    document.cookie = `accessToken=${accessToken}; path=/; max-age=${15 * 60}; SameSite=Strict${isSecure}`;
+    document.cookie = `refreshToken=${refreshToken}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Strict${isSecure}`;
   }
 };
 
@@ -38,9 +39,9 @@ export const clearTokens = () => {
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('user');
 
-    // Also clear cookies
-    document.cookie = 'accessToken=; path=/; max-age=0';
-    document.cookie = 'refreshToken=; path=/; max-age=0';
+    const isSecure = window.location.protocol === 'https:' ? '; Secure' : '';
+    document.cookie = `accessToken=; path=/; max-age=0; SameSite=Strict${isSecure}`;
+    document.cookie = `refreshToken=; path=/; max-age=0; SameSite=Strict${isSecure}`;
   }
 };
 
@@ -121,11 +122,10 @@ export async function refreshAccessToken(): Promise<string | null> {
 
       if (data.success && data.data) {
         const { accessToken } = data.data;
-        // Update only accessToken, keep existing refreshToken
         if (typeof window !== 'undefined') {
           localStorage.setItem('accessToken', accessToken);
-          // Update cookie with SameSite attribute for better compatibility
-          document.cookie = `accessToken=${accessToken}; path=/; max-age=${15 * 60}; SameSite=Lax`;
+          const isSecure = window.location.protocol === 'https:' ? '; Secure' : '';
+          document.cookie = `accessToken=${accessToken}; path=/; max-age=${15 * 60}; SameSite=Strict${isSecure}`;
         }
         return accessToken;
       }
@@ -170,10 +170,7 @@ async function apiRequest<T = any>(
     }
   }
 
-  // Get access token
   const token = getAccessToken();
-
-  // Set headers - don't set Content-Type for FormData (browser will set multipart/form-data automatically)
   const isFormData = fetchConfig.body instanceof FormData;
   const headers: Record<string, string> = {
     ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
@@ -184,36 +181,23 @@ async function apiRequest<T = any>(
     headers.Authorization = `Bearer ${token}`;
   }
 
-  // Make request
-  let response = await fetch(url, {
-    ...fetchConfig,
-    headers,
-  });
+  let response = await fetch(url, { ...fetchConfig, headers });
 
   // Handle 401 - Token expired
   if (response.status === 401 && token) {
-    // Try to refresh token
     const newToken = await refreshAccessToken();
 
     if (newToken) {
-      // Retry request with new token
       headers.Authorization = `Bearer ${newToken}`;
-      response = await fetch(url, {
-        ...fetchConfig,
-        headers,
-      });
+      response = await fetch(url, { ...fetchConfig, headers });
     }
   }
 
-  // Parse response
   const data: any = await response.json();
 
   if (!response.ok) {
     throw {
-      response: {
-        status: response.status,
-        data,
-      },
+      response: { status: response.status, data },
       message: data.message || 'Request failed',
     };
   }
@@ -260,16 +244,13 @@ export const authApi = {
     email: string;
     password: string;
     turnstileToken?: string;
-  }) =>
-    apiClient.post<any>('/auth/login', {
-      ...credentials,
-      ...(credentials.turnstileToken
-        ? { turnstile_token: credentials.turnstileToken }
-        : {}),
-    }),
-
-  register: (data: { email: string; username: string; password: string }) =>
-    apiClient.post<any>('/auth/register', data),
+  }) => {
+    const { turnstileToken, ...rest } = credentials;
+    return apiClient.post<any>('/auth/login', {
+      ...rest,
+      ...(turnstileToken ? { turnstile_token: turnstileToken } : {}),
+    });
+  },
 
   logout: () => apiClient.post<any>('/auth/logout'),
 

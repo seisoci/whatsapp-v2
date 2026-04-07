@@ -54,9 +54,8 @@ const Turnstile = forwardRef<TurnstileRef, TurnstileProps>(
         if (widgetIdRef.current && window.turnstile) {
           try {
             window.turnstile.reset(widgetIdRef.current);
-            console.log('Turnstile widget reset successfully');
-          } catch (error) {
-            console.error('Turnstile reset error:', error);
+          } catch {
+            // Reset gagal — widget akan kadaluarsa otomatis
           }
         }
       },
@@ -95,8 +94,8 @@ const Turnstile = forwardRef<TurnstileRef, TurnstileProps>(
               }
             );
             isRenderedRef.current = true;
-          } catch (error) {
-            console.error('Turnstile render error:', error);
+          } catch {
+            // Render gagal — onError callback akan dipanggil oleh Cloudflare
           }
         }
       };
@@ -113,8 +112,8 @@ const Turnstile = forwardRef<TurnstileRef, TurnstileProps>(
             window.turnstile.remove(widgetIdRef.current);
             widgetIdRef.current = null;
             isRenderedRef.current = false;
-          } catch (error) {
-            console.error('Turnstile cleanup error:', error);
+          } catch {
+            // Cleanup gagal — widget sudah tidak aktif
           }
         }
       };
