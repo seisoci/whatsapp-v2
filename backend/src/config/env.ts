@@ -32,6 +32,9 @@ const envSchema = z.object({
 
   // WhatsApp Cloud API
   WHATSAPP_API_VERSION: z.string().default('v21.0'),
+
+  // Cloudflare Turnstile
+  TURNSTILE_SECRET_KEY: z.string().optional(),
 });
 
 export const validateEnv = () => {

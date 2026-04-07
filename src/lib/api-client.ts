@@ -256,8 +256,17 @@ export const apiClient = {
 };
 
 export const authApi = {
-  login: (credentials: { email: string; password: string }) =>
-    apiClient.post<any>('/auth/login', credentials),
+  login: (credentials: {
+    email: string;
+    password: string;
+    turnstileToken?: string;
+  }) =>
+    apiClient.post<any>('/auth/login', {
+      ...credentials,
+      ...(credentials.turnstileToken
+        ? { turnstile_token: credentials.turnstileToken }
+        : {}),
+    }),
 
   register: (data: { email: string; username: string; password: string }) =>
     apiClient.post<any>('/auth/register', data),

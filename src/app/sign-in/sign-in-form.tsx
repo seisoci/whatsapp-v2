@@ -1,24 +1,21 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Password, Checkbox, Button, Input, Text } from 'rizzui';
+import { Password, Checkbox, Button, Input } from 'rizzui';
 import { useMedia } from '@core/hooks/use-media';
 import { Form } from '@core/ui/form';
 import { routes } from '@/config/routes';
 import { useAuth } from '@/lib/auth-context';
+import { loginSchema, LoginSchema } from '@/validators/login.schema';
+import Turnstile, { TurnstileRef } from '@/components/turnstile';
 
-const initialValues = {
+const initialValues: LoginSchema = {
   email: '',
   password: '',
   rememberMe: false,
-};
-
-type SignInFormData = {
-  email: string;
-  password: string;
-  rememberMe?: boolean;
+  turnstileToken: '',
 };
 
 export default function SignInForm() {
@@ -26,7 +23,10 @@ export default function SignInForm() {
   const isMedium = useMedia('(max-width: 1200px)', false);
   const [isLoading, setIsLoading] = useState(false);
   const [submitError, setSubmitError] = useState('');
+  const [turnstileError, setTurnstileError] = useState('');
   const { user, loading, login } = useAuth();
+  const turnstileRef = useRef<TurnstileRef>(null);
+  const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '';
 
   // Redirect if already logged in
   useEffect(() => {
@@ -35,12 +35,13 @@ export default function SignInForm() {
     }
   }, [user, loading, router]);
 
-  const onSubmit = async (data: SignInFormData) => {
+  const onSubmit = async (data: LoginSchema) => {
     setIsLoading(true);
     setSubmitError('');
+    setTurnstileError('');
 
     try {
-      await login(data.email, data.password);
+      await login(data.email, data.password, data.turnstileToken);
       // Note: Don't set isLoading to false here - redirect will happen via useEffect
     } catch (error: any) {
       const errorMessage =
@@ -48,20 +49,22 @@ export default function SignInForm() {
         error?.message ||
         'Login failed. Please check your credentials.';
       setSubmitError(errorMessage);
+      turnstileRef.current?.reset();
       setIsLoading(false);
     }
   };
 
   return (
     <>
-      <Form<SignInFormData>
+      <Form<LoginSchema>
         onSubmit={onSubmit}
+        validationSchema={loginSchema}
         useFormProps={{
           mode: 'onChange',
           defaultValues: initialValues,
         }}
       >
-        {({ register, formState: { errors } }) => (
+        {({ register, setValue, clearErrors, formState: { errors } }) => (
           <div className="space-y-5 lg:space-y-6">
             {submitError ? (
               <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -97,6 +100,42 @@ export default function SignInForm() {
               })}
               error={errors.password?.message}
             />
+            <input type="hidden" {...register('turnstileToken')} />
+
+            {turnstileSiteKey ? (
+              <div className="space-y-2">
+                <Turnstile
+                  ref={turnstileRef}
+                  siteKey={turnstileSiteKey}
+                  onSuccess={(token) => {
+                    setValue('turnstileToken', token, {
+                      shouldValidate: true,
+                      shouldDirty: true,
+                    });
+                    clearErrors('turnstileToken');
+                    setTurnstileError('');
+                  }}
+                  onError={() => {
+                    setValue('turnstileToken', '', { shouldValidate: true });
+                    setTurnstileError('CAPTCHA gagal dimuat. Coba lagi.');
+                  }}
+                  onExpire={() => {
+                    setValue('turnstileToken', '', { shouldValidate: true });
+                    setTurnstileError('Verifikasi CAPTCHA kedaluwarsa. Silakan ulangi.');
+                  }}
+                  className="overflow-hidden rounded-lg"
+                />
+                {turnstileError || errors.turnstileToken?.message ? (
+                  <div className="text-sm text-red-600">
+                    {turnstileError || errors.turnstileToken?.message}
+                  </div>
+                ) : null}
+              </div>
+            ) : (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                Turnstile site key belum dikonfigurasi.
+              </div>
+            )}
 
             <div className="flex items-center justify-between pb-1">
               <Checkbox

@@ -6,6 +6,7 @@ import { JWTService } from '../utils/jwt';
 import { loginSchema, refreshTokenSchema } from '../validators';
 import { LoginResponse } from '../types';
 import { randomBytes } from 'crypto';
+import { env } from '../config/env';
 
 export class AuthController {
   /**
@@ -13,6 +14,25 @@ export class AuthController {
    * When using Cloudflare, prioritize CF-Connecting-IP header
    * Otherwise, extract the first IP from x-forwarded-for (which can contain multiple IPs)
    */
+  private static async verifyTurnstile(token: string, remoteip?: string | null): Promise<boolean> {
+    const secretKey = env.TURNSTILE_SECRET_KEY;
+    if (!secretKey) return true; // Skip verification if not configured
+
+    const formData = new FormData();
+    formData.append('secret', secretKey);
+    formData.append('response', token);
+    if (remoteip) {
+      formData.append('remoteip', remoteip);
+    }
+
+    const response = await fetch(
+      'https://challenges.cloudflare.com/turnstile/v0/siteverify',
+      { method: 'POST', body: formData }
+    );
+    const result: any = await response.json();
+    return result.success === true;
+  }
+
   private static getClientIp(c: Context): string | null {
     // Cloudflare provides the real client IP in CF-Connecting-IP header
     const cfConnectingIp = c.req.header('cf-connecting-ip');
@@ -37,6 +57,35 @@ export class AuthController {
 
       // Validasi input
       const validatedData = loginSchema.parse(body);
+
+      // Verifikasi Cloudflare Turnstile (jika secret key dikonfigurasi)
+      if (env.TURNSTILE_SECRET_KEY) {
+        const turnstileToken = validatedData.turnstile_token;
+        if (!turnstileToken) {
+          return c.json(
+            {
+              success: false,
+              message: 'Verifikasi CAPTCHA diperlukan.',
+            },
+            400
+          );
+        }
+
+        const turnstileValid = await AuthController.verifyTurnstile(
+          turnstileToken,
+          AuthController.getClientIp(c)
+        );
+
+        if (!turnstileValid) {
+          return c.json(
+            {
+              success: false,
+              message: 'Verifikasi CAPTCHA gagal. Silakan coba lagi.',
+            },
+            400
+          );
+        }
+      }
 
       const userRepository = AppDataSource.getRepository(User);
 

@@ -12,6 +12,7 @@ import { emailSchema, passwordSchema, usernameSchema } from './common.validator'
 export const loginSchema = z.object({
   email: emailSchema,
   password: z.string().min(1, 'Password harus diisi'),
+  turnstile_token: z.string().optional(),
 });
 
 export type LoginInput = z.infer<typeof loginSchema>;

@@ -32,7 +32,11 @@ interface User {
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (
+    email: string,
+    password: string,
+    turnstileToken?: string
+  ) => Promise<void>;
   logout: () => Promise<void>;
   refetchUser: () => Promise<void>;
   isAuthenticated: boolean;
@@ -89,9 +93,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const login = async (email: string, password: string) => {
+  const login = async (
+    email: string,
+    password: string,
+    turnstileToken?: string
+  ) => {
     try {
-      const response = await authApi.login({ email, password });
+      const response = await authApi.login({
+        email,
+        password,
+        ...(turnstileToken ? { turnstileToken } : {}),
+      });
 
       // Response already contains { success, message, data }
       if (response.success && response.data) {
