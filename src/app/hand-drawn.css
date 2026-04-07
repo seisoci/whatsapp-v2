@@ -1,0 +1,595 @@
+/* ================================================================ */
+/*  HAND-DRAWN CHAT THEME — Sketchbook Palette                      */
+/*  #fdfbf7 · #2d2d2d · #fffde7 · #fff9c4 · #2d5da1               */
+/* ================================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=Patrick+Hand&display=swap');
+
+/* ── CSS Variables ── */
+body.hand-drawn,
+.hand-drawn {
+  --hd-bg:        #fdfbf7;
+  --hd-bg-alt:    #f5f0e8;
+  --hd-fg:        #2d2d2d;
+  --hd-fg-muted:  #6b6b6b;
+  --hd-accent:    #ff4d4d;
+  --hd-secondary: #2d5da1;
+  --hd-yellow:    #fffde7;
+  --hd-shadow:    4px 4px 0px 0px #2d2d2d;
+  --hd-shadow-sm: 2px 2px 0px 0px #2d2d2d;
+  --hd-border:    #2d2d2d;
+  --hd-border-muted: rgba(45,45,45,0.25);
+}
+
+/* ── Font for everything ── */
+.hand-drawn,
+.hand-drawn * {
+  font-family: 'Patrick Hand', cursive !important;
+}
+
+.hand-drawn h1,
+.hand-drawn h2,
+.hand-drawn h3,
+.hand-drawn h4,
+.hand-drawn h5,
+.hand-drawn h6,
+.hand-drawn .font-semibold,
+.hand-drawn .font-bold {
+  font-family: 'Kalam', cursive !important;
+}
+
+/* ── Main grid container — paper texture bg ── */
+.hand-drawn > div {
+  background-color: var(--hd-bg) !important;
+  background-image: radial-gradient(circle, rgba(45,45,45,0.07) 1px, transparent 1px) !important;
+  background-size: 24px 24px !important;
+}
+
+/* ── Sidebar column ── */
+.hand-drawn > div > div:first-child {
+  background-color: var(--hd-bg) !important;
+  background-image: radial-gradient(circle, rgba(45,45,45,0.07) 1px, transparent 1px) !important;
+  background-size: 24px 24px !important;
+  border-right: 2px solid var(--hd-border) !important;
+}
+
+/* ── Sidebar header (nb-sidebar-hdr) ── */
+.hand-drawn .nb-sidebar-hdr {
+  background: var(--hd-yellow) !important;
+  border-bottom: 2px solid var(--hd-border) !important;
+}
+.hand-drawn .nb-sidebar-hdr label {
+  color: var(--hd-fg) !important;
+  font-family: 'Kalam', cursive !important;
+}
+
+/* ── Filter tabs row (All / Unread / Archived) ── */
+.hand-drawn > div > div:first-child .flex.gap-2.border-b {
+  background: rgba(255,253,231,0.6) !important;
+  border-bottom: 1px dashed var(--hd-border-muted) !important;
+}
+
+/* ── Contact list item ── */
+.hand-drawn [role="button"] {
+  border-bottom: 1px dashed var(--hd-border-muted) !important;
+  border-left: 3px solid transparent !important;
+  background: transparent !important;
+  transition: background 0.15s, border-left-color 0.15s, transform 0.1s !important;
+}
+.hand-drawn [role="button"]:hover {
+  background: rgba(255,249,196,0.5) !important;
+  border-left-color: var(--hd-accent) !important;
+  transform: translateX(2px) !important;
+}
+
+/* ── Active / selected contact ── */
+.hand-drawn [role="button"].bg-gray-50,
+.hand-drawn .bg-gray-50[role="button"] {
+  background: rgba(255,249,196,0.8) !important;
+  border-left: 3px solid var(--hd-secondary) !important;
+}
+
+/* ── Chat column (right side) ── */
+.hand-drawn > div > div:last-child {
+  background-color: var(--hd-bg) !important;
+}
+
+/* ── Chat inner container ── */
+.hand-drawn .nb-chat-inner {
+  background-color: var(--hd-bg) !important;
+}
+
+/* ── Chat header (nb-chat-hdr) ── */
+.hand-drawn .nb-chat-hdr {
+  background: var(--hd-yellow) !important;
+  border-bottom: 2px solid var(--hd-border) !important;
+}
+.hand-drawn .nb-chat-hdr * {
+  color: var(--hd-fg) !important;
+}
+.hand-drawn .nb-chat-hdr .text-red-600 {
+  color: var(--hd-accent) !important;
+  font-weight: 700 !important;
+}
+.hand-drawn .nb-chat-hdr .text-green-600 {
+  color: #2a7d2a !important;
+}
+.hand-drawn .nb-chat-hdr .text-gray-500,
+.hand-drawn .nb-chat-hdr .text-gray-400,
+.hand-drawn .nb-chat-hdr .text-gray-300 {
+  color: var(--hd-fg-muted) !important;
+}
+
+/* ── Chat header buttons — transparent on yellow bg ── */
+.hand-drawn .nb-chat-hdr button:not(.nb-theme-btn) {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: var(--hd-fg) !important;
+  transform: none !important;
+}
+.hand-drawn .nb-chat-hdr button:not(.nb-theme-btn):hover {
+  background: rgba(45,45,45,0.08) !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+/* ── Message bubble classes (set in JSX inline) ── */
+.hand-drawn .hd-bubble-own {
+  background: #fff9c4 !important;
+  border: 2px solid var(--hd-border) !important;
+  border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px !important;
+  box-shadow: var(--hd-shadow) !important;
+  color: var(--hd-fg) !important;
+}
+.hand-drawn .hd-bubble-other {
+  background: #ffffff !important;
+  border: 2px solid var(--hd-border-muted) !important;
+  border-radius: 15px 225px 15px 255px / 225px 15px 255px 15px !important;
+  box-shadow: 2px 2px 0px 0px rgba(45,45,45,0.2) !important;
+  color: var(--hd-fg) !important;
+}
+
+/* ── Textarea (message input) ── */
+.hand-drawn textarea {
+  border: 1px solid var(--hd-border-muted) !important;
+  background: #fffef9 !important;
+  color: var(--hd-fg) !important;
+  box-shadow: none !important;
+}
+.hand-drawn textarea:focus {
+  outline: none !important;
+  border-color: var(--hd-secondary) !important;
+  box-shadow: none !important;
+}
+
+/* ── rizzui textarea field ── */
+.hand-drawn .rizzui-textarea-field {
+  border: 1px solid var(--hd-border-muted) !important;
+  background: #fffef9 !important;
+  color: var(--hd-fg) !important;
+  box-shadow: none !important;
+}
+.hand-drawn .rizzui-textarea-field:focus {
+  border-color: var(--hd-secondary) !important;
+  box-shadow: none !important;
+  outline: none !important;
+  --tw-ring-shadow: none !important;
+  --tw-ring-color: transparent !important;
+}
+.hand-drawn .rizzui-textarea-field::placeholder {
+  color: var(--hd-fg-muted) !important;
+  opacity: 1 !important;
+}
+
+/* ── rizzui Input wrapper ── */
+.hand-drawn .rizzui-input-field {
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  color: var(--hd-fg) !important;
+}
+.hand-drawn .rizzui-input-field::placeholder {
+  color: var(--hd-fg-muted) !important;
+  opacity: 1 !important;
+}
+.hand-drawn span[class*="focus-within\:border-primary"],
+.hand-drawn span[class*="hover\:border-primary"] {
+  background: #fffef9 !important;
+  border: 1px solid var(--hd-border-muted) !important;
+  box-shadow: none !important;
+}
+.hand-drawn span[class*="focus-within\:border-primary"]:focus-within,
+.hand-drawn span[class*="hover\:border-primary"]:focus-within {
+  border-color: var(--hd-secondary) !important;
+  box-shadow: none !important;
+}
+
+/* ── rizzui Select trigger button ── */
+.hand-drawn [aria-haspopup="listbox"] {
+  background: #fffef9 !important;
+  border: 1px solid var(--hd-border-muted) !important;
+  box-shadow: none !important;
+  color: var(--hd-fg) !important;
+  --tw-ring-shadow: none !important;
+  --tw-ring-color: transparent !important;
+  outline: none !important;
+}
+.hand-drawn [aria-haspopup="listbox"] span,
+.hand-drawn [aria-haspopup="listbox"] svg {
+  color: var(--hd-fg) !important;
+  stroke: var(--hd-fg) !important;
+}
+
+/* ── rizzui Select dropdown (inline, not portal) ── */
+.hand-drawn [role="listbox"],
+.hand-drawn [class*="rizzui-select-options"] {
+  background: #fffef9 !important;
+  border: 2px solid var(--hd-border) !important;
+  box-shadow: var(--hd-shadow) !important;
+  color: var(--hd-fg) !important;
+  padding: 0 !important;
+}
+.hand-drawn [role="option"],
+.hand-drawn [role="option"] * {
+  color: var(--hd-fg) !important;
+  background: transparent !important;
+}
+.hand-drawn [role="option"]:hover,
+.hand-drawn [role="option"]:hover * {
+  background: rgba(255,249,196,0.8) !important;
+  color: var(--hd-fg) !important;
+}
+.hand-drawn [role="option"][aria-selected="true"],
+.hand-drawn [role="option"][aria-selected="true"] * {
+  background: #fff9c4 !important;
+  color: var(--hd-secondary) !important;
+  font-weight: 700 !important;
+}
+
+/* ── Theme button ── */
+.hand-drawn .nb-theme-btn {
+  background: var(--hd-yellow) !important;
+}
+
+/* ── All buttons (base treatment) ── */
+.hand-drawn button:not(.nb-theme-btn):not([aria-haspopup]),
+.hand-drawn [class*="rizzui-button"]:not(.nb-theme-btn) {
+  border: 1px solid var(--hd-border-muted) !important;
+  color: var(--hd-fg) !important;
+  box-shadow: none !important;
+}
+.hand-drawn [class*="rizzui-button"]:not(.nb-theme-btn) {
+  background: #fffef9 !important;
+}
+.hand-drawn button:not(.nb-theme-btn):not([aria-haspopup]):hover,
+.hand-drawn [class*="rizzui-button"]:not(.nb-theme-btn):hover {
+  border-color: var(--hd-secondary) !important;
+  background: rgba(45,93,161,0.06) !important;
+}
+
+/* ── bg-primary buttons ── */
+.hand-drawn button[class*="bg-primary"]:not(.nb-theme-btn),
+body.hand-drawn button[class*="bg-primary"]:not(.nb-theme-btn) {
+  background: var(--hd-secondary) !important;
+  color: #fff !important;
+  border: 1px solid var(--hd-secondary) !important;
+  box-shadow: none !important;
+}
+.hand-drawn button[class*="bg-primary"]:not(.nb-theme-btn):hover,
+body.hand-drawn button[class*="bg-primary"]:not(.nb-theme-btn):hover {
+  background: #234b87 !important;
+}
+
+/* ── bg-[rgb(var(--primary-default))] ActionIcon ── */
+.hand-drawn button[class*="primary-default"]:not(.nb-theme-btn),
+body.hand-drawn button[class*="primary-default"]:not(.nb-theme-btn) {
+  background: #fffef9 !important;
+  color: var(--hd-secondary) !important;
+  border: 1px solid var(--hd-border-muted) !important;
+  box-shadow: none !important;
+}
+.hand-drawn button[class*="primary-default"]:not(.nb-theme-btn):hover,
+body.hand-drawn button[class*="primary-default"]:not(.nb-theme-btn):hover {
+  background: rgba(45,93,161,0.08) !important;
+  border-color: var(--hd-secondary) !important;
+}
+
+/* ── Send button (in chat area) ── */
+.hand-drawn .nb-chat-inner button[class*="border-transparent"]:not(.nb-theme-btn) {
+  background: var(--hd-secondary) !important;
+  color: #fff !important;
+  border: 1px solid var(--hd-secondary) !important;
+}
+
+/* ── ActionIcon ── */
+.hand-drawn [class*="rizzui-action-icon"] {
+  border: 1px solid var(--hd-border-muted) !important;
+  box-shadow: none !important;
+  background: #fffef9 !important;
+  color: var(--hd-secondary) !important;
+}
+.hand-drawn [class*="rizzui-action-icon"]:hover {
+  background: rgba(45,93,161,0.06) !important;
+  border-color: var(--hd-secondary) !important;
+}
+
+/* ── Avatar ── */
+.hand-drawn [class*="rizzui-avatar"] {
+  border: 2px solid var(--hd-border-muted) !important;
+  box-shadow: none !important;
+}
+
+/* ── Unread badge ── */
+.hand-drawn .rounded-full {
+  border: none !important;
+}
+
+/* ── Input area container (bottom of chat) ── */
+.hand-drawn .nb-chat-inner .border-t {
+  background: var(--hd-yellow) !important;
+  border-top: 2px solid var(--hd-border) !important;
+}
+
+/* ── Attachment preview box ── */
+.hand-drawn .border.border-gray-200.bg-gray-50 {
+  border: 1px solid var(--hd-border-muted) !important;
+  background: rgba(255,249,196,0.3) !important;
+  box-shadow: none !important;
+}
+
+/* ── Quick replies / session bar ── */
+.hand-drawn .nb-chat-inner .bg-white.px-4.py-2 {
+  background: #fffef9 !important;
+  border-top: 1px dashed var(--hd-border-muted) !important;
+}
+
+/* ── Empty state ── */
+.hand-drawn .flex.flex-1.items-center.justify-center {
+  background-color: var(--hd-bg) !important;
+  background-image: radial-gradient(circle, rgba(45,45,45,0.07) 1px, transparent 1px) !important;
+  background-size: 24px 24px !important;
+}
+
+/* ── Session expired bar ── */
+.hand-drawn .border-yellow-200.bg-yellow-50 {
+  background: #fff3cd !important;
+  border: 2px dashed var(--hd-accent) !important;
+  color: var(--hd-fg) !important;
+  font-weight: 700 !important;
+  box-shadow: none !important;
+  margin-bottom: 8px !important;
+}
+.hand-drawn .border-yellow-200.bg-yellow-50 * {
+  color: var(--hd-fg) !important;
+}
+
+/* ── Divider lines ── */
+.hand-drawn .border-gray-200,
+.hand-drawn .border-gray-100,
+.hand-drawn .border-gray-300 {
+  border-color: var(--hd-border-muted) !important;
+}
+
+/* ── Archived row ── */
+.hand-drawn .bg-gray-50:not([role="button"]) {
+  background: rgba(255,253,231,0.5) !important;
+  border-bottom: 1px dashed var(--hd-border-muted) !important;
+}
+.hand-drawn .bg-gray-50:not([role="button"]):hover {
+  background: rgba(255,249,196,0.5) !important;
+}
+
+/* ── Text colors ── */
+.hand-drawn .text-gray-500 {
+  color: var(--hd-fg-muted) !important;
+}
+.hand-drawn .nb-sidebar-hdr .text-gray-500,
+.hand-drawn .nb-sidebar-hdr .text-gray-400 {
+  color: var(--hd-fg-muted) !important;
+}
+.hand-drawn .text-green-700 {
+  color: var(--hd-secondary) !important;
+}
+
+/* ── Dropdown popups (emoji, attachment menu) ── */
+.hand-drawn .absolute.bottom-full,
+.hand-drawn .absolute.top-full {
+  border: 2px solid var(--hd-border) !important;
+  box-shadow: var(--hd-shadow) !important;
+  background: #fffef9 !important;
+}
+.hand-drawn .absolute.bottom-full button,
+.hand-drawn .absolute.top-full button {
+  border: none !important;
+  box-shadow: none !important;
+}
+.hand-drawn .absolute.bottom-full button:hover,
+.hand-drawn .absolute.top-full button:hover {
+  background: rgba(255,249,196,0.6) !important;
+  transform: none !important;
+}
+
+/* ── Audio Elements ── */
+.hand-drawn audio {
+  min-width: 240px !important;
+  width: 100% !important;
+  border: 2px solid var(--hd-border-muted) !important;
+}
+
+/* ── Scrollbars ── */
+.hand-drawn .custom-scrollbar::-webkit-scrollbar-thumb,
+.hand-drawn .custom-scrollbar-message::-webkit-scrollbar-thumb {
+  background-color: var(--hd-border-muted) !important;
+  border-radius: 4px !important;
+}
+.hand-drawn .custom-scrollbar::-webkit-scrollbar-track,
+.hand-drawn .custom-scrollbar-message::-webkit-scrollbar-track {
+  background: var(--hd-bg) !important;
+}
+
+/* ================================================================ */
+/*  HAND-DRAWN — MODAL PORTAL (body.hand-drawn)                     */
+/* ================================================================ */
+
+body.hand-drawn [role="dialog"] * {
+  font-family: 'Patrick Hand', cursive !important;
+}
+body.hand-drawn [role="dialog"] h3,
+body.hand-drawn [role="dialog"] h4 {
+  font-family: 'Kalam', cursive !important;
+}
+
+/* ── Modal panel ── */
+body.hand-drawn [role="dialog"] [data-headlessui-state] {
+  background: #fffef9 !important;
+  border: 2px solid var(--hd-border) !important;
+  box-shadow: var(--hd-shadow) !important;
+}
+
+/* ── Modal header ── */
+body.hand-drawn [role="dialog"] .border-b,
+body.hand-drawn [role="dialog"] header,
+body.hand-drawn [role="dialog"] [class~="border-b"] {
+  border-bottom: 2px solid var(--hd-border) !important;
+  background: var(--hd-yellow) !important;
+}
+body.hand-drawn [role="dialog"] .border-b *,
+body.hand-drawn [role="dialog"] header *,
+body.hand-drawn [role="dialog"] [class~="border-b"] * {
+  color: var(--hd-fg) !important;
+}
+
+/* ── Inputs inside modal ── */
+body.hand-drawn [role="dialog"] span[class*="focus-within\:border-primary"],
+body.hand-drawn [role="dialog"] span[class*="hover\:border-primary"] {
+  background: #fffef9 !important;
+  border: 1px solid var(--hd-border-muted) !important;
+  box-shadow: none !important;
+}
+body.hand-drawn [role="dialog"] .rizzui-input-field,
+body.hand-drawn [role="dialog"] .rizzui-textarea-field {
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  color: var(--hd-fg) !important;
+}
+body.hand-drawn [role="dialog"] textarea {
+  border: 1px solid var(--hd-border-muted) !important;
+  background: #fffef9 !important;
+  box-shadow: none !important;
+  color: var(--hd-fg) !important;
+}
+
+/* ── Select inside modal ── */
+body.hand-drawn [role="dialog"] [aria-haspopup="listbox"] {
+  background: #fffef9 !important;
+  border: 1px solid var(--hd-border-muted) !important;
+  box-shadow: none !important;
+  color: var(--hd-fg) !important;
+  --tw-ring-shadow: none !important;
+  --tw-ring-color: transparent !important;
+  outline: none !important;
+}
+body.hand-drawn [role="dialog"] [aria-haspopup="listbox"] span,
+body.hand-drawn [role="dialog"] [aria-haspopup="listbox"] svg {
+  color: var(--hd-fg) !important;
+  stroke: var(--hd-fg) !important;
+}
+
+/* ── Buttons inside modal ── */
+body.hand-drawn [role="dialog"] button[class*="border-transparent"]:not(.nb-theme-btn) {
+  background: var(--hd-secondary) !important;
+  color: #fff !important;
+  border: 1px solid var(--hd-secondary) !important;
+  box-shadow: none !important;
+}
+body.hand-drawn [role="dialog"] button:not([class*="border-transparent"]):not(.nb-theme-btn):not([aria-haspopup]) {
+  border: 1px solid var(--hd-border-muted) !important;
+  box-shadow: none !important;
+  background: #fffef9 !important;
+  color: var(--hd-fg) !important;
+}
+
+/* ── Table inside modal ── */
+body.hand-drawn [role="dialog"] [class*="border-gray"] {
+  border-color: var(--hd-border-muted) !important;
+}
+body.hand-drawn [role="dialog"] thead,
+body.hand-drawn [role="dialog"] th {
+  background: rgba(255,249,196,0.4) !important;
+  color: var(--hd-fg) !important;
+  border: 1px solid var(--hd-border-muted) !important;
+}
+body.hand-drawn [role="dialog"] tr:hover td {
+  background: rgba(255,249,196,0.3) !important;
+}
+
+/* ── Select options dropdown portal ── */
+body.hand-drawn [role="listbox"] {
+  background: #fffef9 !important;
+  border: 2px solid var(--hd-border) !important;
+  box-shadow: var(--hd-shadow) !important;
+  color: var(--hd-fg) !important;
+  padding: 0 !important;
+}
+body.hand-drawn [role="listbox"] * {
+  font-family: 'Patrick Hand', cursive !important;
+}
+body.hand-drawn [role="listbox"] > div:first-child {
+  background: #fffef9 !important;
+  border-bottom: 1px solid var(--hd-border-muted) !important;
+  margin: 0 !important;
+  padding: 4px !important;
+}
+body.hand-drawn [role="listbox"] span[class*="rizzui-select-prefix"] {
+  color: var(--hd-fg) !important;
+  left: 14px !important;
+}
+body.hand-drawn [role="listbox"] span[class*="rizzui-select-prefix"] svg {
+  stroke: var(--hd-fg) !important;
+}
+body.hand-drawn [role="listbox"] input {
+  background: #fffef9 !important;
+  color: var(--hd-fg) !important;
+  border: 1px solid var(--hd-border-muted) !important;
+  box-shadow: none !important;
+  outline: none !important;
+  height: 40px !important;
+  padding-left: 40px !important;
+  --tw-ring-shadow: none !important;
+  --tw-ring-color: transparent !important;
+}
+body.hand-drawn [role="listbox"] input:focus {
+  border-color: var(--hd-secondary) !important;
+  box-shadow: none !important;
+  outline: none !important;
+  --tw-ring-shadow: none !important;
+}
+body.hand-drawn [role="listbox"] input::placeholder {
+  color: var(--hd-fg-muted) !important;
+  opacity: 1 !important;
+}
+body.hand-drawn [role="option"],
+body.hand-drawn [role="option"] *,
+body.hand-drawn [role="listbox"] .text-foreground {
+  color: var(--hd-fg) !important;
+  background: transparent !important;
+}
+body.hand-drawn [role="option"]:hover,
+body.hand-drawn [role="option"]:hover * {
+  background: rgba(255,249,196,0.8) !important;
+  color: var(--hd-fg) !important;
+}
+body.hand-drawn [role="option"][data-headlessui-state*="active"],
+body.hand-drawn [role="option"][data-headlessui-state*="active"] * {
+  background: rgba(255,249,196,0.8) !important;
+  color: var(--hd-secondary) !important;
+  font-weight: 600 !important;
+}
+body.hand-drawn [role="option"][aria-selected="true"],
+body.hand-drawn [role="option"][aria-selected="true"] * {
+  background: #fff9c4 !important;
+  color: var(--hd-secondary) !important;
+  font-weight: 700 !important;
+}

@@ -228,18 +228,23 @@ export default function ChatPage() {
 
   // Pinned chats (local storage)
   const [pinnedContacts, setPinnedContacts] = useState<string[]>([]);
+  const [showThemeMenu, setShowThemeMenu] = useState(false);
+  const themeMenuRef = useRef<HTMLDivElement>(null);
   const [contactOptionsMenuId, setContactOptionsMenuId] = useState<
     string | null
   >(null);
   const contactOptionsMenuRef = useRef<HTMLDivElement>(null);
   const contactListRef = useRef<HTMLDivElement>(null);
   const closingViaUI = useRef(false);
-  const [isNeoBrutalism, setIsNeoBrutalism] = useState(() => {
+  const [chatTheme, setChatTheme] = useState<'default' | 'neo-brutalism' | 'hand-drawn'>(() => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('chat-theme') === 'neo-brutalism';
+      const saved = localStorage.getItem('chat-theme');
+      if (saved === 'neo-brutalism' || saved === 'hand-drawn') return saved;
     }
-    return false;
+    return 'default';
   });
+  const isNeoBrutalism = chatTheme === 'neo-brutalism';
+  const isHandDrawn = chatTheme === 'hand-drawn';
 
   // Load pinned contacts from localStorage on mount
   useEffect(() => {
@@ -1515,25 +1520,17 @@ export default function ChatPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lightboxOpen, showChat]);
 
-  // Sync neo-brutalism class on <body> so modal portal (outside .neo-brutalism div) also gets styled
+  // Sync theme class on <body> so modal portal (outside theme div) also gets styled
   useEffect(() => {
-    if (isNeoBrutalism) {
-      document.body.classList.add('neo-brutalism');
-    } else {
-      document.body.classList.remove('neo-brutalism');
+    document.body.classList.remove('neo-brutalism', 'hand-drawn');
+    if (chatTheme !== 'default') {
+      document.body.classList.add(chatTheme);
     }
     return () => {
-      document.body.classList.remove('neo-brutalism');
+      document.body.classList.remove('neo-brutalism', 'hand-drawn');
     };
-  }, [isNeoBrutalism]);
+  }, [chatTheme]);
 
-  const toggleNeoBrutalism = () => {
-    setIsNeoBrutalism((prev) => {
-      const next = !prev;
-      localStorage.setItem('chat-theme', next ? 'neo-brutalism' : 'default');
-      return next;
-    });
-  };
 
   // Close lightbox via UI (X button / swipe) — syncs history
   const closeLightboxViaUI = () => {
@@ -1561,6 +1558,18 @@ export default function ChatPage() {
     return 0;
   });
 
+  // Close theme menu when clicking outside
+  useEffect(() => {
+    if (!showThemeMenu) return;
+    const handleClickOutside = (event: MouseEvent) => {
+      if (themeMenuRef.current && !themeMenuRef.current.contains(event.target as Node)) {
+        setShowThemeMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showThemeMenu]);
+
   // Close contact options menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -1583,7 +1592,7 @@ export default function ChatPage() {
     <>
       {/* Fullscreen Chat Layout: z-[9999] and top-0 to cover the global header */}
       <div
-        className={`@container fixed inset-0 top-0 z-[9999] ${getSidebarOffset()}${isNeoBrutalism ? ' neo-brutalism' : ''}`}
+        className={`@container fixed inset-0 top-0 z-[9999] ${getSidebarOffset()}${chatTheme !== 'default' ? ` ${chatTheme}` : ''}`}
       >
         <div className="grid h-full grid-cols-12 gap-0 overflow-hidden bg-white dark:bg-gray-50">
           {/* Sidebar - Contact List */}
@@ -1604,17 +1613,46 @@ export default function ChatPage() {
                       <PiHouse className="h-5 w-5" />
                     </ActionIcon>
                   </Link>
-                  <button
-                    onClick={toggleNeoBrutalism}
-                    title={isNeoBrutalism ? 'Switch to Default Theme' : 'Switch to Neo Brutalism'}
-                    className={`nb-theme-btn flex h-10 w-10 shrink-0 items-center justify-center border-2 transition-all ${
-                      isNeoBrutalism
-                        ? 'rounded-none border-[#1F1F1F] bg-[#B0BEC520] shadow-[3px_3px_0_#1F1F1F] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none'
-                        : 'rounded-lg border-gray-300 bg-white text-gray-600 hover:border-gray-400 hover:bg-gray-50'
-                    }`}
-                  >
-                    <PiPalette className={`h-5 w-5 ${isNeoBrutalism ? 'text-[#1F1F1F]' : 'text-gray-600'}`} />
-                  </button>
+                  <div ref={themeMenuRef} className="relative">
+                    <button
+                      onClick={() => setShowThemeMenu((v) => !v)}
+                      title="Pilih Tema"
+                      className={`nb-theme-btn flex h-10 w-10 shrink-0 items-center justify-center border-2 transition-all ${
+                        isNeoBrutalism
+                          ? 'rounded-none border-[#1F1F1F] bg-[#B0BEC520] shadow-[3px_3px_0_#1F1F1F] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none'
+                          : isHandDrawn
+                          ? 'rounded-md border-[#2d2d2d] bg-[#fffde7] shadow-[3px_3px_0_#2d2d2d] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none'
+                          : 'rounded-lg border-gray-300 bg-white text-gray-600 hover:border-gray-400 hover:bg-gray-50'
+                      }`}
+                    >
+                      <PiPalette className={`h-5 w-5 ${chatTheme !== 'default' ? 'text-[#2d2d2d]' : 'text-gray-600'}`} />
+                    </button>
+                    {showThemeMenu && (
+                      <div className="absolute left-0 top-full z-50 mt-1 w-44 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-600 dark:bg-gray-800">
+                        {([
+                          { value: 'default', label: 'Default', emoji: '💬' },
+                          { value: 'neo-brutalism', label: 'Neo Brutalism', emoji: '🖤' },
+                          { value: 'hand-drawn', label: 'Hand-Drawn', emoji: '✏️' },
+                        ] as const).map((theme) => (
+                          <button
+                            key={theme.value}
+                            onClick={() => {
+                              setChatTheme(theme.value);
+                              localStorage.setItem('chat-theme', theme.value);
+                              setShowThemeMenu(false);
+                            }}
+                            className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-gray-50 dark:hover:bg-gray-700 ${
+                              chatTheme === theme.value ? 'bg-blue-50 font-medium text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'
+                            }`}
+                          >
+                            <span>{theme.emoji}</span>
+                            <span>{theme.label}</span>
+                            {chatTheme === theme.value && <span className="ml-auto text-blue-500">✓</span>}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                   <div className="min-w-0 flex-1">
                     <label className="mb-1 block text-xs font-medium text-gray-700">
                       WhatsApp Number
@@ -2080,7 +2118,13 @@ export default function ChatPage() {
                 <div
                   ref={chatContainerRef}
                   className={`custom-scrollbar-message relative min-h-0 flex-1 overflow-y-auto p-4 ${messagesLoading ? 'invisible' : 'visible'}`}
-                  style={isNeoBrutalism ? { scrollBehavior: 'auto', background: '#FFFFFF', borderBottom: '2px solid #1F1F1F' } : { scrollBehavior: 'auto', backgroundImage: 'url(/background.png)', backgroundRepeat: 'repeat', backgroundSize: 'auto' }}
+                  style={
+                    isNeoBrutalism
+                      ? { scrollBehavior: 'auto', background: '#FFFFFF', borderBottom: '2px solid #1F1F1F' }
+                      : isHandDrawn
+                      ? { scrollBehavior: 'auto', background: '#fdfbf7', backgroundImage: 'radial-gradient(circle, rgba(45,45,45,0.06) 1px, transparent 1px)', backgroundSize: '24px 24px' }
+                      : { scrollBehavior: 'auto', backgroundImage: 'url(/background.png)', backgroundRepeat: 'repeat', backgroundSize: 'auto' }
+                  }
                 >
                   {/* Loading overlay - show while messages load */}
                   {messagesLoading && (
@@ -2105,6 +2149,8 @@ export default function ChatPage() {
                               className={`px-2.5 py-1 relative transition-all ${
                                 isNeoBrutalism
                                   ? `border border-[#1F1F1F]/30 text-[#1F1F1F] ${isOwn ? 'bg-[#B0BEC520] shadow-[2px_2px_0_#1F1F1F]/20' : 'bg-white shadow-[2px_2px_0_#1F1F1F]/20'}`
+                                  : isHandDrawn
+                                  ? isOwn ? 'hd-bubble-own' : 'hd-bubble-other'
                                   : `rounded-lg ${isOwn ? 'bg-[#d9fdd3] text-gray-900 shadow-sm dark:bg-[#005c4b] dark:text-gray-100' : 'bg-white text-gray-900 shadow-sm dark:bg-[#202c33] dark:text-gray-100'}`
                               }`}
                             >
