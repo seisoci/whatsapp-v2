@@ -236,15 +236,16 @@ export default function ChatPage() {
   const contactOptionsMenuRef = useRef<HTMLDivElement>(null);
   const contactListRef = useRef<HTMLDivElement>(null);
   const closingViaUI = useRef(false);
-  const [chatTheme, setChatTheme] = useState<'default' | 'neo-brutalism' | 'hand-drawn'>(() => {
+  const [chatTheme, setChatTheme] = useState<'default' | 'neo-brutalism' | 'hand-drawn' | 'playful-geometric'>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('chat-theme');
-      if (saved === 'neo-brutalism' || saved === 'hand-drawn') return saved;
+      if (saved === 'neo-brutalism' || saved === 'hand-drawn' || saved === 'playful-geometric') return saved;
     }
     return 'default';
   });
   const isNeoBrutalism = chatTheme === 'neo-brutalism';
   const isHandDrawn = chatTheme === 'hand-drawn';
+  const isPlayfulGeometric = chatTheme === 'playful-geometric';
 
   // Load pinned contacts from localStorage on mount
   useEffect(() => {
@@ -1522,12 +1523,12 @@ export default function ChatPage() {
 
   // Sync theme class on <body> so modal portal (outside theme div) also gets styled
   useEffect(() => {
-    document.body.classList.remove('neo-brutalism', 'hand-drawn');
+    document.body.classList.remove('neo-brutalism', 'hand-drawn', 'playful-geometric');
     if (chatTheme !== 'default') {
       document.body.classList.add(chatTheme);
     }
     return () => {
-      document.body.classList.remove('neo-brutalism', 'hand-drawn');
+      document.body.classList.remove('neo-brutalism', 'hand-drawn', 'playful-geometric');
     };
   }, [chatTheme]);
 
@@ -1594,21 +1595,27 @@ export default function ChatPage() {
       <div
         className={`@container fixed inset-0 top-0 z-[9999] ${getSidebarOffset()}${chatTheme !== 'default' ? ` ${chatTheme}` : ''}`}
       >
-        <div className="grid h-full grid-cols-12 gap-0 overflow-hidden bg-white dark:bg-gray-50">
+        <div className="nb-chat-shell grid h-full grid-cols-12 gap-0 overflow-hidden bg-white dark:bg-gray-50">
           {/* Sidebar - Contact List */}
           <div
-            className={`col-span-12 h-full min-h-0 border-r border-gray-200 @lg:col-span-4 @xl:col-span-3 dark:border-gray-300 ${
+            className={`nb-chat-sidebar col-span-12 h-full min-h-0 border-r border-gray-200 @lg:col-span-4 @xl:col-span-3 dark:border-gray-300 ${
               showChat ? 'hidden @lg:block' : 'block'
             }`}
           >
             <div className="flex h-full flex-col">
               {/* Header with Phone Number Selector */}
-              <div className="nb-sidebar-hdr border-b border-gray-200 p-4">
+              <div
+                className={`nb-sidebar-hdr border-b border-gray-200 p-4 ${
+                  isPlayfulGeometric
+                    ? 'border-[#1E293B]! bg-[linear-gradient(135deg,rgba(255,255,255,0.95),rgba(244,114,182,0.08),rgba(251,191,36,0.12))] shadow-[0_2px_0_0_#1E293B]'
+                    : ''
+                }`}
+              >
                 <div className="mb-4 flex items-end gap-2">
                   <Link href="/">
                     <ActionIcon
                       size="lg"
-                      className="h-10 w-10 shrink-0 bg-[rgb(var(--primary-default))] text-white hover:bg-[rgb(var(--primary-default))]/90"
+                      className="nb-home-btn h-10 w-10 shrink-0 bg-[rgb(var(--primary-default))] text-white hover:bg-[rgb(var(--primary-default))]/90"
                     >
                       <PiHouse className="h-5 w-5" />
                     </ActionIcon>
@@ -1622,17 +1629,20 @@ export default function ChatPage() {
                           ? 'rounded-none border-[#1F1F1F] bg-[#B0BEC520] shadow-[3px_3px_0_#1F1F1F] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none'
                           : isHandDrawn
                           ? 'rounded-md border-[#2d2d2d] bg-[#e9efe6] shadow-[3px_3px_0_#2d2d2d] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none'
+                          : isPlayfulGeometric
+                          ? 'rounded-full border-[#1E293B] bg-[linear-gradient(135deg,#8B5CF6,#F472B6,#FBBF24)] shadow-[3px_3px_0_#1E293B] active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#1E293B]'
                           : 'rounded-lg border-gray-300 bg-white text-gray-600 hover:border-gray-400 hover:bg-gray-50'
                       }`}
                     >
-                      <PiPalette className={`h-5 w-5 ${chatTheme !== 'default' ? 'text-[#2d2d2d]' : 'text-gray-600'}`} />
+                      <PiPalette className={`h-5 w-5 ${isPlayfulGeometric ? 'text-[#1E293B]' : chatTheme !== 'default' ? 'text-[#2d2d2d]' : 'text-gray-600'}`} />
                     </button>
                     {showThemeMenu && (
-                      <div className="absolute left-0 top-full z-50 mt-1 w-44 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-600 dark:bg-gray-800">
+                      <div className="nb-theme-menu absolute left-0 top-full z-50 mt-1 w-52 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-600 dark:bg-gray-800">
                         {([
                           { value: 'default', label: 'Default', emoji: '💬' },
                           { value: 'neo-brutalism', label: 'Neo Brutalism', emoji: '🖤' },
                           { value: 'hand-drawn', label: 'Hand-Drawn', emoji: '✏️' },
+                          { value: 'playful-geometric', label: 'Playful Geometric', emoji: '🎈' },
                         ] as const).map((theme) => (
                           <button
                             key={theme.value}
@@ -1654,7 +1664,13 @@ export default function ChatPage() {
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <label className="mb-1 block text-xs font-medium text-gray-700">
+                    <label
+                      className={`mb-1 block text-xs font-medium ${
+                        isPlayfulGeometric
+                          ? 'font-[var(--font-outfit)] uppercase tracking-[0.12em] text-[#1E293B]'
+                          : 'text-gray-700'
+                      }`}
+                    >
                       WhatsApp Number
                     </label>
                     <Select
@@ -1697,7 +1713,7 @@ export default function ChatPage() {
                         </div>
                       )}
                       placeholder="Select WhatsApp Number"
-                      className="w-full"
+                      className="nb-sidebar-select w-full"
                     />
                   </div>
                 </div>
@@ -1707,7 +1723,7 @@ export default function ChatPage() {
                     placeholder="Search Contact"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="flex-1"
+                    className="nb-sidebar-search flex-1"
                   />
                   <Button
                     onClick={() => {
@@ -1734,7 +1750,11 @@ export default function ChatPage() {
                       });
                     }}
                     disabled={!selectedPhoneNumberId}
-                    className="shrink-0"
+                    className={`nb-send-template-btn shrink-0 ${
+                      isPlayfulGeometric
+                        ? 'border-[#1E293B]! bg-[#34D399]! text-white! shadow-[4px_4px_0_#1E293B]! hover:bg-[#10B981]! hover:shadow-[6px_6px_0_#1E293B]! hover:translate-x-[-2px] hover:translate-y-[-2px] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[2px_2px_0_#1E293B]! rounded-full'
+                        : ''
+                    }`}
                     title="Send Template"
                   >
                     <PiPaperPlaneTilt className="h-5 w-5" />
@@ -1755,7 +1775,13 @@ export default function ChatPage() {
                   }
                 }}
               >
-                <div className="flex gap-2 border-b border-gray-200 px-4 py-3">
+                <div
+                  className={`nb-filter-row flex gap-2 border-b border-gray-200 px-4 py-3 ${
+                    isPlayfulGeometric
+                      ? 'border-[#1E293B]/15! bg-[rgba(255,255,255,0.82)]'
+                      : ''
+                  }`}
+                >
                   {(['all', 'unread', 'archived'] as const).map((filter) => {
                     const isActive = chatFilter === filter;
                     const count = filter === 'all' ? totalContacts : filter === 'unread' ? unreadCount : archivedCount;
@@ -1765,27 +1791,87 @@ export default function ChatPage() {
                         key={filter}
                         type="button"
                         onClick={() => setChatFilter(filter)}
-                        style={isNeoBrutalism ? {
-                          background: isActive ? '#016B61' : '#fff',
-                          color: isActive ? '#fff' : '#1F1F1F',
-                          border: isActive ? '1.5px solid #016B61' : '1px solid #1F1F1F30',
-                          fontWeight: isActive ? 700 : 500,
-                          padding: '4px 10px',
-                          fontSize: '12px',
-                          height: '32px',
-                          flex: 1,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '6px',
-                          cursor: 'pointer',
-                          borderRadius: 0,
-                        } : undefined}
-                        className={isNeoBrutalism ? (isActive ? 'nb-filter-active' : 'nb-filter-btn') : `font-medium cursor-pointer focus:outline-none transition-colors duration-200 rounded-(--border-radius) px-2.5 py-1 text-xs h-8 flex flex-1 items-center justify-center gap-2 ${isActive ? 'bg-primary text-primary-foreground border-(length:--border-width) border-transparent' : 'bg-transparent border-(length:--border-width) border-border hover:border-primary hover:text-primary'}`}
+                        style={
+                          isNeoBrutalism
+                            ? {
+                                background: isActive ? '#016B61' : '#fff',
+                                color: isActive ? '#fff' : '#1F1F1F',
+                                border: isActive ? '1.5px solid #016B61' : '1px solid #1F1F1F30',
+                                fontWeight: isActive ? 700 : 500,
+                                padding: '4px 10px',
+                                fontSize: '12px',
+                                height: '32px',
+                                flex: 1,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '6px',
+                                cursor: 'pointer',
+                                borderRadius: 0,
+                              }
+                            : isPlayfulGeometric
+                            ? {
+                                background:
+                                  isActive
+                                    ? filter === 'all'
+                                      ? '#8B5CF6'
+                                      : filter === 'unread'
+                                      ? '#34D399'
+                                      : '#F472B6'
+                                    : '#FFFFFF',
+                                color: isActive ? '#FFFFFF' : '#1E293B',
+                                border: '2px solid #1E293B',
+                                boxShadow: isActive ? '4px 4px 0 0 #1E293B' : 'none',
+                                fontWeight: 700,
+                                padding: '4px 10px',
+                                fontSize: '12px',
+                                height: '32px',
+                                flex: 1,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '6px',
+                                cursor: 'pointer',
+                                borderRadius: 9999,
+                              }
+                            : undefined
+                        }
+                        className={
+                          isNeoBrutalism
+                            ? isActive
+                              ? 'nb-filter-active'
+                              : 'nb-filter-btn'
+                            : `font-medium cursor-pointer focus:outline-none transition-colors duration-200 rounded-(--border-radius) px-2.5 py-1 text-xs h-8 flex flex-1 items-center justify-center gap-2 ${
+                                isActive
+                                  ? 'bg-primary text-primary-foreground border-(length:--border-width) border-transparent'
+                                  : 'bg-transparent border-(length:--border-width) border-border hover:border-primary hover:text-primary'
+                              } ${isPlayfulGeometric ? 'font-[var(--font-outfit)]' : ''}`
+                        }
                       >
                         <span>{label}</span>
                         {count > 0 && (
-                          <span style={isNeoBrutalism ? { background: isActive ? 'rgba(255,255,255,0.2)' : '#1F1F1F15', color: isActive ? '#fff' : '#1F1F1F', borderRadius: 0, padding: '0 5px', fontSize: '11px', fontWeight: 600 } : undefined}
+                          <span
+                            style={
+                              isNeoBrutalism
+                                ? { background: isActive ? 'rgba(255,255,255,0.2)' : '#1F1F1F15', color: isActive ? '#fff' : '#1F1F1F', borderRadius: 0, padding: '0 5px', fontSize: '11px', fontWeight: 600 }
+                                : isPlayfulGeometric
+                                ? {
+                                    background: isActive ? '#FFFFFF' : 'rgba(30,41,59,0.08)',
+                                    color:
+                                      isActive
+                                        ? filter === 'all'
+                                          ? '#8B5CF6'
+                                          : filter === 'unread'
+                                          ? '#34D399'
+                                          : '#F472B6'
+                                        : '#1E293B',
+                                    borderRadius: 9999,
+                                    padding: '0 6px',
+                                    fontSize: '11px',
+                                    fontWeight: 700,
+                                  }
+                                : undefined
+                            }
                             className={isNeoBrutalism ? 'inline-flex h-5 min-w-[20px] items-center justify-center' : `inline-flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-xs font-medium ${isActive ? 'bg-white/20 text-white' : 'bg-[rgb(var(--primary-default))] text-white'}`}>
                             {count}
                           </span>
@@ -1799,7 +1885,11 @@ export default function ChatPage() {
                 {chatFilter !== 'archived' && archivedCount > 0 && (
                   <button
                     onClick={() => setChatFilter('archived')}
-                    className="flex w-full items-center gap-3 border-b border-gray-200 bg-gray-50 px-4 py-3 text-left transition-colors hover:bg-gray-100"
+                    className={`nb-archived-row flex w-full items-center gap-3 border-b border-gray-200 bg-gray-50 px-4 py-3 text-left transition-colors hover:bg-gray-100 ${
+                      isPlayfulGeometric
+                        ? 'border-[#1E293B]/15! bg-[linear-gradient(90deg,rgba(251,191,36,0.16),rgba(244,114,182,0.1),rgba(139,92,246,0.08))]! hover:bg-[linear-gradient(90deg,rgba(244,114,182,0.14),rgba(52,211,153,0.12))]!'
+                        : ''
+                    }`}
                   >
                     <PiArchive className="h-5 w-5 text-gray-500" />
                     <span className="text-sm font-medium text-gray-700">
@@ -1841,9 +1931,13 @@ export default function ChatPage() {
                           handleContactClick(contact);
                         }
                       }}
-                      className={`flex w-full cursor-pointer items-center gap-2 border-b border-gray-100 p-2 text-left transition-colors hover:bg-gray-50 ${
+                      className={`nb-contact-row flex w-full cursor-pointer items-center gap-2 border-b border-gray-100 p-2 text-left transition-colors hover:bg-gray-50 ${
                         selectedContact?.id === contact.id ? 'bg-gray-50' : ''
-                      }`}
+                      } ${
+                        isPlayfulGeometric
+                          ? 'border-[#E2E8F0]! hover:bg-[rgba(251,191,36,0.12)]!'
+                          : ''
+                      } ${contactOptionsMenuId === contact.id ? 'relative z-20' : ''}`}
                     >
                       <Avatar
                         src={
@@ -1854,7 +1948,7 @@ export default function ChatPage() {
                         className="h-10 w-10"
                       />
                       <div className="min-w-0 flex-1">
-                        <h6 className="truncate text-xs font-semibold">
+                        <h6 className={`truncate text-xs font-semibold ${isPlayfulGeometric ? 'font-[var(--font-outfit)] text-[#1E293B]' : ''}`}>
                           {contact.profileName || contact.phoneNumber}
                         </h6>
                         <p className="truncate text-[10px] text-gray-500">
@@ -1899,11 +1993,15 @@ export default function ChatPage() {
                             </span>
                           )}
                           {/* Options menu button */}
-                          <div className="relative">
+                          <div className={`relative ${contactOptionsMenuId === contact.id ? 'z-30' : ''}`}>
                             <ActionIcon
                               size="sm"
                               variant="text"
-                              className="text-gray-400 hover:text-gray-600"
+                              className={`nb-options-btn text-gray-400 hover:text-gray-600 ${
+                                isPlayfulGeometric
+                                  ? 'border-[#1E293B]! bg-white! text-[#1E293B]! shadow-[4px_4px_0_#1E293B]! hover:bg-[#FBBF24]! hover:shadow-[6px_6px_0_#1E293B]! hover:translate-x-[-2px] hover:translate-y-[-2px] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[2px_2px_0_#1E293B]! rounded-full'
+                                  : ''
+                              }`}
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setContactOptionsMenuId(
@@ -1920,7 +2018,7 @@ export default function ChatPage() {
                             {contactOptionsMenuId === contact.id && (
                               <div
                                 ref={contactOptionsMenuRef}
-                                className="absolute top-6 right-0 z-50 w-36 rounded-md border border-gray-200 bg-white py-1 shadow-lg"
+                                className="nb-contact-menu absolute top-full right-0 z-[70] mt-2 w-36 rounded-md border border-gray-200 bg-white py-1 shadow-lg"
                               >
                                 <div
                                   role="button"
@@ -2042,7 +2140,7 @@ export default function ChatPage() {
                   <div className="flex items-center gap-2">
                     <Button
                       variant="text"
-                      className="h-auto p-0 hover:bg-transparent @lg:hidden"
+                      className="nb-back-btn h-auto p-0 hover:bg-transparent @lg:hidden"
                       onClick={handleBackToListViaUI}
                     >
                       <PiArrowLeft className="h-5 w-5" />
@@ -2071,13 +2169,19 @@ export default function ChatPage() {
                           onClick={() =>
                             copyPhoneNumber(selectedContact.phoneNumber)
                           }
-                          className="text-gray-400 transition-colors hover:text-gray-600 dark:hover:text-gray-300"
+                          className={`nb-copy-phone-btn inline-flex h-6 w-6 items-center justify-center rounded-full border transition-all ${
+                            copiedPhone
+                              ? 'border-green-200 bg-green-50 text-green-600'
+                              : isPlayfulGeometric
+                              ? 'border-[#1E293B] bg-white text-[#1E293B] shadow-[2px_2px_0_#1E293B] hover:bg-[#FBBF24] hover:text-[#1E293B]'
+                              : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300 hover:bg-gray-50 hover:text-gray-700'
+                          }`}
                           title={copiedPhone ? 'Copied!' : 'Copy phone number'}
                         >
                           {copiedPhone ? (
-                            <PiCheck className="h-3 w-3 text-green-600" />
+                            <PiCheck className="h-3.5 w-3.5" />
                           ) : (
-                            <PiCopy className="h-3 w-3" />
+                            <PiCopy className="h-3.5 w-3.5" />
                           )}
                         </button>
                       </div>
@@ -2123,6 +2227,15 @@ export default function ChatPage() {
                       ? { scrollBehavior: 'auto', background: '#FFFFFF', borderBottom: '2px solid #1F1F1F' }
                       : isHandDrawn
                       ? { scrollBehavior: 'auto', background: '#f7f8f4', backgroundImage: 'radial-gradient(circle, rgba(45,45,45,0.06) 1px, transparent 1px)', backgroundSize: '24px 24px' }
+                      : isPlayfulGeometric
+                      ? {
+                          scrollBehavior: 'auto',
+                          backgroundColor: '#FFFDF5',
+                          backgroundImage:
+                            'radial-gradient(circle at 24px 24px, rgba(139,92,246,0.14) 0 2px, transparent 2.5px), radial-gradient(circle at 72px 56px, rgba(244,114,182,0.16) 0 3px, transparent 3.5px), radial-gradient(circle at 48px 80px, rgba(52,211,153,0.14) 0 3px, transparent 3.5px), linear-gradient(90deg, rgba(226,232,240,0.5) 1px, transparent 1px), linear-gradient(rgba(226,232,240,0.5) 1px, transparent 1px)',
+                          backgroundSize: '96px 96px, 120px 120px, 32px 32px, 32px 32px',
+                          backgroundPosition: '0 0, 0 0, 0 0, 0 0',
+                        }
                       : { scrollBehavior: 'auto', backgroundImage: 'url(/background.png)', backgroundRepeat: 'repeat', backgroundSize: 'auto' }
                   }
                 >
@@ -2151,6 +2264,8 @@ export default function ChatPage() {
                                   ? `border border-[#1F1F1F]/30 text-[#1F1F1F] ${isOwn ? 'bg-[#B0BEC520] shadow-[2px_2px_0_#1F1F1F]/20' : 'bg-white shadow-[2px_2px_0_#1F1F1F]/20'}`
                                   : isHandDrawn
                                   ? isOwn ? 'hd-bubble-own' : 'hd-bubble-other'
+                                  : isPlayfulGeometric
+                                  ? isOwn ? 'pg-bubble-own' : 'pg-bubble-other'
                                   : `rounded-lg ${isOwn ? 'bg-[#d9fdd3] text-gray-900 shadow-sm dark:bg-[#005c4b] dark:text-gray-100' : 'bg-white text-gray-900 shadow-sm dark:bg-[#202c33] dark:text-gray-100'}`
                               }`}
                             >
@@ -2692,6 +2807,14 @@ export default function ChatPage() {
                           backgroundSize: '24px 24px',
                           borderTop: '2px solid #2d2d2d',
                         }
+                      : isPlayfulGeometric
+                      ? {
+                          backgroundColor: '#FFFDF5',
+                          backgroundImage:
+                            'linear-gradient(90deg, rgba(226,232,240,0.5) 1px, transparent 1px), linear-gradient(rgba(226,232,240,0.5) 1px, transparent 1px), radial-gradient(circle at 16px 16px, rgba(251,191,36,0.25) 0 4px, transparent 4.5px)',
+                          backgroundSize: '28px 28px, 28px 28px, 88px 88px',
+                          borderTop: '2px solid #1E293B',
+                        }
                       : {
                           backgroundImage: 'url(/background.png)',
                           backgroundRepeat: 'repeat',
@@ -2730,7 +2853,7 @@ export default function ChatPage() {
                           {(pendingAttachment.file.size / 1024).toFixed(1)} KB
                         </p>
                       </div>
-                      <ActionIcon variant="text" onClick={cancelAttachment}>
+                      <ActionIcon variant="text" onClick={cancelAttachment} className="nb-cancel-attachment-btn">
                         <PiX className="h-5 w-5" />
                       </ActionIcon>
                     </div>
@@ -2771,14 +2894,34 @@ export default function ChatPage() {
                     <div className="relative" ref={attachmentMenuRef}>
                       <ActionIcon
                         variant="text"
+                        className="nb-attach-btn"
                         onClick={toggleAttachmentMenu}
                         disabled={!selectedContact.isSessionActive}
+                        style={
+                          isPlayfulGeometric
+                            ? !selectedContact.isSessionActive
+                              ? {
+                                  background: '#F8FAFC',
+                                  color: '#64748B',
+                                  border: '2px solid #CBD5E1',
+                                  borderRadius: '9999px',
+                                  boxShadow: 'none',
+                                }
+                              : {
+                                  background: '#FFFFFF',
+                                  color: '#1E293B',
+                                  border: '2px solid #1E293B',
+                                  borderRadius: '9999px',
+                                  boxShadow: '4px 4px 0 0 #1E293B',
+                                }
+                            : undefined
+                        }
                       >
                         <PiPaperclipHorizontal className="h-6 w-6" />
                       </ActionIcon>
 
                       {showAttachmentMenu && (
-                        <div className="absolute bottom-full left-0 mb-2 w-40 rounded-lg border border-gray-200 bg-white py-1 shadow-lg">
+                        <div className="nb-attachment-menu absolute bottom-full left-0 mb-2 w-40 rounded-lg border border-gray-200 bg-white py-1 shadow-lg">
                           <button
                             onClick={() => imageInputRef.current?.click()}
                             className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm hover:bg-gray-100"
@@ -2810,7 +2953,7 @@ export default function ChatPage() {
                     <div className="relative flex-1">
                       {/* Suggestions Dropdown */}
                       {showSuggestions && filteredQuickReplies.length > 0 && (
-                        <div className="absolute bottom-full left-0 right-0 z-50 mb-2 max-h-64 min-w-[480px] overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800">
+                        <div className="nb-suggestion-menu absolute bottom-full left-0 right-0 z-50 mb-2 max-h-64 min-w-[480px] overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800">
                           {filteredQuickReplies.map((qr, index) => (
                             <button
                               key={qr.id}
@@ -2844,7 +2987,30 @@ export default function ChatPage() {
                             : 'Session expired. User must reply to open 24h window.'
                         }
                         disabled={sending || !selectedContact.isSessionActive}
-                        className="w-full resize-none [&_textarea]:!bg-white [&_textarea]:!placeholder-gray-900 dark:[&_textarea]:!bg-gray-800"
+                        className={`w-full resize-none [&_textarea]:!bg-white [&_textarea]:!placeholder-gray-900 dark:[&_textarea]:!bg-gray-800 ${
+                          isPlayfulGeometric
+                            ? '[&_textarea]:!rounded-[24px] [&_textarea]:!border-2 [&_textarea]:!border-[#1E293B] [&_textarea]:!bg-white [&_textarea]:!text-[#1E293B] disabled:[&_textarea]:!border-[#CBD5E1] disabled:[&_textarea]:!bg-[#F8FAFC] disabled:[&_textarea]:!text-[#64748B]'
+                            : ''
+                        }`}
+                        style={
+                          isPlayfulGeometric
+                            ? sending || !selectedContact.isSessionActive
+                              ? {
+                                  background: '#F8FAFC',
+                                  color: '#64748B',
+                                  border: '2px solid #CBD5E1',
+                                  borderRadius: '24px',
+                                  boxShadow: 'none',
+                                }
+                              : {
+                                  background: '#FFFFFF',
+                                  color: '#1E293B',
+                                  border: '2px solid #1E293B',
+                                  borderRadius: '24px',
+                                  boxShadow: '4px 4px 0 0 transparent',
+                                }
+                            : undefined
+                        }
                         rows={1}
                       />
                     </div>
@@ -2853,14 +3019,34 @@ export default function ChatPage() {
                     <div className="relative" ref={emojiPickerRef}>
                       <ActionIcon
                         variant="text"
+                        className="nb-emoji-btn"
                         onClick={toggleEmojiPicker}
                         disabled={!selectedContact.isSessionActive}
+                        style={
+                          isPlayfulGeometric
+                            ? !selectedContact.isSessionActive
+                              ? {
+                                  background: '#F8FAFC',
+                                  color: '#64748B',
+                                  border: '2px solid #CBD5E1',
+                                  borderRadius: '9999px',
+                                  boxShadow: 'none',
+                                }
+                              : {
+                                  background: '#FFFFFF',
+                                  color: '#1E293B',
+                                  border: '2px solid #1E293B',
+                                  borderRadius: '9999px',
+                                  boxShadow: '4px 4px 0 0 #1E293B',
+                                }
+                            : undefined
+                        }
                       >
                         <PiSmiley className="h-6 w-6" />
                       </ActionIcon>
 
                       {showEmojiPicker && (
-                        <div className="absolute right-0 bottom-full mb-2 grid max-h-48 w-64 grid-cols-8 gap-1 overflow-y-auto rounded-lg border border-gray-200 bg-white p-2 shadow-lg">
+                        <div className="nb-emoji-menu absolute right-0 bottom-full mb-2 grid max-h-48 w-64 grid-cols-8 gap-1 overflow-y-auto rounded-lg border border-gray-200 bg-white p-2 shadow-lg">
                           {defaultEmojis.map((emoji, index) => (
                             <button
                               key={index}
@@ -2876,11 +3062,31 @@ export default function ChatPage() {
 
                     {/* Send Button */}
                     <Button
+                      className="nb-send-btn"
                       onClick={handleSendMessage}
                       disabled={
                         (!messageInput?.trim() && !pendingAttachment) ||
                         sending ||
                         !selectedContact.isSessionActive
+                      }
+                      style={
+                        isPlayfulGeometric
+                          ? (!messageInput?.trim() && !pendingAttachment) || sending || !selectedContact.isSessionActive
+                            ? {
+                                background: '#F8FAFC',
+                                color: '#64748B',
+                                border: '2px solid #CBD5E1',
+                                borderRadius: '9999px',
+                                boxShadow: 'none',
+                              }
+                            : {
+                                background: '#F472B6',
+                                color: '#FFFFFF',
+                                border: '2px solid #1E293B',
+                                borderRadius: '9999px',
+                                boxShadow: '4px 4px 0 0 #1E293B',
+                              }
+                          : undefined
                       }
                       size="sm"
                     >
@@ -2894,21 +3100,40 @@ export default function ChatPage() {
 
                 </div>
                 {/* Quick Replies & Session Warning */}
-                <div className="flex items-center gap-2 bg-white px-4 py-2 dark:bg-gray-900">
+                <div className="nb-quickbar flex items-center gap-2 bg-white px-4 py-2 dark:bg-gray-900">
                   <div className="relative" ref={quickReplyRef}>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={toggleQuickReplies}
                       disabled={!selectedContact.isSessionActive}
-                      className="gap-2"
+                      className="nb-quickreply-btn gap-2"
+                      style={
+                        isPlayfulGeometric
+                          ? !selectedContact.isSessionActive
+                            ? {
+                                background: '#F8FAFC',
+                                color: '#64748B',
+                                border: '2px solid #CBD5E1',
+                                borderRadius: '9999px',
+                                boxShadow: 'none',
+                              }
+                            : {
+                                background: '#FBBF24',
+                                color: '#1E293B',
+                                border: '2px solid #1E293B',
+                                borderRadius: '9999px',
+                                boxShadow: '4px 4px 0 0 #1E293B',
+                              }
+                          : undefined
+                      }
                     >
                       <PiLightning className="h-4 w-4" />
                       Quick Replies
                     </Button>
 
                     {showQuickReplies && (
-                      <div className="absolute bottom-full left-0 mb-2 max-h-64 w-64 space-y-1 overflow-y-auto rounded-lg border border-gray-200 bg-white p-2 shadow-lg">
+                      <div className="nb-quickreply-menu absolute bottom-full left-0 mb-2 max-h-64 w-64 space-y-1 overflow-y-auto rounded-lg border border-gray-200 bg-white p-2 shadow-lg">
                         {quickReplies.map((reply) => (
                           <button
                             key={reply.id}
@@ -2923,7 +3148,7 @@ export default function ChatPage() {
                   </div>
 
                   {!selectedContact.isSessionActive && (
-                    <span className="rounded-md border border-yellow-200 bg-yellow-50 px-2 py-1 text-[10px] text-yellow-700">
+                    <span className="nb-session-badge rounded-md border border-yellow-200 bg-yellow-50 px-2 py-1 text-[10px] text-yellow-700">
                       ⚠️ Sesi berakhir — hanya template
                     </span>
                   )}

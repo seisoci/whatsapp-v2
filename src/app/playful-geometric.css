@@ -1,0 +1,1049 @@
+/* ================================================================ */
+/*  PLAYFUL GEOMETRIC CHAT THEME                                    */
+/* ================================================================ */
+
+body.playful-geometric,
+.playful-geometric {
+  --pg-bg: #fffdf5;
+  --pg-surface: #ffffff;
+  --pg-surface-muted: #f8fafc;
+  --pg-fg: #1e293b;
+  --pg-fg-muted: #64748b;
+  --pg-accent: #8b5cf6;
+  --pg-secondary: #f472b6;
+  --pg-tertiary: #fbbf24;
+  --pg-quaternary: #34d399;
+  --pg-border: #1e293b;
+  --pg-border-soft: #e2e8f0;
+  --pg-shadow: 4px 4px 0 0 #1e293b;
+  --pg-shadow-soft: 6px 6px 0 0 #e2e8f0;
+  --pg-shadow-hover: 6px 6px 0 0 #1e293b;
+  --pg-shadow-active: 2px 2px 0 0 #1e293b;
+}
+
+body.playful-geometric {
+  background: var(--pg-bg) !important;
+  color: var(--pg-fg) !important;
+}
+
+body.playful-geometric,
+body.playful-geometric *,
+.playful-geometric,
+.playful-geometric * {
+  font-family: var(--font-plus-jakarta-sans), system-ui, sans-serif !important;
+}
+
+body.playful-geometric h1,
+body.playful-geometric h2,
+body.playful-geometric h3,
+body.playful-geometric h4,
+body.playful-geometric h5,
+body.playful-geometric h6,
+body.playful-geometric button,
+body.playful-geometric label,
+.playful-geometric h1,
+.playful-geometric h2,
+.playful-geometric h3,
+.playful-geometric h4,
+.playful-geometric h5,
+.playful-geometric h6,
+.playful-geometric button,
+.playful-geometric label {
+  font-family: var(--font-outfit), system-ui, sans-serif !important;
+}
+
+.playful-geometric > div,
+.playful-geometric .nb-chat-shell {
+  background-color: var(--pg-bg) !important;
+  background-image:
+    radial-gradient(circle at 24px 24px, rgba(139, 92, 246, 0.14) 0 2px, transparent 2.5px),
+    radial-gradient(circle at 72px 56px, rgba(52, 211, 153, 0.12) 0 3px, transparent 3.5px),
+    linear-gradient(90deg, rgba(226, 232, 240, 0.7) 1px, transparent 1px),
+    linear-gradient(rgba(226, 232, 240, 0.7) 1px, transparent 1px) !important;
+  background-size: 96px 96px, 32px 32px, 32px 32px !important;
+}
+
+.playful-geometric > div > div:first-child,
+.playful-geometric .nb-chat-sidebar {
+  background: linear-gradient(180deg, #fffdf5 0%, #fff7fb 100%) !important;
+  border-right: 2px solid var(--pg-border) !important;
+  position: relative;
+}
+
+.playful-geometric .nb-sidebar-hdr {
+  background:
+    radial-gradient(circle at top right, rgba(244, 114, 182, 0.18), transparent 34%),
+    radial-gradient(circle at bottom left, rgba(251, 191, 36, 0.16), transparent 30%),
+    var(--pg-surface) !important;
+  border-bottom: 2px solid var(--pg-border) !important;
+}
+
+.playful-geometric .nb-sidebar-hdr label {
+  color: var(--pg-fg) !important;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.7rem !important;
+  font-weight: 800 !important;
+}
+
+.playful-geometric > div > div:first-child .flex.gap-2.border-b,
+.playful-geometric .nb-filter-row {
+  background: rgba(255, 255, 255, 0.8) !important;
+  border-bottom: 2px dashed var(--pg-border-soft) !important;
+}
+
+.playful-geometric > div > div:first-child .flex.gap-2.border-b > button,
+.playful-geometric .nb-filter-row > button {
+  border: 2px solid var(--pg-border) !important;
+  border-radius: 9999px !important;
+  background: var(--pg-surface) !important;
+  color: var(--pg-fg) !important;
+  box-shadow: none !important;
+  font-weight: 700 !important;
+}
+
+.playful-geometric > div > div:first-child .flex.gap-2.border-b > button:hover,
+.playful-geometric .nb-filter-row > button:hover {
+  background: var(--pg-tertiary) !important;
+}
+
+.playful-geometric > div > div:first-child .flex.gap-2.border-b > button.bg-primary,
+.playful-geometric .nb-filter-row > button.bg-primary {
+  background: var(--pg-accent) !important;
+  border-color: var(--pg-border) !important;
+  color: #fff !important;
+  box-shadow: var(--pg-shadow) !important;
+}
+
+.playful-geometric > div > div:first-child .flex.gap-2.border-b > button > .rounded-full,
+.playful-geometric .nb-filter-row > button > .rounded-full {
+  background: rgba(30, 41, 59, 0.08) !important;
+  color: var(--pg-fg) !important;
+  border: 1px solid rgba(30, 41, 59, 0.12) !important;
+}
+
+.playful-geometric > div > div:first-child .flex.gap-2.border-b > button.bg-primary > .rounded-full,
+.playful-geometric .nb-filter-row > button.bg-primary > .rounded-full {
+  background: #fff !important;
+  color: var(--pg-accent) !important;
+  border-color: #fff !important;
+}
+
+.playful-geometric [role="button"] {
+  background: transparent !important;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.9) !important;
+  border-left: 6px solid transparent !important;
+  transition:
+    background-color 0.2s ease,
+    transform 0.2s ease,
+    border-left-color 0.2s ease !important;
+}
+
+.playful-geometric [role="button"]:hover {
+  background: rgba(251, 191, 36, 0.16) !important;
+  border-left-color: var(--pg-secondary) !important;
+  transform: translateX(4px) !important;
+}
+
+.playful-geometric [role="button"].bg-gray-50,
+.playful-geometric .bg-gray-50[role="button"],
+.playful-geometric .nb-contact-row.bg-gray-50 {
+  background: linear-gradient(90deg, rgba(139, 92, 246, 0.14), rgba(244, 114, 182, 0.08), rgba(251, 191, 36, 0.08)) !important;
+  border-left-color: var(--pg-accent) !important;
+}
+
+.playful-geometric .nb-contact-row {
+  background: transparent !important;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.9) !important;
+}
+
+.playful-geometric .nb-contact-row:hover {
+  background: rgba(251, 191, 36, 0.12) !important;
+}
+
+.playful-geometric .nb-contact-row h6 {
+  color: var(--pg-fg) !important;
+  font-family: var(--font-outfit), system-ui, sans-serif !important;
+}
+
+.playful-geometric .nb-contact-row p,
+.playful-geometric .nb-contact-row span {
+  color: var(--pg-fg-muted) !important;
+}
+
+.playful-geometric > div > div:last-child,
+.playful-geometric .nb-chat-inner {
+  background: transparent !important;
+}
+
+.playful-geometric .nb-chat-hdr {
+  background:
+    linear-gradient(90deg, rgba(139, 92, 246, 0.14), rgba(52, 211, 153, 0.08)),
+    var(--pg-surface) !important;
+  border-bottom: 2px solid var(--pg-border) !important;
+  position: relative;
+}
+
+.playful-geometric .nb-chat-hdr * {
+  color: var(--pg-fg) !important;
+}
+
+.playful-geometric .nb-chat-hdr h6 {
+  font-family: var(--font-outfit), system-ui, sans-serif !important;
+  font-size: 0.9rem !important;
+  font-weight: 800 !important;
+}
+
+.playful-geometric .nb-chat-hdr button:not(.nb-theme-btn) {
+  border: 2px solid transparent !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  border-radius: 9999px !important;
+}
+
+.playful-geometric .nb-chat-hdr button:not(.nb-theme-btn):hover {
+  background: rgba(251, 191, 36, 0.16) !important;
+  border-color: rgba(251, 191, 36, 0.28) !important;
+}
+
+.playful-geometric .nb-copy-phone-btn {
+  border: 2px solid var(--pg-border) !important;
+  border-radius: 9999px !important;
+  background: var(--pg-surface) !important;
+  color: var(--pg-fg) !important;
+  box-shadow: 2px 2px 0 0 var(--pg-border) !important;
+}
+
+.playful-geometric .nb-copy-phone-btn:hover {
+  background: var(--pg-tertiary) !important;
+  color: var(--pg-fg) !important;
+  transform: translate(-1px, -1px) !important;
+  box-shadow: 3px 3px 0 0 var(--pg-border) !important;
+}
+
+.playful-geometric .pg-bubble-own,
+.playful-geometric .pg-bubble-other {
+  border: 2px solid var(--pg-border) !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.playful-geometric .pg-bubble-own {
+  background:
+    radial-gradient(circle at top right, rgba(251, 191, 36, 0.28), transparent 34%),
+    radial-gradient(circle at bottom left, rgba(244, 114, 182, 0.14), transparent 30%),
+    #fffaf0 !important;
+  color: var(--pg-fg) !important;
+  border-radius: 24px 24px 10px 24px !important;
+  box-shadow: var(--pg-shadow) !important;
+}
+
+.playful-geometric .pg-bubble-other {
+  background:
+    radial-gradient(circle at top left, rgba(52, 211, 153, 0.16), transparent 30%),
+    radial-gradient(circle at bottom right, rgba(244, 114, 182, 0.12), transparent 28%),
+    var(--pg-surface) !important;
+  color: var(--pg-fg) !important;
+  border-radius: 24px 24px 24px 10px !important;
+  box-shadow: var(--pg-shadow-soft) !important;
+}
+
+.playful-geometric .pg-bubble-own a,
+.playful-geometric .pg-bubble-own p,
+.playful-geometric .pg-bubble-own span,
+.playful-geometric .pg-bubble-own svg {
+  color: var(--pg-fg) !important;
+}
+
+.playful-geometric .pg-bubble-own .text-green-700,
+.playful-geometric .pg-bubble-own .text-green-800,
+.playful-geometric .pg-bubble-own .text-green-600,
+.playful-geometric .pg-bubble-own .text-gray-500,
+.playful-geometric .pg-bubble-own .text-gray-600,
+.playful-geometric .pg-bubble-own .text-gray-400,
+.playful-geometric .pg-bubble-own .text-gray-300 {
+  color: #475569 !important;
+}
+
+.playful-geometric .pg-bubble-own .bg-\[\#c6f0bf\],
+.playful-geometric .pg-bubble-own .bg-blue-400\/25,
+.playful-geometric .pg-bubble-own .bg-blue-400\/30,
+.playful-geometric .pg-bubble-own .bg-blue-300\/50,
+.playful-geometric .pg-bubble-own .bg-green-200 {
+  background: rgba(244, 114, 182, 0.14) !important;
+  color: #9d174d !important;
+  border: 1px solid rgba(244, 114, 182, 0.24) !important;
+}
+
+.playful-geometric .pg-bubble-own [class*="bg-\\[\\#c6f0bf\\]"],
+.playful-geometric .pg-bubble-own [class*="text-green-800"],
+.playful-geometric .pg-bubble-own [class*="text-green-200"] {
+  background: rgba(244, 114, 182, 0.14) !important;
+  color: #9d174d !important;
+}
+
+.playful-geometric .pg-bubble-own .rounded.px-1\.5.py-0\.5,
+.playful-geometric .pg-bubble-own .rounded.px-2.py-1 {
+  background: rgba(244, 114, 182, 0.14) !important;
+  color: #9d174d !important;
+  border: 1px solid rgba(244, 114, 182, 0.24) !important;
+  font-weight: 700 !important;
+}
+
+.playful-geometric .pg-bubble-own .text-\[10px\] svg,
+.playful-geometric .pg-bubble-own .opacity-90 svg {
+  color: #475569 !important;
+}
+
+.playful-geometric textarea,
+.playful-geometric .rizzui-textarea-field,
+.playful-geometric .rizzui-input-field,
+.playful-geometric [aria-haspopup="listbox"],
+.playful-geometric span[class*="focus-within\:border-primary"],
+.playful-geometric span[class*="hover\:border-primary"] {
+  background: var(--pg-surface) !important;
+  border: 2px solid #cbd5e1 !important;
+  border-radius: 16px !important;
+  box-shadow: none !important;
+  color: var(--pg-fg) !important;
+}
+
+.playful-geometric textarea:focus,
+.playful-geometric .rizzui-textarea-field:focus,
+.playful-geometric .rizzui-input-field:focus,
+.playful-geometric span[class*="focus-within\:border-primary"]:focus-within,
+.playful-geometric span[class*="hover\:border-primary"]:focus-within,
+.playful-geometric [aria-haspopup="listbox"]:focus,
+.playful-geometric [aria-haspopup="listbox"]:focus-visible {
+  border-color: var(--pg-accent) !important;
+  box-shadow: 4px 4px 0 0 var(--pg-accent) !important;
+  outline: none !important;
+}
+
+.playful-geometric .rizzui-textarea-field::placeholder,
+.playful-geometric .rizzui-input-field::placeholder {
+  color: var(--pg-fg-muted) !important;
+  opacity: 1 !important;
+}
+
+.playful-geometric .nb-sidebar-select [aria-haspopup="listbox"],
+.playful-geometric .nb-sidebar-search span {
+  background: var(--pg-surface) !important;
+  border: 2px solid var(--pg-border) !important;
+  border-radius: 16px !important;
+  color: var(--pg-fg) !important;
+  box-shadow: 4px 4px 0 0 transparent !important;
+}
+
+.playful-geometric .nb-sidebar-search .rizzui-input-field {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  color: var(--pg-fg) !important;
+}
+
+.playful-geometric .nb-sidebar-select [aria-haspopup="listbox"] {
+  min-height: 42px !important;
+}
+
+.playful-geometric .nb-sidebar-select [aria-haspopup="listbox"]:focus,
+.playful-geometric .nb-sidebar-select [aria-haspopup="listbox"]:focus-visible,
+.playful-geometric .nb-sidebar-search span:focus-within {
+  border-color: var(--pg-accent) !important;
+  box-shadow: 4px 4px 0 0 var(--pg-accent) !important;
+}
+
+.playful-geometric .nb-sidebar-search .rizzui-input-field::placeholder {
+  color: var(--pg-fg-muted) !important;
+}
+
+.playful-geometric [role="listbox"],
+.playful-geometric [class*="rizzui-select-options"] {
+  background: var(--pg-surface) !important;
+  border: 2px solid var(--pg-border) !important;
+  box-shadow: var(--pg-shadow) !important;
+  border-radius: 16px !important;
+  color: var(--pg-fg) !important;
+}
+
+.playful-geometric [role="option"],
+.playful-geometric [role="option"] * {
+  color: var(--pg-fg) !important;
+  background: transparent !important;
+}
+
+.playful-geometric [role="option"]:hover,
+.playful-geometric [role="option"]:hover * {
+  background: rgba(244, 114, 182, 0.12) !important;
+}
+
+.playful-geometric [role="option"][aria-selected="true"],
+.playful-geometric [role="option"][aria-selected="true"] * {
+  background: rgba(139, 92, 246, 0.12) !important;
+  color: var(--pg-accent) !important;
+  font-weight: 700 !important;
+}
+
+.playful-geometric .nb-theme-btn {
+  background: var(--pg-surface) !important;
+}
+
+.playful-geometric .nb-home-btn,
+.playful-geometric .nb-send-template-btn,
+.playful-geometric .nb-options-btn,
+.playful-geometric .nb-back-btn,
+.playful-geometric .nb-cancel-attachment-btn,
+.playful-geometric .nb-attach-btn,
+.playful-geometric .nb-emoji-btn,
+.playful-geometric .nb-send-btn {
+  border: 2px solid var(--pg-border) !important;
+  border-radius: 9999px !important;
+  box-shadow: var(--pg-shadow) !important;
+  font-family: var(--font-outfit), system-ui, sans-serif !important;
+  font-weight: 700 !important;
+  transition:
+    transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+    background-color 0.2s ease,
+    color 0.2s ease !important;
+}
+
+.playful-geometric .nb-home-btn {
+  background: var(--pg-quaternary) !important;
+  color: #fff !important;
+}
+
+.playful-geometric .nb-send-template-btn {
+  background: var(--pg-quaternary) !important;
+  color: #fff !important;
+}
+
+.playful-geometric .nb-send-btn {
+  background: var(--pg-secondary) !important;
+  color: #fff !important;
+}
+
+.playful-geometric .nb-home-btn svg,
+.playful-geometric .nb-send-template-btn svg,
+.playful-geometric .nb-send-btn svg {
+  color: #fff !important;
+}
+
+.playful-geometric .nb-options-btn,
+.playful-geometric .nb-back-btn,
+.playful-geometric .nb-cancel-attachment-btn,
+.playful-geometric .nb-attach-btn,
+.playful-geometric .nb-emoji-btn {
+  background: var(--pg-surface) !important;
+  color: var(--pg-fg) !important;
+}
+
+.playful-geometric .nb-home-btn:hover {
+  background: #10b981 !important;
+  transform: translate(-2px, -2px) !important;
+  box-shadow: var(--pg-shadow-hover) !important;
+}
+
+.playful-geometric .nb-send-template-btn:hover {
+  background: #10b981 !important;
+  transform: translate(-2px, -2px) !important;
+  box-shadow: var(--pg-shadow-hover) !important;
+}
+
+.playful-geometric .nb-send-btn:hover {
+  background: #ec4899 !important;
+  transform: translate(-2px, -2px) !important;
+  box-shadow: var(--pg-shadow-hover) !important;
+}
+
+.playful-geometric .nb-options-btn:hover,
+.playful-geometric .nb-back-btn:hover,
+.playful-geometric .nb-cancel-attachment-btn:hover,
+.playful-geometric .nb-attach-btn:hover,
+.playful-geometric .nb-emoji-btn:hover {
+  background: var(--pg-tertiary) !important;
+  color: var(--pg-fg) !important;
+  transform: translate(-2px, -2px) !important;
+  box-shadow: var(--pg-shadow-hover) !important;
+}
+
+.playful-geometric .nb-home-btn:active,
+.playful-geometric .nb-send-template-btn:active,
+.playful-geometric .nb-send-btn:active,
+.playful-geometric .nb-options-btn:active,
+.playful-geometric .nb-back-btn:active,
+.playful-geometric .nb-cancel-attachment-btn:active,
+.playful-geometric .nb-attach-btn:active,
+.playful-geometric .nb-emoji-btn:active {
+  transform: translate(2px, 2px) !important;
+  box-shadow: var(--pg-shadow-active) !important;
+}
+
+.playful-geometric .nb-send-template-btn[disabled],
+.playful-geometric .nb-send-btn[disabled],
+.playful-geometric .nb-attach-btn[disabled],
+.playful-geometric .nb-emoji-btn[disabled] {
+  background: var(--pg-surface-muted) !important;
+  color: var(--pg-fg-muted) !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: none !important;
+  transform: none !important;
+  opacity: 1 !important;
+}
+
+.playful-geometric .nb-send-template-btn[disabled] svg,
+.playful-geometric .nb-send-btn[disabled] svg,
+.playful-geometric .nb-attach-btn[disabled] svg,
+.playful-geometric .nb-emoji-btn[disabled] svg {
+  color: var(--pg-fg-muted) !important;
+}
+
+.playful-geometric .nb-theme-menu {
+  background: var(--pg-surface) !important;
+  border: 2px solid var(--pg-border) !important;
+  border-radius: 24px !important;
+  box-shadow: var(--pg-shadow) !important;
+}
+
+.playful-geometric .nb-theme-menu button {
+  border: 0 !important;
+  border-radius: 16px !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  color: var(--pg-fg) !important;
+  font-family: var(--font-outfit), system-ui, sans-serif !important;
+}
+
+.playful-geometric .nb-theme-menu button:hover {
+  background: rgba(251, 191, 36, 0.16) !important;
+  transform: none !important;
+}
+
+.playful-geometric .nb-contact-menu {
+  background: var(--pg-surface) !important;
+  border: 2px solid var(--pg-border) !important;
+  border-radius: 20px !important;
+  box-shadow: var(--pg-shadow) !important;
+}
+
+.playful-geometric .nb-contact-menu [role="button"] {
+  border-left-width: 0 !important;
+  border-bottom: 0 !important;
+  border-radius: 14px !important;
+}
+
+.playful-geometric .nb-archived-row {
+  background: linear-gradient(90deg, rgba(251, 191, 36, 0.16), rgba(244, 114, 182, 0.1), rgba(139, 92, 246, 0.08)) !important;
+  border-bottom: 2px solid var(--pg-border-soft) !important;
+}
+
+.playful-geometric .nb-archived-row:hover {
+  background: linear-gradient(90deg, rgba(251, 191, 36, 0.16), rgba(244, 114, 182, 0.12)) !important;
+}
+
+.playful-geometric .nb-attachment-menu,
+.playful-geometric .nb-suggestion-menu,
+.playful-geometric .nb-emoji-menu,
+.playful-geometric .nb-quickreply-menu {
+  background: var(--pg-surface) !important;
+  border: 2px solid var(--pg-border) !important;
+  border-radius: 24px !important;
+  box-shadow: var(--pg-shadow) !important;
+}
+
+.playful-geometric .nb-attachment-menu button,
+.playful-geometric .nb-suggestion-menu button,
+.playful-geometric .nb-emoji-menu button,
+.playful-geometric .nb-quickreply-menu button {
+  border: 0 !important;
+  box-shadow: none !important;
+  border-radius: 14px !important;
+  background: transparent !important;
+  color: var(--pg-fg) !important;
+  font-family: var(--font-plus-jakarta-sans), system-ui, sans-serif !important;
+  transform: none !important;
+}
+
+.playful-geometric .nb-attachment-menu button:hover,
+.playful-geometric .nb-suggestion-menu button:hover,
+.playful-geometric .nb-emoji-menu button:hover,
+.playful-geometric .nb-quickreply-menu button:hover {
+  background: rgba(244, 114, 182, 0.12) !important;
+  color: var(--pg-fg) !important;
+}
+
+.playful-geometric button:not(.nb-theme-btn):not([aria-haspopup]),
+.playful-geometric [class*="rizzui-button"]:not(.nb-theme-btn),
+.playful-geometric [class*="rizzui-action-icon"] {
+  border: 2px solid var(--pg-border) !important;
+  color: var(--pg-fg) !important;
+  border-radius: 9999px !important;
+  box-shadow: var(--pg-shadow) !important;
+  background: var(--pg-surface) !important;
+  transition:
+    transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+    background-color 0.2s ease,
+    color 0.2s ease !important;
+}
+
+.playful-geometric button:not(.nb-theme-btn):not([aria-haspopup]):hover,
+.playful-geometric [class*="rizzui-button"]:not(.nb-theme-btn):hover,
+.playful-geometric [class*="rizzui-action-icon"]:hover {
+  background: var(--pg-tertiary) !important;
+  transform: translate(-2px, -2px) !important;
+  box-shadow: var(--pg-shadow-hover) !important;
+}
+
+.playful-geometric button:not(.nb-theme-btn):not([aria-haspopup]):active,
+.playful-geometric [class*="rizzui-button"]:not(.nb-theme-btn):active,
+.playful-geometric [class*="rizzui-action-icon"]:active {
+  transform: translate(2px, 2px) !important;
+  box-shadow: var(--pg-shadow-active) !important;
+}
+
+.playful-geometric button[class*="bg-primary"]:not(.nb-theme-btn),
+body.playful-geometric button[class*="bg-primary"]:not(.nb-theme-btn),
+.playful-geometric .nb-chat-inner button[class*="border-transparent"]:not(.nb-theme-btn) {
+  background: var(--pg-accent) !important;
+  color: #fff !important;
+}
+
+.playful-geometric button[class*="bg-primary"]:not(.nb-theme-btn):hover,
+body.playful-geometric button[class*="bg-primary"]:not(.nb-theme-btn):hover,
+.playful-geometric .nb-chat-inner button[class*="border-transparent"]:not(.nb-theme-btn):hover {
+  background: #7c3aed !important;
+  color: #fff !important;
+}
+
+.playful-geometric .nb-chat-composer .rizzui-textarea-root {
+  background: transparent !important;
+}
+
+.playful-geometric .nb-chat-composer .rizzui-textarea-root label,
+.playful-geometric .nb-chat-composer .rizzui-textarea-root span {
+  font-family: var(--font-plus-jakarta-sans), system-ui, sans-serif !important;
+}
+
+.playful-geometric .nb-chat-composer .rizzui-textarea-field,
+.playful-geometric .nb-chat-composer textarea.rizzui-textarea-field {
+  background: var(--pg-surface) !important;
+  border: 2px solid #cbd5e1 !important;
+  border-radius: 24px !important;
+  box-shadow: 4px 4px 0 0 transparent !important;
+  min-height: 48px !important;
+}
+
+.playful-geometric .nb-chat-composer .rizzui-textarea-root label,
+.playful-geometric .nb-chat-composer .rizzui-textarea-root span {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.playful-geometric .nb-chat-composer .rizzui-textarea-field:focus,
+.playful-geometric .nb-chat-composer textarea.rizzui-textarea-field:focus,
+.playful-geometric .nb-chat-composer .rizzui-textarea-root span:focus-within {
+  border-color: var(--pg-accent) !important;
+  box-shadow: 4px 4px 0 0 var(--pg-accent) !important;
+}
+
+.playful-geometric .nb-chat-composer button:not(.nb-theme-btn),
+.playful-geometric .nb-chat-composer [class*="rizzui-button"]:not(.nb-theme-btn),
+.playful-geometric .nb-chat-composer [class*="rizzui-action-icon"] {
+  min-height: 48px !important;
+}
+
+.playful-geometric .nb-chat-composer button[disabled],
+.playful-geometric .nb-chat-composer button[aria-disabled="true"],
+.playful-geometric .nb-chat-composer [class*="rizzui-button"][disabled],
+.playful-geometric .nb-chat-composer [class*="rizzui-action-icon"][disabled],
+.playful-geometric .nb-chat-composer .nb-attach-btn[disabled],
+.playful-geometric .nb-chat-composer .nb-emoji-btn[disabled],
+.playful-geometric .nb-chat-composer .nb-send-btn[disabled],
+.playful-geometric .nb-chat-composer textarea[disabled],
+.playful-geometric .nb-chat-composer .rizzui-textarea-field[disabled] {
+  background: var(--pg-surface-muted) !important;
+  color: var(--pg-fg-muted) !important;
+  border: 2px solid #cbd5e1 !important;
+  box-shadow: none !important;
+  opacity: 1 !important;
+}
+
+.playful-geometric .nb-chat-composer .nb-attach-btn[disabled],
+.playful-geometric .nb-chat-composer .nb-emoji-btn[disabled],
+.playful-geometric .nb-chat-composer .nb-send-btn[disabled] {
+  background: var(--pg-surface-muted) !important;
+  color: var(--pg-fg-muted) !important;
+  border: 2px solid #cbd5e1 !important;
+  border-radius: 9999px !important;
+  box-shadow: none !important;
+  transform: none !important;
+  opacity: 1 !important;
+}
+
+.playful-geometric .nb-chat-composer .nb-attach-btn[disabled] svg,
+.playful-geometric .nb-chat-composer .nb-emoji-btn[disabled] svg,
+.playful-geometric .nb-chat-composer .nb-send-btn[disabled] svg {
+  color: var(--pg-fg-muted) !important;
+}
+
+body.playful-geometric .nb-chat-composer button.nb-attach-btn,
+body.playful-geometric .nb-chat-composer button.nb-emoji-btn,
+body.playful-geometric .nb-chat-composer button.nb-send-btn,
+body.playful-geometric .nb-chat-composer button.nb-attach-btn[disabled],
+body.playful-geometric .nb-chat-composer button.nb-emoji-btn[disabled],
+body.playful-geometric .nb-chat-composer button.nb-send-btn[disabled] {
+  border-radius: 9999px !important;
+}
+
+body.playful-geometric .nb-chat-composer button.nb-attach-btn[disabled],
+body.playful-geometric .nb-chat-composer button.nb-emoji-btn[disabled],
+body.playful-geometric .nb-chat-composer button.nb-send-btn[disabled] {
+  background: var(--pg-surface-muted) !important;
+  color: var(--pg-fg-muted) !important;
+  border: 2px solid #cbd5e1 !important;
+  box-shadow: none !important;
+  transform: none !important;
+  opacity: 1 !important;
+}
+
+body.playful-geometric .nb-chat-composer button.nb-attach-btn[disabled]:hover,
+body.playful-geometric .nb-chat-composer button.nb-emoji-btn[disabled]:hover,
+body.playful-geometric .nb-chat-composer button.nb-send-btn[disabled]:hover {
+  background: var(--pg-surface-muted) !important;
+  color: var(--pg-fg-muted) !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+body.playful-geometric .nb-chat-composer button.nb-attach-btn[disabled] svg,
+body.playful-geometric .nb-chat-composer button.nb-emoji-btn[disabled] svg,
+body.playful-geometric .nb-chat-composer button.nb-send-btn[disabled] svg {
+  color: var(--pg-fg-muted) !important;
+}
+
+body.playful-geometric .nb-chat-composer textarea.rizzui-textarea-field[disabled] {
+  background: var(--pg-surface-muted) !important;
+  color: var(--pg-fg-muted) !important;
+  border: 2px solid #cbd5e1 !important;
+  box-shadow: none !important;
+  -webkit-text-fill-color: var(--pg-fg-muted) !important;
+  opacity: 1 !important;
+}
+
+.playful-geometric .nb-quickbar {
+  background: rgba(255, 255, 255, 0.84) !important;
+  border-top: 2px dashed var(--pg-border-soft) !important;
+}
+
+.playful-geometric .nb-quickreply-btn {
+  background: var(--pg-tertiary) !important;
+  color: var(--pg-fg) !important;
+  border: 2px solid var(--pg-border) !important;
+  border-radius: 9999px !important;
+  box-shadow: var(--pg-shadow) !important;
+  font-family: var(--font-outfit), system-ui, sans-serif !important;
+}
+
+.playful-geometric .nb-quickreply-btn:hover {
+  background: #f59e0b !important;
+  transform: translate(-2px, -2px) !important;
+  box-shadow: var(--pg-shadow-hover) !important;
+}
+
+.playful-geometric .nb-quickreply-btn[disabled] {
+  background: var(--pg-surface-muted) !important;
+  color: var(--pg-fg-muted) !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: none !important;
+  transform: none !important;
+  opacity: 1 !important;
+}
+
+.playful-geometric .nb-session-badge {
+  background: rgba(251, 191, 36, 0.18) !important;
+  color: var(--pg-fg) !important;
+  border: 2px solid var(--pg-border) !important;
+  border-radius: 9999px !important;
+  box-shadow: 2px 2px 0 0 rgba(30, 41, 59, 0.14) !important;
+}
+
+.playful-geometric .border.border-gray-200.bg-gray-50 {
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.14), rgba(244, 114, 182, 0.08)) !important;
+  border: 2px solid var(--pg-border-soft) !important;
+  border-radius: 24px !important;
+  box-shadow: var(--pg-shadow-soft) !important;
+}
+
+.playful-geometric .nb-chat-inner .bg-white.px-4.py-2 {
+  background: rgba(255, 255, 255, 0.84) !important;
+  border-top: 2px dashed var(--pg-border-soft) !important;
+}
+
+.playful-geometric .flex.flex-1.items-center.justify-center {
+  background:
+    radial-gradient(circle at 20% 20%, rgba(251, 191, 36, 0.18), transparent 18%),
+    radial-gradient(circle at 80% 24%, rgba(244, 114, 182, 0.16), transparent 18%),
+    radial-gradient(circle at 70% 80%, rgba(52, 211, 153, 0.16), transparent 16%),
+    var(--pg-bg) !important;
+}
+
+.playful-geometric .border-yellow-200.bg-yellow-50 {
+  background: rgba(251, 191, 36, 0.18) !important;
+  border: 2px solid var(--pg-border) !important;
+  color: var(--pg-fg) !important;
+  box-shadow: var(--pg-shadow) !important;
+}
+
+.playful-geometric .border-yellow-200.bg-yellow-50 * {
+  color: var(--pg-fg) !important;
+}
+
+.playful-geometric .border-gray-200,
+.playful-geometric .border-gray-100,
+.playful-geometric .border-gray-300 {
+  border-color: var(--pg-border-soft) !important;
+}
+
+.playful-geometric .bg-gray-50:not([role="button"]) {
+  background: rgba(248, 250, 252, 0.82) !important;
+}
+
+.playful-geometric .bg-gray-50:not([role="button"]):hover {
+  background: rgba(244, 114, 182, 0.08) !important;
+}
+
+.playful-geometric .text-gray-500,
+.playful-geometric .text-gray-400,
+.playful-geometric .text-gray-300 {
+  color: var(--pg-fg-muted) !important;
+}
+
+.playful-geometric .text-green-700 {
+  color: var(--pg-quaternary) !important;
+}
+
+.playful-geometric .absolute.bottom-full,
+.playful-geometric .absolute.top-full,
+.playful-geometric .absolute.right-0.bottom-full {
+  background: var(--pg-surface) !important;
+  border: 2px solid var(--pg-border) !important;
+  border-radius: 24px !important;
+  box-shadow: var(--pg-shadow) !important;
+}
+
+.playful-geometric .absolute.bottom-full button,
+.playful-geometric .absolute.top-full button {
+  box-shadow: none !important;
+  border-width: 0 !important;
+  border-radius: 16px !important;
+}
+
+.playful-geometric audio {
+  border: 2px solid var(--pg-border) !important;
+  border-radius: 9999px !important;
+  background: var(--pg-surface) !important;
+}
+
+.playful-geometric .custom-scrollbar::-webkit-scrollbar-thumb,
+.playful-geometric .custom-scrollbar-message::-webkit-scrollbar-thumb {
+  background: var(--pg-accent) !important;
+  border-radius: 9999px !important;
+}
+
+.playful-geometric .custom-scrollbar::-webkit-scrollbar-track,
+.playful-geometric .custom-scrollbar-message::-webkit-scrollbar-track {
+  background: rgba(226, 232, 240, 0.5) !important;
+}
+
+body.playful-geometric [role="dialog"] * {
+  font-family: var(--font-plus-jakarta-sans), system-ui, sans-serif !important;
+}
+
+body.playful-geometric [role="dialog"] h3,
+body.playful-geometric [role="dialog"] h4,
+body.playful-geometric [role="dialog"] button,
+body.playful-geometric [role="dialog"] label {
+  font-family: var(--font-outfit), system-ui, sans-serif !important;
+}
+
+body.playful-geometric [role="dialog"] [data-headlessui-state] {
+  background: var(--pg-surface) !important;
+  border: 2px solid var(--pg-border) !important;
+  border-radius: 24px !important;
+  box-shadow: var(--pg-shadow) !important;
+}
+
+body.playful-geometric [role="dialog"] .border-b,
+body.playful-geometric [role="dialog"] header,
+body.playful-geometric [role="dialog"] [class~="border-b"] {
+  background: linear-gradient(90deg, rgba(139, 92, 246, 0.14), rgba(244, 114, 182, 0.1), rgba(251, 191, 36, 0.08)) !important;
+  border-bottom: 2px solid var(--pg-border) !important;
+}
+
+body.playful-geometric [role="dialog"] .border-b *,
+body.playful-geometric [role="dialog"] header *,
+body.playful-geometric [role="dialog"] [class~="border-b"] * {
+  color: var(--pg-fg) !important;
+}
+
+body.playful-geometric [role="dialog"] span[class*="focus-within\:border-primary"],
+body.playful-geometric [role="dialog"] span[class*="hover\:border-primary"],
+body.playful-geometric [role="dialog"] textarea,
+body.playful-geometric [role="dialog"] [aria-haspopup="listbox"] {
+  background: var(--pg-surface) !important;
+  border: 2px solid #cbd5e1 !important;
+  border-radius: 16px !important;
+  box-shadow: none !important;
+}
+
+body.playful-geometric [role="dialog"] button[class*="border-transparent"]:not(.nb-theme-btn) {
+  background: var(--pg-accent) !important;
+  color: #fff !important;
+  border: 2px solid var(--pg-border) !important;
+  box-shadow: var(--pg-shadow) !important;
+}
+
+body.playful-geometric [role="dialog"] button:not([class*="border-transparent"]):not(.nb-theme-btn):not([aria-haspopup]) {
+  background: var(--pg-surface) !important;
+  color: var(--pg-fg) !important;
+  border: 2px solid var(--pg-border) !important;
+  box-shadow: var(--pg-shadow) !important;
+}
+
+body.playful-geometric [role="dialog"] [class*="border-gray"] {
+  border-color: var(--pg-border-soft) !important;
+}
+
+body.playful-geometric [role="dialog"] thead,
+body.playful-geometric [role="dialog"] th {
+  background: rgba(139, 92, 246, 0.12) !important;
+  color: var(--pg-fg) !important;
+}
+
+body.playful-geometric [role="dialog"] tr:hover td {
+  background: rgba(244, 114, 182, 0.08) !important;
+}
+
+body.playful-geometric [role="listbox"] {
+  background: var(--pg-surface) !important;
+  border: 2px solid var(--pg-border) !important;
+  border-radius: 16px !important;
+  box-shadow: var(--pg-shadow) !important;
+}
+
+body.playful-geometric [role="listbox"] * {
+  font-family: var(--font-plus-jakarta-sans), system-ui, sans-serif !important;
+}
+
+body.playful-geometric [role="listbox"] input {
+  background: var(--pg-surface) !important;
+  border: 2px solid #cbd5e1 !important;
+  color: var(--pg-fg) !important;
+  box-shadow: none !important;
+}
+
+body.playful-geometric [role="listbox"] input:focus {
+  border-color: var(--pg-accent) !important;
+  box-shadow: 4px 4px 0 0 var(--pg-accent) !important;
+}
+
+body.playful-geometric [role="tooltip"]:has(.nb-tag-popover),
+body.playful-geometric [role="tooltip"]:has(.nb-tag-delete-popover) {
+  background: var(--pg-surface) !important;
+  border: 2px solid var(--pg-border) !important;
+  border-radius: 20px !important;
+  box-shadow: var(--pg-shadow) !important;
+  opacity: 1 !important;
+  backdrop-filter: none !important;
+}
+
+body.playful-geometric [role="tooltip"]:has(.nb-tag-popover) svg[data-testid="popover-arrow"],
+body.playful-geometric [role="tooltip"]:has(.nb-tag-delete-popover) svg[data-testid="popover-arrow"] {
+  fill: var(--pg-surface) !important;
+}
+
+body.playful-geometric [role="tooltip"]:has(.nb-tag-popover) svg[data-testid="popover-arrow"] path,
+body.playful-geometric [role="tooltip"]:has(.nb-tag-delete-popover) svg[data-testid="popover-arrow"] path {
+  fill: var(--pg-surface) !important;
+  stroke: var(--pg-border) !important;
+}
+
+body.playful-geometric .nb-tag-popover,
+body.playful-geometric .nb-tag-delete-popover {
+  background: transparent !important;
+}
+
+body.playful-geometric .nb-tag-input span {
+  background: var(--pg-surface) !important;
+  border: 2px solid var(--pg-border) !important;
+  border-radius: 14px !important;
+  box-shadow: none !important;
+}
+
+body.playful-geometric .nb-tag-input .rizzui-input-field {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  color: var(--pg-fg) !important;
+}
+
+body.playful-geometric .nb-tag-input span:focus-within {
+  border-color: var(--pg-accent) !important;
+  box-shadow: 4px 4px 0 0 var(--pg-accent) !important;
+}
+
+body.playful-geometric .nb-tag-submit {
+  background: var(--pg-secondary) !important;
+  color: #fff !important;
+  border: 2px solid var(--pg-border) !important;
+  box-shadow: var(--pg-shadow) !important;
+}
+
+body.playful-geometric .nb-tag-submit:hover {
+  background: #ec4899 !important;
+  color: #fff !important;
+}
+
+body.playful-geometric [role="option"],
+body.playful-geometric [role="option"] *,
+body.playful-geometric [role="listbox"] .text-foreground {
+  color: var(--pg-fg) !important;
+  background: transparent !important;
+}
+
+body.playful-geometric [role="option"]:hover,
+body.playful-geometric [role="option"]:hover * {
+  background: rgba(244, 114, 182, 0.12) !important;
+}
+
+body.playful-geometric [role="option"][aria-selected="true"],
+body.playful-geometric [role="option"][aria-selected="true"] * {
+  background: rgba(139, 92, 246, 0.14) !important;
+  color: var(--pg-accent) !important;
+}
+
+@media (max-width: 768px) {
+  body.playful-geometric,
+  .playful-geometric {
+    --pg-shadow: 2px 2px 0 0 #1e293b;
+    --pg-shadow-soft: 2px 2px 0 0 #e2e8f0;
+    --pg-shadow-hover: 3px 3px 0 0 #1e293b;
+  }
+
+  .playful-geometric > div {
+    background-size: 72px 72px, 24px 24px, 24px 24px !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .playful-geometric [role="button"],
+  .playful-geometric button,
+  .playful-geometric [class*="rizzui-button"],
+  .playful-geometric [class*="rizzui-action-icon"] {
+    transition: none !important;
+    transform: none !important;
+  }
+}

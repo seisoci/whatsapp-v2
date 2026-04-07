@@ -41,7 +41,7 @@ function TagItem({ tag, onRemove }: TagItemProps) {
         </Popover.Trigger>
         <Popover.Content className="!z-[9999]">
           {({ setOpen }) => (
-            <div className="w-56 pb-2 pt-1 text-left rtl:text-right">
+            <div className="nb-tag-delete-popover w-56 pb-2 pt-1 text-left rtl:text-right">
               <Text
                 as="span"
                 className="mb-0.5 flex items-start text-sm font-semibold text-gray-700 sm:items-center"
@@ -181,8 +181,8 @@ export default function ContactTags({ contact, onUpdate }: ContactTagsProps) {
             <PiPlus className="h-3.5 w-3.5" />
           </button>
         </Popover.Trigger>
-        <Popover.Content className="!z-[9999] p-3 w-72 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg rounded-lg">
-          <div className="space-y-3">
+      <Popover.Content className="!z-[9999] p-3 w-72 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg rounded-lg">
+          <div className="nb-tag-popover space-y-3">
             {/* Create Input */}
             <div>
               <Input
@@ -190,7 +190,7 @@ export default function ContactTags({ contact, onUpdate }: ContactTagsProps) {
                 size="sm"
                 value={newTagName}
                 onChange={(e) => setNewTagName(e.target.value)}
-                className="mb-3"
+                className="nb-tag-input mb-3"
               />
               
               <div className="pt-1">
@@ -203,7 +203,7 @@ export default function ContactTags({ contact, onUpdate }: ContactTagsProps) {
                       key={color.value}
                       type="button"
                       onClick={() => setSelectedColor(color.value)}
-                      className={`w-5 h-5 rounded-full ${color.previewClass} transition-transform hover:scale-110 ${selectedColor === color.value ? 'ring-2 ring-offset-2 ring-gray-400 scale-110' : ''}`}
+                      className={`nb-tag-color w-5 h-5 rounded-full ${color.previewClass} transition-transform hover:scale-110 ${selectedColor === color.value ? 'ring-2 ring-offset-2 ring-gray-400 scale-110' : ''}`}
                       title={color.name}
                     />
                   ))}
@@ -211,7 +211,7 @@ export default function ContactTags({ contact, onUpdate }: ContactTagsProps) {
                 
                 <Button 
                   size="sm" 
-                  className="w-full"
+                  className="nb-tag-submit w-full"
                   onClick={handleCreateTag}
                   isLoading={isCreating}
                   disabled={!newTagName.trim()}

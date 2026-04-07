@@ -4,7 +4,15 @@ import GlobalDrawer from '@/app/shared/drawer-views/container';
 import GlobalModal from '@/app/shared/modal-views/container';
 import { JotaiProvider, ThemeProvider } from '@/app/shared/theme-provider';
 import { siteConfig } from '@/config/site.config';
-import { inter, kalam, lexendDeca, patrickHand, publicSans } from '@/app/fonts';
+import {
+  inter,
+  kalam,
+  lexendDeca,
+  outfit,
+  patrickHand,
+  plusJakartaSans,
+  publicSans,
+} from '@/app/fonts';
 import cn from '@core/utils/class-names';
 import NextProgress from '@core/components/next-progress';
 
@@ -48,6 +56,8 @@ export default function RootLayout({
           publicSans.variable,
           kalam.variable,
           patrickHand.variable,
+          outfit.variable,
+          plusJakartaSans.variable,
           'font-inter'
         )}
       >
