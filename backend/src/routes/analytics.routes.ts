@@ -12,5 +12,6 @@ analyticsRouter.get('/top-templates', AnalyticsController.getTopTemplates);
 analyticsRouter.get('/response-time', AnalyticsController.getResponseTime);
 analyticsRouter.get('/messages-per-agent', AnalyticsController.getMessagesPerAgent);
 analyticsRouter.get('/contact-growth', AnalyticsController.getContactGrowth);
+analyticsRouter.get('/top-active-contacts', AnalyticsController.getTopActiveContacts);
 
 export default analyticsRouter;

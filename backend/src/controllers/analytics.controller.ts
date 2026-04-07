@@ -278,4 +278,49 @@ export class AnalyticsController {
       return c.json({ success: false, message: 'Failed to fetch contact growth' }, 500);
     }
   }
+
+  /**
+   * GET /analytics/top-active-contacts
+   * Top 50 kontak paling aktif dalam 30 hari terakhir
+   * Dihitung dari jumlah hari unik yang contact mengirim pesan masuk
+   */
+  static async getTopActiveContacts(c: Context) {
+    try {
+      const phoneNumberId = c.req.query('phoneNumberId');
+      const days = Math.min(Math.max(parseInt(c.req.query('days') || '30'), 1), 365);
+
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - days);
+
+      const params: any[] = [startDate];
+      let phoneFilter = '';
+      if (phoneNumberId) {
+        params.push(phoneNumberId);
+        phoneFilter = `AND m.phone_number_id = $${params.length}`;
+      }
+
+      const sql = `
+        SELECT
+          c.id           AS "contactId",
+          c.wa_id        AS "waId",
+          COALESCE(c.profile_name, c.wa_id) AS "profileName",
+          COUNT(DISTINCT DATE(m.created_at))::int AS "activeDays"
+        FROM messages m
+        JOIN contacts c ON c.id = m.contact_id
+        WHERE m.direction = 'incoming'
+          AND m.created_at >= $1
+          ${phoneFilter}
+        GROUP BY c.id, c.wa_id, c.profile_name
+        ORDER BY "activeDays" DESC
+        LIMIT 50
+      `;
+
+      const data = await AppDataSource.query(sql, params);
+
+      return c.json({ success: true, data });
+    } catch (error: any) {
+      console.error('[Analytics] getTopActiveContacts error:', error);
+      return c.json({ success: false, message: 'Failed to fetch top active contacts' }, 500);
+    }
+  }
 }

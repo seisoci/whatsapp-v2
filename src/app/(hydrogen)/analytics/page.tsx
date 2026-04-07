@@ -9,14 +9,14 @@ import { MessageStatusChart } from '@/app/shared/analytics/message-status-chart'
 import { TopTemplatesChart } from '@/app/shared/analytics/top-templates-chart';
 import { MessagesPerAgentChart } from '@/app/shared/analytics/messages-per-agent-chart';
 import { ContactGrowthChart } from '@/app/shared/analytics/contact-growth-chart';
-import { ResponseTimeStatsCard } from '@/app/shared/analytics/response-time-stats';
+import { TopActiveContactsTable } from '@/app/shared/analytics/top-active-contacts-table';
 import type {
   MessageOverTime,
   MessageStatusItem,
   TopTemplate,
-  ResponseTimeStats,
   AgentMessageCount,
   ContactGrowthItem,
+  TopActiveContact,
 } from '@/lib/api/analytics';
 
 const pageHeader = {
@@ -42,9 +42,9 @@ export default function AnalyticsPage() {
   const [messagesOverTime, setMessagesOverTime] = useState<MessageOverTime[]>([]);
   const [messageStatus, setMessageStatus] = useState<MessageStatusItem[]>([]);
   const [topTemplates, setTopTemplates] = useState<TopTemplate[]>([]);
-  const [responseTime, setResponseTime] = useState<ResponseTimeStats | null>(null);
   const [messagesPerAgent, setMessagesPerAgent] = useState<AgentMessageCount[]>([]);
   const [contactGrowth, setContactGrowth] = useState<ContactGrowthItem[]>([]);
+  const [topActiveContacts, setTopActiveContacts] = useState<TopActiveContact[]>([]);
 
   useEffect(() => {
     phoneNumbersApi.getAll().then((res: any) => {
@@ -63,17 +63,17 @@ export default function AnalyticsPage() {
       analyticsApi.getMessagesOverTime(filters),
       analyticsApi.getMessageStatus(filters),
       analyticsApi.getTopTemplates(filters),
-      analyticsApi.getResponseTime(filters),
       analyticsApi.getMessagesPerAgent(filters),
       analyticsApi.getContactGrowth(filters),
+      analyticsApi.getTopActiveContacts(filters),
     ])
-      .then(([mot, ms, tt, rt, mpa, cg]) => {
+      .then(([mot, ms, tt, mpa, cg, tac]) => {
         setMessagesOverTime(mot);
         setMessageStatus(ms);
         setTopTemplates(tt);
-        setResponseTime(rt);
         setMessagesPerAgent(mpa);
         setContactGrowth(cg);
+        setTopActiveContacts(tac);
       })
       .catch(console.error)
       .finally(() => setIsLoading(false));
@@ -87,7 +87,6 @@ export default function AnalyticsPage() {
     <>
       <PageHeader title={pageHeader.title} breadcrumb={pageHeader.breadcrumb}>
         <div className="flex flex-wrap items-center gap-2">
-          {/* Filter Nomor HP */}
           <select
             value={selectedPhoneNumberId}
             onChange={(e) => setSelectedPhoneNumberId(e.target.value)}
@@ -101,7 +100,6 @@ export default function AnalyticsPage() {
             ))}
           </select>
 
-          {/* Filter Periode */}
           <div className="flex overflow-hidden rounded-lg border border-gray-200 dark:border-gray-600">
             {DAYS_OPTIONS.map((opt) => (
               <button
@@ -118,7 +116,6 @@ export default function AnalyticsPage() {
             ))}
           </div>
 
-          {/* Refresh */}
           <button
             onClick={fetchData}
             disabled={isLoading}
@@ -135,23 +132,23 @@ export default function AnalyticsPage() {
         </div>
       ) : (
         <div className="mt-6 grid grid-cols-1 gap-6">
-          {/* Row 1: Pesan masuk & keluar — full width */}
+          {/* Row 1: Pesan masuk & keluar */}
           <MessagesOverTimeChart data={messagesOverTime} />
 
-          {/* Row 2: Status pesan + Waktu respon */}
+          {/* Row 2: Status pesan + Pesan per Agen (donut) */}
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <MessageStatusChart data={messageStatus} />
-            <ResponseTimeStatsCard data={responseTime} />
-          </div>
-
-          {/* Row 3: Top templates + Per agen */}
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <TopTemplatesChart data={topTemplates} />
             <MessagesPerAgentChart data={messagesPerAgent} />
           </div>
 
-          {/* Row 4: Pertumbuhan kontak — full width */}
-          <ContactGrowthChart data={contactGrowth} />
+          {/* Row 3: Top templates + Pertumbuhan kontak */}
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <TopTemplatesChart data={topTemplates} />
+            <ContactGrowthChart data={contactGrowth} />
+          </div>
+
+          {/* Row 5: Top 50 kontak aktif */}
+          <TopActiveContactsTable data={topActiveContacts} />
         </div>
       )}
     </>

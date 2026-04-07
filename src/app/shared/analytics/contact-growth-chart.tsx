@@ -11,7 +11,6 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
-import { format } from 'date-fns';
 import type { ContactGrowthItem } from '@/lib/api/analytics';
 
 export function ContactGrowthChart({ data }: { data: ContactGrowthItem[] }) {
@@ -27,7 +26,8 @@ export function ContactGrowthChart({ data }: { data: ContactGrowthItem[] }) {
             <XAxis
               dataKey="date"
               tickFormatter={(v) => {
-                try { return format(new Date(v), 'dd/MM'); } catch { return v; }
+                const parts = String(v).split('-');
+                return parts.length === 3 ? `${parts[2]}/${parts[1]}` : v;
               }}
               tick={{ fontSize: 11 }}
               tickLine={false}
@@ -43,7 +43,12 @@ export function ContactGrowthChart({ data }: { data: ContactGrowthItem[] }) {
             />
             <Tooltip
               labelFormatter={(v) => {
-                try { return format(new Date(v), 'dd MMM yyyy'); } catch { return v; }
+                const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+                const parts = String(v).split('-');
+                if (parts.length === 3) {
+                  return `${parts[2]} ${months[parseInt(parts[1]) - 1]} ${parts[0]}`;
+                }
+                return v;
               }}
               contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
             />

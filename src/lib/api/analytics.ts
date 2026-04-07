@@ -35,6 +35,13 @@ export interface ContactGrowthItem {
   cumulative: number;
 }
 
+export interface TopActiveContact {
+  contactId: string;
+  waId: string;
+  profileName: string;
+  activeDays: number;
+}
+
 export interface AnalyticsFilters {
   phoneNumberId?: string;
   days?: number;
@@ -75,6 +82,11 @@ export const analyticsApi = {
 
   getContactGrowth: async (filters: AnalyticsFilters = {}): Promise<ContactGrowthItem[]> => {
     const res: any = await apiClient.get('/analytics/contact-growth', { params: buildParams(filters) });
+    return res?.data ?? [];
+  },
+
+  getTopActiveContacts: async (filters: AnalyticsFilters = {}): Promise<TopActiveContact[]> => {
+    const res: any = await apiClient.get('/analytics/top-active-contacts', { params: buildParams(filters) });
     return res?.data ?? [];
   },
 };
