@@ -1621,7 +1621,7 @@ export default function ChatPage() {
                         isNeoBrutalism
                           ? 'rounded-none border-[#1F1F1F] bg-[#B0BEC520] shadow-[3px_3px_0_#1F1F1F] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none'
                           : isHandDrawn
-                          ? 'rounded-md border-[#2d2d2d] bg-[#fffde7] shadow-[3px_3px_0_#2d2d2d] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none'
+                          ? 'rounded-md border-[#2d2d2d] bg-[#e9efe6] shadow-[3px_3px_0_#2d2d2d] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none'
                           : 'rounded-lg border-gray-300 bg-white text-gray-600 hover:border-gray-400 hover:bg-gray-50'
                       }`}
                     >
@@ -2122,7 +2122,7 @@ export default function ChatPage() {
                     isNeoBrutalism
                       ? { scrollBehavior: 'auto', background: '#FFFFFF', borderBottom: '2px solid #1F1F1F' }
                       : isHandDrawn
-                      ? { scrollBehavior: 'auto', background: '#fdfbf7', backgroundImage: 'radial-gradient(circle, rgba(45,45,45,0.06) 1px, transparent 1px)', backgroundSize: '24px 24px' }
+                      ? { scrollBehavior: 'auto', background: '#f7f8f4', backgroundImage: 'radial-gradient(circle, rgba(45,45,45,0.06) 1px, transparent 1px)', backgroundSize: '24px 24px' }
                       : { scrollBehavior: 'auto', backgroundImage: 'url(/background.png)', backgroundRepeat: 'repeat', backgroundSize: 'auto' }
                   }
                 >
@@ -2679,7 +2679,26 @@ export default function ChatPage() {
                 </div>
 
                 {/* Input Area */}
-                <div className="flex-shrink-0 p-4" style={isNeoBrutalism ? { background: '#FFFFFF', borderTop: '3px solid #1F1F1F' } : { backgroundImage: 'url(/background.png)', backgroundRepeat: 'repeat', backgroundSize: 'auto' }}>
+                <div
+                  className="nb-chat-composer flex-shrink-0 p-4"
+                  style={
+                    isNeoBrutalism
+                      ? { background: '#FFFFFF', borderTop: '3px solid #1F1F1F' }
+                      : isHandDrawn
+                      ? {
+                          background: '#e9efe6',
+                          backgroundImage:
+                            'radial-gradient(circle, rgba(45,45,45,0.06) 1px, transparent 1px)',
+                          backgroundSize: '24px 24px',
+                          borderTop: '2px solid #2d2d2d',
+                        }
+                      : {
+                          backgroundImage: 'url(/background.png)',
+                          backgroundRepeat: 'repeat',
+                          backgroundSize: 'auto',
+                        }
+                  }
+                >
 
                   {/* Attachment Preview */}
                   {pendingAttachment && (

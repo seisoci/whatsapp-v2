@@ -3,30 +3,49 @@
 /*  #fdfbf7 · #2d2d2d · #fffde7 · #fff9c4 · #2d5da1               */
 /* ================================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=Patrick+Hand&display=swap');
-
 /* ── CSS Variables ── */
 body.hand-drawn,
 .hand-drawn {
-  --hd-bg:        #fdfbf7;
-  --hd-bg-alt:    #f5f0e8;
+  --hd-bg:        #f7f8f4;
+  --hd-bg-alt:    #eef2eb;
   --hd-fg:        #2d2d2d;
   --hd-fg-muted:  #6b6b6b;
-  --hd-accent:    #ff4d4d;
-  --hd-secondary: #2d5da1;
-  --hd-yellow:    #fffde7;
+  --hd-accent:    #cf5a38;
+  --hd-secondary: #2f5f8a;
+  --hd-yellow:    #e9efe6;
+  --hd-surface:   #fbfcf8;
+  --hd-note:      #e4ecdf;
+  --hd-selected:  #dbe7df;
   --hd-shadow:    4px 4px 0px 0px #2d2d2d;
   --hd-shadow-sm: 2px 2px 0px 0px #2d2d2d;
   --hd-border:    #2d2d2d;
   --hd-border-muted: rgba(45,45,45,0.25);
 }
 
-/* ── Font for everything ── */
-.hand-drawn,
-.hand-drawn * {
-  font-family: 'Patrick Hand', cursive !important;
+body.hand-drawn {
+  background-color: var(--hd-bg) !important;
+  color: var(--hd-fg) !important;
 }
 
+/* ── Font for everything ── */
+body.hand-drawn,
+body.hand-drawn *,
+.hand-drawn,
+.hand-drawn * {
+  font-family: var(--font-public-sans), sans-serif !important;
+}
+
+body.hand-drawn h1,
+body.hand-drawn h2,
+body.hand-drawn h3,
+body.hand-drawn h4,
+body.hand-drawn h5,
+body.hand-drawn h6,
+body.hand-drawn .font-semibold,
+body.hand-drawn .font-bold,
+body.hand-drawn button,
+body.hand-drawn label,
+body.hand-drawn [role="button"],
 .hand-drawn h1,
 .hand-drawn h2,
 .hand-drawn h3,
@@ -34,8 +53,11 @@ body.hand-drawn,
 .hand-drawn h5,
 .hand-drawn h6,
 .hand-drawn .font-semibold,
-.hand-drawn .font-bold {
-  font-family: 'Kalam', cursive !important;
+.hand-drawn .font-bold,
+.hand-drawn button,
+.hand-drawn label,
+.hand-drawn [role="button"] {
+  font-family: var(--font-kalam), cursive !important;
 }
 
 /* ── Main grid container — paper texture bg ── */
@@ -60,13 +82,47 @@ body.hand-drawn,
 }
 .hand-drawn .nb-sidebar-hdr label {
   color: var(--hd-fg) !important;
-  font-family: 'Kalam', cursive !important;
+  font-family: var(--font-kalam), cursive !important;
 }
 
 /* ── Filter tabs row (All / Unread / Archived) ── */
 .hand-drawn > div > div:first-child .flex.gap-2.border-b {
-  background: rgba(255,253,231,0.6) !important;
+  background: rgba(233,239,230,0.7) !important;
   border-bottom: 1px dashed var(--hd-border-muted) !important;
+}
+
+.hand-drawn > div > div:first-child .flex.gap-2.border-b > button {
+  background: var(--hd-surface) !important;
+  color: var(--hd-fg) !important;
+  border: 1px solid var(--hd-border-muted) !important;
+}
+
+.hand-drawn > div > div:first-child .flex.gap-2.border-b > button:hover {
+  background: var(--hd-note) !important;
+  border-color: var(--hd-secondary) !important;
+}
+
+.hand-drawn > div > div:first-child .flex.gap-2.border-b > button.bg-primary {
+  background: var(--hd-secondary) !important;
+  color: #fff !important;
+  border-color: var(--hd-secondary) !important;
+  box-shadow: var(--hd-shadow-sm) !important;
+}
+
+.hand-drawn > div > div:first-child .flex.gap-2.border-b > button.bg-primary span {
+  color: inherit !important;
+}
+
+.hand-drawn > div > div:first-child .flex.gap-2.border-b > button > .rounded-full {
+  background: rgba(47,95,138,0.14) !important;
+  color: var(--hd-secondary) !important;
+  border: 1px solid rgba(47,95,138,0.28) !important;
+}
+
+.hand-drawn > div > div:first-child .flex.gap-2.border-b > button.bg-primary > .rounded-full {
+  background: rgba(255,255,255,0.9) !important;
+  color: var(--hd-secondary) !important;
+  border-color: rgba(255,255,255,0.9) !important;
 }
 
 /* ── Contact list item ── */
@@ -77,7 +133,7 @@ body.hand-drawn,
   transition: background 0.15s, border-left-color 0.15s, transform 0.1s !important;
 }
 .hand-drawn [role="button"]:hover {
-  background: rgba(255,249,196,0.5) !important;
+  background: rgba(219,231,223,0.62) !important;
   border-left-color: var(--hd-accent) !important;
   transform: translateX(2px) !important;
 }
@@ -85,7 +141,7 @@ body.hand-drawn,
 /* ── Active / selected contact ── */
 .hand-drawn [role="button"].bg-gray-50,
 .hand-drawn .bg-gray-50[role="button"] {
-  background: rgba(255,249,196,0.8) !important;
+  background: var(--hd-selected) !important;
   border-left: 3px solid var(--hd-secondary) !important;
 }
 
@@ -136,7 +192,7 @@ body.hand-drawn,
 
 /* ── Message bubble classes (set in JSX inline) ── */
 .hand-drawn .hd-bubble-own {
-  background: #fff9c4 !important;
+  background: var(--hd-note) !important;
   border: 2px solid var(--hd-border) !important;
   border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px !important;
   box-shadow: var(--hd-shadow) !important;
@@ -153,7 +209,7 @@ body.hand-drawn,
 /* ── Textarea (message input) ── */
 .hand-drawn textarea {
   border: 1px solid var(--hd-border-muted) !important;
-  background: #fffef9 !important;
+  background: var(--hd-surface) !important;
   color: var(--hd-fg) !important;
   box-shadow: none !important;
 }
@@ -166,7 +222,7 @@ body.hand-drawn,
 /* ── rizzui textarea field ── */
 .hand-drawn .rizzui-textarea-field {
   border: 1px solid var(--hd-border-muted) !important;
-  background: #fffef9 !important;
+  background: var(--hd-surface) !important;
   color: var(--hd-fg) !important;
   box-shadow: none !important;
 }
@@ -195,7 +251,7 @@ body.hand-drawn,
 }
 .hand-drawn span[class*="focus-within\:border-primary"],
 .hand-drawn span[class*="hover\:border-primary"] {
-  background: #fffef9 !important;
+  background: var(--hd-surface) !important;
   border: 1px solid var(--hd-border-muted) !important;
   box-shadow: none !important;
 }
@@ -207,7 +263,7 @@ body.hand-drawn,
 
 /* ── rizzui Select trigger button ── */
 .hand-drawn [aria-haspopup="listbox"] {
-  background: #fffef9 !important;
+  background: var(--hd-surface) !important;
   border: 1px solid var(--hd-border-muted) !important;
   box-shadow: none !important;
   color: var(--hd-fg) !important;
@@ -237,12 +293,12 @@ body.hand-drawn,
 }
 .hand-drawn [role="option"]:hover,
 .hand-drawn [role="option"]:hover * {
-  background: rgba(255,249,196,0.8) !important;
+  background: rgba(219,231,223,0.7) !important;
   color: var(--hd-fg) !important;
 }
 .hand-drawn [role="option"][aria-selected="true"],
 .hand-drawn [role="option"][aria-selected="true"] * {
-  background: #fff9c4 !important;
+  background: var(--hd-selected) !important;
   color: var(--hd-secondary) !important;
   font-weight: 700 !important;
 }
@@ -260,7 +316,7 @@ body.hand-drawn,
   box-shadow: none !important;
 }
 .hand-drawn [class*="rizzui-button"]:not(.nb-theme-btn) {
-  background: #fffef9 !important;
+  background: var(--hd-surface) !important;
 }
 .hand-drawn button:not(.nb-theme-btn):not([aria-haspopup]):hover,
 .hand-drawn [class*="rizzui-button"]:not(.nb-theme-btn):hover {
@@ -331,10 +387,86 @@ body.hand-drawn button[class*="primary-default"]:not(.nb-theme-btn):hover {
   border-top: 2px solid var(--hd-border) !important;
 }
 
+/* ── Composer controls ── */
+.hand-drawn .nb-chat-composer .rizzui-textarea-root {
+  background: transparent !important;
+}
+
+.hand-drawn .nb-chat-composer .rizzui-textarea-root label,
+.hand-drawn .nb-chat-composer .rizzui-textarea-root span {
+  font-family: var(--font-public-sans), sans-serif !important;
+}
+
+.hand-drawn .nb-chat-composer .rizzui-textarea-field,
+.hand-drawn .nb-chat-composer textarea.rizzui-textarea-field {
+  background: var(--hd-surface) !important;
+  border: 1.5px solid var(--hd-border) !important;
+  color: var(--hd-fg) !important;
+  border-radius: 18px !important;
+  box-shadow: var(--hd-shadow-sm) !important;
+}
+
+.hand-drawn .nb-chat-composer .rizzui-textarea-field::placeholder,
+.hand-drawn .nb-chat-composer textarea.rizzui-textarea-field::placeholder {
+  color: var(--hd-fg-muted) !important;
+}
+
+.hand-drawn .nb-chat-composer .rizzui-textarea-field:focus,
+.hand-drawn .nb-chat-composer textarea.rizzui-textarea-field:focus,
+.hand-drawn .nb-chat-composer .rizzui-textarea-root span:focus-within {
+  border-color: var(--hd-secondary) !important;
+  box-shadow: 0 0 0 2px rgba(47,95,138,0.16) !important;
+}
+
+.hand-drawn .nb-chat-composer button:not(.nb-theme-btn),
+.hand-drawn .nb-chat-composer [class*="rizzui-button"]:not(.nb-theme-btn),
+.hand-drawn .nb-chat-composer [class*="rizzui-action-icon"] {
+  background: var(--hd-surface) !important;
+  color: var(--hd-secondary) !important;
+  border: 1.5px solid var(--hd-border) !important;
+  box-shadow: var(--hd-shadow-sm) !important;
+}
+
+.hand-drawn .nb-chat-composer button:not(.nb-theme-btn):hover,
+.hand-drawn .nb-chat-composer [class*="rizzui-button"]:not(.nb-theme-btn):hover,
+.hand-drawn .nb-chat-composer [class*="rizzui-action-icon"]:hover {
+  background: var(--hd-note) !important;
+  border-color: var(--hd-secondary) !important;
+  color: var(--hd-secondary) !important;
+}
+
+.hand-drawn .nb-chat-composer button[class*="border-transparent"]:not(.nb-theme-btn),
+.hand-drawn .nb-chat-composer button[class*="bg-primary"]:not(.nb-theme-btn) {
+  background: var(--hd-secondary) !important;
+  color: #fff !important;
+  border-color: var(--hd-secondary) !important;
+}
+
+.hand-drawn .nb-chat-composer button[disabled],
+.hand-drawn .nb-chat-composer button[aria-disabled="true"],
+.hand-drawn .nb-chat-composer [class*="rizzui-button"][disabled],
+.hand-drawn .nb-chat-composer [class*="rizzui-action-icon"][disabled] {
+  background: rgba(228,236,223,0.92) !important;
+  color: rgba(45,45,45,0.55) !important;
+  border: 1.5px dashed rgba(45,45,45,0.35) !important;
+  box-shadow: none !important;
+  opacity: 1 !important;
+}
+
+.hand-drawn .nb-chat-composer textarea[disabled],
+.hand-drawn .nb-chat-composer .rizzui-textarea-field[disabled] {
+  background: rgba(251,252,248,0.9) !important;
+  color: rgba(45,45,45,0.62) !important;
+  border: 1.5px dashed rgba(45,45,45,0.35) !important;
+  box-shadow: none !important;
+  -webkit-text-fill-color: rgba(45,45,45,0.62) !important;
+  opacity: 1 !important;
+}
+
 /* ── Attachment preview box ── */
 .hand-drawn .border.border-gray-200.bg-gray-50 {
   border: 1px solid var(--hd-border-muted) !important;
-  background: rgba(255,249,196,0.3) !important;
+  background: rgba(228,236,223,0.45) !important;
   box-shadow: none !important;
 }
 
@@ -373,11 +505,11 @@ body.hand-drawn button[class*="primary-default"]:not(.nb-theme-btn):hover {
 
 /* ── Archived row ── */
 .hand-drawn .bg-gray-50:not([role="button"]) {
-  background: rgba(255,253,231,0.5) !important;
+  background: rgba(233,239,230,0.6) !important;
   border-bottom: 1px dashed var(--hd-border-muted) !important;
 }
 .hand-drawn .bg-gray-50:not([role="button"]):hover {
-  background: rgba(255,249,196,0.5) !important;
+  background: rgba(219,231,223,0.55) !important;
 }
 
 /* ── Text colors ── */
@@ -406,7 +538,7 @@ body.hand-drawn button[class*="primary-default"]:not(.nb-theme-btn):hover {
 }
 .hand-drawn .absolute.bottom-full button:hover,
 .hand-drawn .absolute.top-full button:hover {
-  background: rgba(255,249,196,0.6) !important;
+  background: rgba(219,231,223,0.6) !important;
   transform: none !important;
 }
 
@@ -433,16 +565,18 @@ body.hand-drawn button[class*="primary-default"]:not(.nb-theme-btn):hover {
 /* ================================================================ */
 
 body.hand-drawn [role="dialog"] * {
-  font-family: 'Patrick Hand', cursive !important;
+  font-family: var(--font-public-sans), sans-serif !important;
 }
 body.hand-drawn [role="dialog"] h3,
-body.hand-drawn [role="dialog"] h4 {
-  font-family: 'Kalam', cursive !important;
+body.hand-drawn [role="dialog"] h4,
+body.hand-drawn [role="dialog"] button,
+body.hand-drawn [role="dialog"] label {
+  font-family: var(--font-kalam), cursive !important;
 }
 
 /* ── Modal panel ── */
 body.hand-drawn [role="dialog"] [data-headlessui-state] {
-  background: #fffef9 !important;
+  background: var(--hd-surface) !important;
   border: 2px solid var(--hd-border) !important;
   box-shadow: var(--hd-shadow) !important;
 }
@@ -463,7 +597,7 @@ body.hand-drawn [role="dialog"] [class~="border-b"] * {
 /* ── Inputs inside modal ── */
 body.hand-drawn [role="dialog"] span[class*="focus-within\:border-primary"],
 body.hand-drawn [role="dialog"] span[class*="hover\:border-primary"] {
-  background: #fffef9 !important;
+  background: var(--hd-surface) !important;
   border: 1px solid var(--hd-border-muted) !important;
   box-shadow: none !important;
 }
@@ -476,14 +610,14 @@ body.hand-drawn [role="dialog"] .rizzui-textarea-field {
 }
 body.hand-drawn [role="dialog"] textarea {
   border: 1px solid var(--hd-border-muted) !important;
-  background: #fffef9 !important;
+  background: var(--hd-surface) !important;
   box-shadow: none !important;
   color: var(--hd-fg) !important;
 }
 
 /* ── Select inside modal ── */
 body.hand-drawn [role="dialog"] [aria-haspopup="listbox"] {
-  background: #fffef9 !important;
+  background: var(--hd-surface) !important;
   border: 1px solid var(--hd-border-muted) !important;
   box-shadow: none !important;
   color: var(--hd-fg) !important;
@@ -507,7 +641,7 @@ body.hand-drawn [role="dialog"] button[class*="border-transparent"]:not(.nb-them
 body.hand-drawn [role="dialog"] button:not([class*="border-transparent"]):not(.nb-theme-btn):not([aria-haspopup]) {
   border: 1px solid var(--hd-border-muted) !important;
   box-shadow: none !important;
-  background: #fffef9 !important;
+  background: var(--hd-surface) !important;
   color: var(--hd-fg) !important;
 }
 
@@ -517,27 +651,27 @@ body.hand-drawn [role="dialog"] [class*="border-gray"] {
 }
 body.hand-drawn [role="dialog"] thead,
 body.hand-drawn [role="dialog"] th {
-  background: rgba(255,249,196,0.4) !important;
+  background: rgba(219,231,223,0.45) !important;
   color: var(--hd-fg) !important;
   border: 1px solid var(--hd-border-muted) !important;
 }
 body.hand-drawn [role="dialog"] tr:hover td {
-  background: rgba(255,249,196,0.3) !important;
+  background: rgba(219,231,223,0.35) !important;
 }
 
 /* ── Select options dropdown portal ── */
 body.hand-drawn [role="listbox"] {
-  background: #fffef9 !important;
+  background: var(--hd-surface) !important;
   border: 2px solid var(--hd-border) !important;
   box-shadow: var(--hd-shadow) !important;
   color: var(--hd-fg) !important;
   padding: 0 !important;
 }
 body.hand-drawn [role="listbox"] * {
-  font-family: 'Patrick Hand', cursive !important;
+  font-family: var(--font-public-sans), sans-serif !important;
 }
 body.hand-drawn [role="listbox"] > div:first-child {
-  background: #fffef9 !important;
+  background: var(--hd-surface) !important;
   border-bottom: 1px solid var(--hd-border-muted) !important;
   margin: 0 !important;
   padding: 4px !important;
@@ -550,7 +684,7 @@ body.hand-drawn [role="listbox"] span[class*="rizzui-select-prefix"] svg {
   stroke: var(--hd-fg) !important;
 }
 body.hand-drawn [role="listbox"] input {
-  background: #fffef9 !important;
+  background: var(--hd-surface) !important;
   color: var(--hd-fg) !important;
   border: 1px solid var(--hd-border-muted) !important;
   box-shadow: none !important;
@@ -578,18 +712,18 @@ body.hand-drawn [role="listbox"] .text-foreground {
 }
 body.hand-drawn [role="option"]:hover,
 body.hand-drawn [role="option"]:hover * {
-  background: rgba(255,249,196,0.8) !important;
+  background: rgba(219,231,223,0.7) !important;
   color: var(--hd-fg) !important;
 }
 body.hand-drawn [role="option"][data-headlessui-state*="active"],
 body.hand-drawn [role="option"][data-headlessui-state*="active"] * {
-  background: rgba(255,249,196,0.8) !important;
+  background: rgba(219,231,223,0.7) !important;
   color: var(--hd-secondary) !important;
   font-weight: 600 !important;
 }
 body.hand-drawn [role="option"][aria-selected="true"],
 body.hand-drawn [role="option"][aria-selected="true"] * {
-  background: #fff9c4 !important;
+  background: var(--hd-selected) !important;
   color: var(--hd-secondary) !important;
   font-weight: 700 !important;
 }
