@@ -1007,6 +1007,39 @@ body.playful-geometric .nb-tag-submit:hover {
   color: #fff !important;
 }
 
+body.playful-geometric .nb-tag-color {
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+body.playful-geometric .nb-tag-color.bg-blue-500 {
+  background: rgb(59 130 246) !important;
+}
+
+body.playful-geometric .nb-tag-color.bg-red-500 {
+  background: rgb(239 68 68) !important;
+}
+
+body.playful-geometric .nb-tag-color.bg-green-500 {
+  background: rgb(34 197 94) !important;
+}
+
+body.playful-geometric .nb-tag-color.bg-yellow-500 {
+  background: rgb(234 179 8) !important;
+}
+
+body.playful-geometric .nb-tag-color.bg-purple-500 {
+  background: rgb(168 85 247) !important;
+}
+
+body.playful-geometric .nb-tag-color.bg-gray-500 {
+  background: rgb(107 114 128) !important;
+}
+
+body.playful-geometric .nb-tag-color:hover {
+  transform: scale(1.1) !important;
+}
+
 body.playful-geometric [role="option"],
 body.playful-geometric [role="option"] *,
 body.playful-geometric [role="listbox"] .text-foreground {

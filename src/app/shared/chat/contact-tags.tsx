@@ -7,12 +7,12 @@ import { chatApi, type Tag, type Contact } from '@/lib/api/chat';
 import DeletePopover from '@/components/delete-popover';
 
 const TAG_COLORS = [
-  { name: 'Blue', value: 'blue', class: 'bg-blue-100 text-blue-700', previewClass: 'bg-blue-500' },
-  { name: 'Red', value: 'red', class: 'bg-red-100 text-red-700', previewClass: 'bg-red-500' },
-  { name: 'Green', value: 'green', class: 'bg-green-100 text-green-700', previewClass: 'bg-green-500' },
-  { name: 'Yellow', value: 'yellow', class: 'bg-yellow-100 text-yellow-700', previewClass: 'bg-yellow-500' },
-  { name: 'Purple', value: 'purple', class: 'bg-purple-100 text-purple-700', previewClass: 'bg-purple-500' },
-  { name: 'Gray', value: 'gray', class: 'bg-gray-100 text-gray-700', previewClass: 'bg-gray-500' },
+  { name: 'Blue', value: 'blue', class: 'border border-blue-200 bg-blue-100 text-blue-700', previewClass: 'bg-blue-500' },
+  { name: 'Red', value: 'red', class: 'border border-red-200 bg-red-100 text-red-700', previewClass: 'bg-red-500' },
+  { name: 'Green', value: 'green', class: 'border border-green-200 bg-green-100 text-green-700', previewClass: 'bg-green-500' },
+  { name: 'Yellow', value: 'yellow', class: 'border border-yellow-200 bg-yellow-100 text-yellow-700', previewClass: 'bg-yellow-500' },
+  { name: 'Purple', value: 'purple', class: 'border border-purple-200 bg-purple-100 text-purple-700', previewClass: 'bg-purple-500' },
+  { name: 'Gray', value: 'gray', class: 'border border-gray-200 bg-gray-100 text-gray-700', previewClass: 'bg-gray-500' },
 ];
 
 interface TagItemProps {
