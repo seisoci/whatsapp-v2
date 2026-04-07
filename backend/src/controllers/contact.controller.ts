@@ -76,25 +76,25 @@ export class ContactController {
 
       const contactRepository = AppDataSource.getRepository(Contact);
       
-      // Check for existing contact
+      // Check for existing contact — return it instead of erroring (upsert behavior)
       const existingContact = await contactRepository.findOne({
         where: { waId, phoneNumberId }
       });
 
       if (existingContact) {
         return c.json({
-          success: false,
-          message: 'Contact already exists for this phone number',
-        }, 409);
+          success: true,
+          message: 'Contact already exists',
+          data: existingContact,
+        }, 200);
       }
 
       const contact = new Contact();
       contact.waId = waId;
+      contact.phoneNumber = waId;
       contact.phoneNumberId = phoneNumberId;
       contact.profileName = profileName;
       contact.businessName = businessName;
-      // customFor email if needed, store in customFields or notes as existing schema doesn't have email column directly
-      // Schema has customFields
       if (email) {
         contact.customFields = { ...contact.customFields, email };
       }

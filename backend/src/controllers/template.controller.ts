@@ -24,9 +24,14 @@ export class TemplateController {
     try {
       const phoneNumberRepository = AppDataSource.getRepository(PhoneNumber);
 
-      // Get all active phone numbers with their credentials
+      // Optional filter: phoneNumberDbId = internal UUID of a specific phone number
+      const phoneNumberDbId = c.req.query('phoneNumberDbId');
+
+      // Get active phone numbers, optionally filtered to a specific one
       const phoneNumbers = await phoneNumberRepository.find({
-        where: { isActive: true },
+        where: phoneNumberDbId
+          ? { id: phoneNumberDbId, isActive: true }
+          : { isActive: true },
         select: {
           id: true,
           phoneNumberId: true,

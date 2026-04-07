@@ -81,6 +81,19 @@ export const createApiEndpointColumns = ({
       </div>
     ),
   }),
+  columnHelper.accessor('phoneNumberName', {
+    id: 'phoneNumberName',
+    size: 180,
+    header: 'Sender Number',
+    enableSorting: false,
+    cell: ({ row }) => (
+      <span className="text-sm">
+        {row.original.phoneNumberName || (
+          <span className="text-gray-400 text-xs italic">Not set (auto)</span>
+        )}
+      </span>
+    ),
+  }),
   columnHelper.accessor('isActive', {
     id: 'isActive',
     size: 120,

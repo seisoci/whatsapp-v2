@@ -12,6 +12,8 @@ export interface ApiEndpoint {
   webhookUrl: string;
   apiKey: string | null;
   isActive: boolean;
+  phoneNumberId: string | null;
+  phoneNumberName: string | null;
   createdBy: string | null;
   creatorName: string | null;
   createdAt: string;
@@ -24,6 +26,7 @@ export interface CreateApiEndpointData {
   webhookUrl: string;
   apiKey?: string | null;
   isActive?: boolean;
+  phoneNumberId?: string | null;
 }
 
 export interface UpdateApiEndpointData {
@@ -32,6 +35,7 @@ export interface UpdateApiEndpointData {
   webhookUrl?: string;
   apiKey?: string | null;
   isActive?: boolean;
+  phoneNumberId?: string | null;
 }
 
 export const apiEndpointsApi = {

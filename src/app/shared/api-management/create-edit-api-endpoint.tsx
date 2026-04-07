@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Title, Text, Input, Button, Textarea, Switch } from 'rizzui';
+import { Title, Text, Input, Button, Textarea, Switch, Select } from 'rizzui';
 import { useModal } from '@/app/shared/modal-views/use-modal';
 import { apiEndpointsApi } from '@/lib/api/api-endpoints';
+import { phoneNumbersApi } from '@/lib/api/phone-numbers';
 import toast from 'react-hot-toast';
 import { ApiEndpoint } from '.';
 
@@ -16,9 +17,15 @@ const apiEndpointSchema = z.object({
   webhookUrl: z.string().url('Invalid webhook URL').max(500),
   apiKey: z.string().max(255).optional().nullable(),
   isActive: z.boolean(),
+  phoneNumberId: z.string().optional().nullable(),
 });
 
 type ApiEndpointFormData = z.infer<typeof apiEndpointSchema>;
+
+interface PhoneNumberOption {
+  value: string;
+  label: string;
+}
 
 interface CreateEditApiEndpointProps {
   apiEndpoint?: ApiEndpoint;
@@ -31,6 +38,7 @@ export default function CreateEditApiEndpoint({
 }: CreateEditApiEndpointProps) {
   const { closeModal } = useModal();
   const isEditMode = !!apiEndpoint;
+  const [phoneNumberOptions, setPhoneNumberOptions] = useState<PhoneNumberOption[]>([]);
 
   const {
     register,
@@ -46,41 +54,59 @@ export default function CreateEditApiEndpoint({
       webhookUrl: '',
       apiKey: '',
       isActive: true,
+      phoneNumberId: null,
     },
   });
 
+  // Load phone numbers first, then populate form values for edit mode.
+  // Combining both into one effect ensures the Select has valid options
+  // before displayValue is evaluated — prevents the "reset on edit" issue.
   useEffect(() => {
-    if (apiEndpoint) {
-      reset({
-        name: apiEndpoint.name || '',
-        description: apiEndpoint.description || '',
-        webhookUrl: apiEndpoint.webhookUrl || '',
-        apiKey: apiEndpoint.apiKey || '',
-        isActive: apiEndpoint.isActive ?? true,
+    phoneNumbersApi.getAll().then((res: any) => {
+      const data = res?.data || [];
+      const options: PhoneNumberOption[] = (Array.isArray(data) ? data : []).map((p: any) => {
+        const display = p.displayPhoneNumber && p.displayPhoneNumber !== 'Error fetching data'
+          ? p.displayPhoneNumber
+          : p.phoneNumberId;
+        const businessName = p.verifiedName || p.name;
+        const label = businessName ? `${display} - ${businessName}` : display;
+        return { value: p.id, label };
       });
-    }
-  }, [apiEndpoint, reset]);
+      const allOptions = [{ value: '', label: '— No specific number —' }, ...options];
+      setPhoneNumberOptions(allOptions);
+
+      if (apiEndpoint) {
+        reset({
+          name: apiEndpoint.name || '',
+          description: apiEndpoint.description || '',
+          webhookUrl: apiEndpoint.webhookUrl || '',
+          apiKey: apiEndpoint.apiKey || '',
+          isActive: apiEndpoint.isActive ?? true,
+          phoneNumberId: apiEndpoint.phoneNumberId || '',
+        });
+      }
+    }).catch(() => {
+      setPhoneNumberOptions([{ value: '', label: '— No specific number —' }]);
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const onSubmit: SubmitHandler<ApiEndpointFormData> = async (data) => {
     try {
       let response;
+      const payload = {
+        name: data.name,
+        description: data.description || null,
+        webhookUrl: data.webhookUrl,
+        apiKey: data.apiKey || null,
+        isActive: data.isActive,
+        phoneNumberId: data.phoneNumberId || null,
+      };
 
       if (isEditMode) {
-        response = await apiEndpointsApi.update(apiEndpoint.id, {
-          name: data.name,
-          description: data.description || null,
-          webhookUrl: data.webhookUrl,
-          apiKey: data.apiKey || null,
-          isActive: data.isActive,
-        });
+        response = await apiEndpointsApi.update(apiEndpoint.id, payload);
       } else {
-        response = await apiEndpointsApi.create({
-          name: data.name,
-          description: data.description || null,
-          webhookUrl: data.webhookUrl,
-          apiKey: data.apiKey || null,
-          isActive: data.isActive,
-        });
+        response = await apiEndpointsApi.create(payload);
       }
 
       if (response.success) {
@@ -149,6 +175,30 @@ export default function CreateEditApiEndpoint({
           error={errors.apiKey?.message}
           className="col-span-full"
         />
+
+        <Controller
+          name="phoneNumberId"
+          control={control}
+          render={({ field: { value, onChange } }) => (
+            <Select
+              label="Sender Phone Number"
+              placeholder="Select sender number"
+              options={phoneNumberOptions}
+              value={value ?? ''}
+              onChange={(opt: PhoneNumberOption) => onChange(opt?.value || null)}
+              getOptionDisplayValue={(opt) => opt.label}
+              displayValue={(selected) =>
+                phoneNumberOptions.find((o) => o.value === selected)?.label || ''
+              }
+              error={errors.phoneNumberId?.message}
+              className="col-span-full"
+              inPortal={false}
+            />
+          )}
+        />
+        <Text className="-mt-3 text-xs text-gray-500">
+          Select which WhatsApp number sends messages via this endpoint. If not set, the system will use the first active number.
+        </Text>
 
         <Controller
           name="isActive"

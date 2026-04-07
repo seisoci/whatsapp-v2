@@ -19,7 +19,7 @@ export const apiKeyMiddleware = async (c: Context, next: Next) => {
     const apiEndpointRepo = AppDataSource.getRepository(ApiEndpoint);
     const apiEndpoint = await apiEndpointRepo.findOne({
       where: { apiKey, isActive: true },
-      relations: ['creator'], // Load creator for user attribution
+      relations: ['creator', 'phoneNumber'], // Load creator and phoneNumber
     });
 
     if (!apiEndpoint) {

@@ -8,6 +8,7 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { User } from './User';
+import { PhoneNumber } from './PhoneNumber';
 
 /**
  * API Endpoint Model
@@ -32,6 +33,13 @@ export class ApiEndpoint {
 
   @Column({ name: 'is_active', default: true })
   isActive: boolean;
+
+  @Column({ name: 'phone_number_id', type: 'uuid', nullable: true })
+  phoneNumberId: string | null;
+
+  @ManyToOne(() => PhoneNumber, { nullable: true })
+  @JoinColumn({ name: 'phone_number_id' })
+  phoneNumber: PhoneNumber | null;
 
   // Audit fields
   @Column({ name: 'created_by', nullable: true })

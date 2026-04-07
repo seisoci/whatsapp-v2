@@ -44,7 +44,7 @@ export default function SendTemplateModal({
   useEffect(() => {
     const fetchTemplates = async () => {
       try {
-        const response = await templatesApi.getAll();
+        const response = await templatesApi.getAll({ phoneNumberDbId: phoneNumberId });
         const data = Array.isArray(response)
           ? response
           : (response as any).data || [];
@@ -55,10 +55,10 @@ export default function SendTemplateModal({
       }
     };
     fetchTemplates();
-  }, []);
+  }, [phoneNumberId]);
 
   const handleTemplateSelect = (templateOption: any) => {
-    const template = templates.find((t) => t.name === templateOption.value);
+    const template = templates.find((t) => t.id === templateOption.value);
     setSelectedTemplate(template);
     setTemplateParams({});
     setHeaderMediaUrl('');
@@ -402,10 +402,15 @@ export default function SendTemplateModal({
             <Select
               options={templates.map((t) => ({
                 label: `${t.name} (${t.language})`,
-                value: t.name,
+                value: t.id,
               }))}
-              value={selectedTemplate?.name || ''}
+              value={selectedTemplate?.id || ''}
               onChange={handleTemplateSelect}
+              getOptionDisplayValue={(opt) => opt.label}
+              displayValue={(selected) => {
+                const t = templates.find((t) => t.id === selected);
+                return t ? `${t.name} (${t.language})` : '';
+              }}
               placeholder="Select an approved template..."
               searchable
               inPortal={false}

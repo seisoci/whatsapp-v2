@@ -12,6 +12,7 @@ const createApiEndpointSchema = z.object({
   webhookUrl: z.string().url('Invalid webhook URL').max(500),
   apiKey: z.string().max(255).optional().nullable(),
   isActive: z.boolean().default(true),
+  phoneNumberId: z.string().uuid('Invalid phone number ID').optional().nullable(),
 });
 
 const updateApiEndpointSchema = z.object({
@@ -20,6 +21,7 @@ const updateApiEndpointSchema = z.object({
   webhookUrl: z.string().url('Invalid webhook URL').max(500).optional(),
   apiKey: z.string().max(255).optional().nullable(),
   isActive: z.boolean().optional(),
+  phoneNumberId: z.string().uuid('Invalid phone number ID').optional().nullable(),
 });
 
 class ApiEndpointController {
@@ -38,7 +40,7 @@ class ApiEndpointController {
 
       const apiEndpoints = await apiEndpointRepo.find({
         order: { createdAt: 'DESC' },
-        relations: ['creator'],
+        relations: ['creator', 'phoneNumber'],
       });
 
       return c.json({
@@ -50,6 +52,8 @@ class ApiEndpointController {
           webhookUrl: endpoint.webhookUrl,
           apiKey: endpoint.apiKey,
           isActive: endpoint.isActive,
+          phoneNumberId: endpoint.phoneNumberId,
+          phoneNumberName: endpoint.phoneNumber?.name || endpoint.phoneNumber?.phoneNumberId || null,
           createdBy: endpoint.createdBy,
           creatorName: endpoint.creator?.username || null,
           createdAt: endpoint.createdAt,
@@ -77,7 +81,7 @@ class ApiEndpointController {
 
       const endpoint = await apiEndpointRepo.findOne({
         where: { id },
-        relations: ['creator'],
+        relations: ['creator', 'phoneNumber'],
       });
 
       if (!endpoint) {
@@ -99,6 +103,8 @@ class ApiEndpointController {
           webhookUrl: endpoint.webhookUrl,
           apiKey: endpoint.apiKey,
           isActive: endpoint.isActive,
+          phoneNumberId: endpoint.phoneNumberId,
+          phoneNumberName: endpoint.phoneNumber?.name || endpoint.phoneNumber?.phoneNumberId || null,
           createdBy: endpoint.createdBy,
           creatorName: endpoint.creator?.username || null,
           createdAt: endpoint.createdAt,
@@ -135,7 +141,7 @@ class ApiEndpointController {
         );
       }
 
-      const { name, description, webhookUrl, apiKey, isActive } = validation.data;
+      const { name, description, webhookUrl, apiKey, isActive, phoneNumberId } = validation.data;
       const user = c.get('user');
 
       try {
@@ -152,6 +158,7 @@ class ApiEndpointController {
         webhookUrl,
         apiKey: apiKey || null,
         isActive,
+        phoneNumberId: phoneNumberId || null,
         createdBy: user?.id || null,
       });
 
@@ -168,6 +175,7 @@ class ApiEndpointController {
             webhookUrl: newEndpoint.webhookUrl,
             apiKey: newEndpoint.apiKey,
             isActive: newEndpoint.isActive,
+            phoneNumberId: newEndpoint.phoneNumberId,
             createdAt: newEndpoint.createdAt,
             updatedAt: newEndpoint.updatedAt,
           },
@@ -218,7 +226,7 @@ class ApiEndpointController {
         );
       }
 
-      const { name, description, webhookUrl, apiKey, isActive } = validation.data;
+      const { name, description, webhookUrl, apiKey, isActive, phoneNumberId } = validation.data;
 
       if (webhookUrl !== undefined) {
         try {
@@ -233,6 +241,7 @@ class ApiEndpointController {
       if (webhookUrl !== undefined) endpoint.webhookUrl = webhookUrl;
       if (apiKey !== undefined) endpoint.apiKey = apiKey;
       if (isActive !== undefined) endpoint.isActive = isActive;
+      if (phoneNumberId !== undefined) endpoint.phoneNumberId = phoneNumberId || null;
 
       await apiEndpointRepo.save(endpoint);
 
@@ -246,6 +255,7 @@ class ApiEndpointController {
           webhookUrl: endpoint.webhookUrl,
           apiKey: endpoint.apiKey,
           isActive: endpoint.isActive,
+          phoneNumberId: endpoint.phoneNumberId,
           createdAt: endpoint.createdAt,
           updatedAt: endpoint.updatedAt,
         },

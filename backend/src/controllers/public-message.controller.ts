@@ -104,15 +104,26 @@ export class PublicMessageController {
 
       // 3. Find Sender Phone Number
       const phoneNumberRepo = AppDataSource.getRepository(PhoneNumber);
-      const phoneNumber = await phoneNumberRepo.findOne({
-        where: { isActive: true },
-        order: { createdAt: 'ASC' }
-      });
+
+      // Use phone number linked to this API endpoint; fall back to first active if not set
+      let phoneNumber = apiEndpoint.phoneNumber ?? null;
+      if (!phoneNumber) {
+        if (apiEndpoint.phoneNumberId) {
+          phoneNumber = await phoneNumberRepo.findOne({
+            where: { id: apiEndpoint.phoneNumberId, isActive: true },
+          });
+        } else {
+          phoneNumber = await phoneNumberRepo.findOne({
+            where: { isActive: true },
+            order: { createdAt: 'ASC' },
+          });
+        }
+      }
 
       if (!phoneNumber) {
         return c.json({
           success: false,
-          message: 'No active WhatsApp sender number found.',
+          message: 'No active WhatsApp sender number found for this endpoint.',
         }, 503);
       }
 
