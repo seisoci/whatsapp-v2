@@ -1,16 +1,13 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { SubmitHandler } from 'react-hook-form';
 import { Password, Checkbox, Button, Input, Text } from 'rizzui';
 import { useMedia } from '@core/hooks/use-media';
 import { Form } from '@core/ui/form';
 import { routes } from '@/config/routes';
-import { loginSchema, LoginSchema } from '@/validators/login.schema';
 import { useAuth } from '@/lib/auth-context';
-import toast from 'react-hot-toast';
 
 const initialValues = {
   email: '',
@@ -28,6 +25,7 @@ export default function SignInForm() {
   const router = useRouter();
   const isMedium = useMedia('(max-width: 1200px)', false);
   const [isLoading, setIsLoading] = useState(false);
+  const [submitError, setSubmitError] = useState('');
   const { user, loading, login } = useAuth();
 
   // Redirect if already logged in
@@ -39,14 +37,17 @@ export default function SignInForm() {
 
   const onSubmit = async (data: SignInFormData) => {
     setIsLoading(true);
+    setSubmitError('');
 
     try {
       await login(data.email, data.password);
-      toast.success('Login successful!');
       // Note: Don't set isLoading to false here - redirect will happen via useEffect
     } catch (error: any) {
-      const errorMessage = error?.response?.data?.message || error?.message || 'Login failed. Please check your credentials.';
-      toast.error(errorMessage);
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Login failed. Please check your credentials.';
+      setSubmitError(errorMessage);
       setIsLoading(false);
     }
   };
@@ -62,6 +63,11 @@ export default function SignInForm() {
       >
         {({ register, formState: { errors } }) => (
           <div className="space-y-5 lg:space-y-6">
+            {submitError ? (
+              <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                {submitError}
+              </div>
+            ) : null}
             <Input
               type="email"
               size="lg"
