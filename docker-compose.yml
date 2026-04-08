@@ -46,6 +46,8 @@ services:
       - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
       - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
       - MINIO_BUCKET=${MINIO_BUCKET:-uploads}
+      # Turnstile
+      - TURNSTILE_SECRET_KEY=${TURNSTILE_SECRET_KEY}
       # WhatsApp
       - WHATSAPP_API_VERSION=${WHATSAPP_API_VERSION:-v21.0}
     networks:
