@@ -236,13 +236,24 @@ export class MessageController {
 
       // Get phone number credentials
       // The frontend may pass either the DB uuid (id) or the WA phone_number_id
+      // Only select columns that exist in DB (cached columns like displayPhoneNumber may not be migrated yet)
+      const phoneNumberSelect = {
+        id: true,
+        phoneNumberId: true,
+        accessToken: true,
+        wabaId: true,
+        name: true,
+        isActive: true,
+      } as const;
+
       const phoneNumberRepo = AppDataSource.getRepository(PhoneNumber);
       let phoneNumber = await phoneNumberRepo
-        .findOne({ where: { id: phoneNumberId } })
+        .findOne({ where: { id: phoneNumberId }, select: phoneNumberSelect })
         .catch(() => null);
       if (!phoneNumber) {
         phoneNumber = await phoneNumberRepo.findOne({
           where: { phoneNumberId },
+          select: phoneNumberSelect,
         });
       }
 

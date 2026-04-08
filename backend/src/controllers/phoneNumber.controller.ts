@@ -33,9 +33,25 @@ export class PhoneNumberController {
     try {
       const phoneNumberRepository = AppDataSource.getRepository(PhoneNumber);
 
-      // Fetch all fields (accessToken needed for WhatsApp API calls below, never exposed in response)
+      // Only fetch columns that exist in DB (cached columns may not be migrated yet)
+      // accessToken is selected for internal WhatsApp API calls but never exposed in response
       const phoneNumbers = await phoneNumberRepository.find({
         relations: ['creator'],
+        select: {
+          id: true,
+          phoneNumberId: true,
+          accessToken: true,
+          wabaId: true,
+          name: true,
+          isActive: true,
+          createdAt: true,
+          updatedAt: true,
+          creator: {
+            id: true,
+            username: true,
+            email: true,
+          },
+        },
         order: {
           createdAt: 'DESC',
         },
