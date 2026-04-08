@@ -1,8 +1,22 @@
 import { Context } from 'hono';
+import { z } from 'zod';
 import { AppDataSource } from '../config/database';
 import { User } from '../models/User';
-import { paginationSchema } from '../validators/common.validator';
+import { userPaginationSchema, emailSchema, usernameSchema, passwordSchema } from '../validators/common.validator';
 import { withPermissions } from '../utils/controller.decorator';
+
+const createUserSchema = z.object({
+  email: emailSchema,
+  username: usernameSchema,
+  password: passwordSchema,
+  roleId: z.string().min(1, 'Role ID harus disediakan.'),
+  isActive: z.boolean().optional().default(true),
+  emailVerified: z.boolean().optional().default(false),
+});
+
+const resetPasswordSchema = z.object({
+  newPassword: passwordSchema,
+});
 
 export class UserController {
   /**
@@ -25,7 +39,7 @@ export class UserController {
       const query = c.req.query();
 
       // Validate pagination parameters
-      const validatedQuery = paginationSchema.parse({
+      const validatedQuery = userPaginationSchema.parse({
         page: query.page ? parseInt(query.page) : 1,
         limit: query.limit ? parseInt(query.limit) : 10,
         search: query.search,
@@ -163,8 +177,17 @@ export class UserController {
    */
   static async store(c: Context) {
     try {
-      const body = await c.req.json();
+      const rawBody = await c.req.json();
+      const parsed = createUserSchema.safeParse(rawBody);
 
+      if (!parsed.success) {
+        return c.json(
+          { success: false, message: parsed.error.errors[0]?.message || 'Data tidak valid.' },
+          400
+        );
+      }
+
+      const body = parsed.data;
       const userRepository = AppDataSource.getRepository(User);
 
       // Check if email already exists
@@ -182,14 +205,14 @@ export class UserController {
         );
       }
 
-      // Create new user
+      // Create new user (body already validated and typed by createUserSchema)
       const user = userRepository.create({
         username: body.username,
         email: body.email,
         password: body.password,
         roleId: body.roleId,
-        isActive: body.isActive !== undefined ? body.isActive : true,
-        emailVerified: body.emailVerified !== undefined ? body.emailVerified : false,
+        isActive: body.isActive,
+        emailVerified: body.emailVerified,
       });
 
       await userRepository.save(user);
@@ -335,24 +358,12 @@ export class UserController {
   static async resetPassword(c: Context) {
     try {
       const { id } = c.req.param();
-      const body = await c.req.json();
+      const rawBody = await c.req.json();
+      const parsed = resetPasswordSchema.safeParse(rawBody);
 
-      if (!body.newPassword) {
+      if (!parsed.success) {
         return c.json(
-          {
-            success: false,
-            message: 'Password baru harus disediakan.',
-          },
-          400
-        );
-      }
-
-      if (body.newPassword.length < 8) {
-        return c.json(
-          {
-            success: false,
-            message: 'Password harus minimal 8 karakter.',
-          },
+          { success: false, message: parsed.error.errors[0]?.message || 'Password tidak valid.' },
           400
         );
       }
@@ -371,7 +382,7 @@ export class UserController {
       }
 
       // Update password (akan di-hash otomatis oleh User entity @BeforeInsert/@BeforeUpdate)
-      user.password = body.newPassword;
+      user.password = parsed.data.newPassword;
 
       // Reset login attempts jika ada
       user.resetLoginAttempts();

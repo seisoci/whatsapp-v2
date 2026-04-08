@@ -17,8 +17,8 @@ class StorageService {
       endPoint: process.env.MINIO_ENDPOINT || 'localhost',
       port: parseInt(process.env.MINIO_PORT || '9000'),
       useSSL: process.env.MINIO_USE_SSL === 'true',
-      accessKey: process.env.MINIO_ACCESS_KEY || 'minioadmin',
-      secretKey: process.env.MINIO_SECRET_KEY || 'minioadmin',
+      accessKey: process.env.MINIO_ACCESS_KEY ?? '',
+      secretKey: process.env.MINIO_SECRET_KEY ?? '',
     });
   }
 
@@ -26,6 +26,10 @@ class StorageService {
    * Initialize storage - create bucket if not exists
    */
   async initialize(): Promise<void> {
+    if (!process.env.MINIO_ACCESS_KEY || !process.env.MINIO_SECRET_KEY) {
+      throw new Error('MINIO_ACCESS_KEY and MINIO_SECRET_KEY environment variables must be set');
+    }
+
     try {
       const bucketExists = await this.client.bucketExists(this.defaultBucket);
 

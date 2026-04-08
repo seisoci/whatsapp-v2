@@ -42,6 +42,7 @@ const app = new Hono();
 
 // Global middlewares
 app.use('*', logger());
+// app.use('*', securityHeaders);
 app.use('*', corsMiddleware);
 app.use('*', ipFilter);
 app.use('*', sanitizeMiddleware);

@@ -33,23 +33,9 @@ export class PhoneNumberController {
     try {
       const phoneNumberRepository = AppDataSource.getRepository(PhoneNumber);
 
+      // Fetch all fields (accessToken needed for WhatsApp API calls below, never exposed in response)
       const phoneNumbers = await phoneNumberRepository.find({
         relations: ['creator'],
-        select: {
-          id: true,
-          phoneNumberId: true,
-          accessToken: true,
-          wabaId: true,
-          name: true,
-          isActive: true,
-          createdAt: true,
-          updatedAt: true,
-          creator: {
-            id: true,
-            username: true,
-            email: true,
-          },
-        },
         order: {
           createdAt: 'DESC',
         },
@@ -275,7 +261,7 @@ export class PhoneNumberController {
       return c.json(
         {
           success: false,
-          message: error.message || 'Terjadi kesalahan pada server.',
+          message: 'Terjadi kesalahan pada server.',
         },
         500
       );
@@ -447,7 +433,7 @@ export class PhoneNumberController {
       return c.json(
         {
           success: false,
-          message: error.message || 'Terjadi kesalahan saat sinkronisasi.',
+          message: 'Terjadi kesalahan saat sinkronisasi.',
         },
         500
       );
@@ -502,7 +488,7 @@ export class PhoneNumberController {
       return c.json(
         {
           success: false,
-          message: error.message || 'Terjadi kesalahan saat test koneksi.',
+          message: 'Terjadi kesalahan saat test koneksi.',
         },
         500
       );
@@ -552,7 +538,7 @@ export class PhoneNumberController {
       return c.json(
         {
           success: false,
-          message: error.message || 'Gagal mengirim verification code.',
+          message: 'Gagal mengirim verification code.',
         },
         500
       );
@@ -611,7 +597,7 @@ export class PhoneNumberController {
       return c.json(
         {
           success: false,
-          message: error.message || 'Gagal memverifikasi code.',
+          message: 'Gagal memverifikasi code.',
         },
         500
       );
@@ -670,7 +656,7 @@ export class PhoneNumberController {
       return c.json(
         {
           success: false,
-          message: error.message || 'Gagal mengatur two-step verification.',
+          message: 'Gagal mengatur two-step verification.',
         },
         500
       );
@@ -717,7 +703,7 @@ export class PhoneNumberController {
       return c.json(
         {
           success: false,
-          message: error.message || 'Gagal mendapatkan status display name.',
+          message: 'Gagal mendapatkan status display name.',
         },
         500
       );
@@ -775,7 +761,7 @@ export class PhoneNumberController {
       return c.json(
         {
           success: false,
-          message: error.message || 'Gagal update business profile.',
+          message: 'Gagal update business profile.',
         },
         500
       );
@@ -888,7 +874,7 @@ export class PhoneNumberController {
       return c.json(
         {
           success: false,
-          message: error.message || 'Gagal upload foto profil.',
+          message: 'Gagal upload foto profil.',
         },
         500
       );
@@ -933,7 +919,7 @@ export class PhoneNumberController {
       return c.json(
         {
           success: false,
-          message: error.message || 'Gagal menghapus foto profil.',
+          message: 'Gagal menghapus foto profil.',
         },
         500
       );

@@ -71,6 +71,10 @@ export const booleanStringSchema = z
   .transform((val) => val.toLowerCase() === 'true')
   .pipe(z.boolean());
 
+// Allowed sort columns for user queries (allowlist to prevent SQL injection)
+export const USER_SORT_COLUMNS = ['email', 'username', 'createdAt', 'updatedAt', 'isActive'] as const;
+export type UserSortColumn = typeof USER_SORT_COLUMNS[number];
+
 // Pagination validation
 export const paginationSchema = z.object({
   page: z.coerce.number().int().positive().default(1),
@@ -78,6 +82,11 @@ export const paginationSchema = z.object({
   search: z.string().optional(),
   sortBy: z.string().optional(),
   sortOrder: z.enum(['asc', 'desc']).default('desc'),
+});
+
+// User-specific pagination with strict sortBy allowlist
+export const userPaginationSchema = paginationSchema.extend({
+  sortBy: z.enum(USER_SORT_COLUMNS).optional(),
 });
 
 // ID parameter validation

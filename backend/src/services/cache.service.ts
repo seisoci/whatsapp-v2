@@ -1,3 +1,4 @@
+import { timingSafeEqual } from 'crypto';
 import { RedisService } from '../config/redis';
 
 /**
@@ -314,7 +315,12 @@ class CacheService {
    */
   async verifyCode(identifier: string, code: string): Promise<boolean> {
     const storedCode = await this.get<string>(`verify:${identifier}`, false);
-    return storedCode === code;
+    if (!storedCode) return false;
+    // Use constant-time comparison to prevent timing side-channel attacks
+    const a = Buffer.from(storedCode);
+    const b = Buffer.from(code);
+    if (a.length !== b.length) return false;
+    return timingSafeEqual(a, b);
   }
 
   /**

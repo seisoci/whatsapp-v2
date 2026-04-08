@@ -18,11 +18,11 @@ export const sanitizeInput = (input: any): any => {
 
   if (typeof input === 'object' && input !== null) {
     const sanitized: any = Array.isArray(input) ? [] : {};
-    for (const key in input) {
-      // Sanitize key juga untuk mencegah prototype pollution
+    // Use Object.keys() (own enumerable props only) to prevent prototype pollution via for...in
+    for (const key of Object.keys(input)) {
       const sanitizedKey = sanitizeInput(key);
       if (sanitizedKey !== '__proto__' && sanitizedKey !== 'constructor' && sanitizedKey !== 'prototype') {
-        sanitized[sanitizedKey] = sanitizeInput(input[key]);
+        sanitized[sanitizedKey] = sanitizeInput((input as any)[key]);
       }
     }
     return sanitized;

@@ -122,10 +122,18 @@ export class RedisService {
   }
 
   /**
-   * Get all keys matching pattern
+   * Get all keys matching pattern using SCAN (non-blocking, safe for production)
+   * KEYS is O(N) and blocks Redis; SCAN iterates in batches without blocking.
    */
   static async keys(pattern: string): Promise<string[]> {
-    return await redisClient.keys(pattern);
+    const result: string[] = [];
+    let cursor = '0';
+    do {
+      const [nextCursor, batch] = await redisClient.scan(cursor, 'MATCH', pattern, 'COUNT', 100);
+      cursor = nextCursor;
+      result.push(...batch);
+    } while (cursor !== '0');
+    return result;
   }
 
   /**
