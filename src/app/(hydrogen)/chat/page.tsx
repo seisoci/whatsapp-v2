@@ -317,13 +317,16 @@ export default function ChatPage() {
 
   // Sync missed data on page visibility change (tab switch, device wake) and WebSocket reconnect
   useEffect(() => {
-    const syncMissedData = () => {
+    // wsWasConnected: only reload messages via HTTP when WS dropped (to avoid race with live WS messages)
+    const syncMissedData = (wsDropped: boolean) => {
       if (!selectedPhoneNumberId) return;
-      // Reload contacts list and stats to catch any missed messages
+      // Always reload contacts list and stats to catch any missed updates
       loadContacts(1, false);
       loadContactsStats();
-      // If a chat is open, reload its messages
-      if (selectedContact) {
+      // Only reload messages via HTTP if WS was disconnected.
+      // When WS is alive, live events handle incoming messages; reloading via HTTP would race
+      // with those events and risk overwriting messages that haven't been persisted yet.
+      if (wsDropped && selectedContact) {
         loadMessages(selectedContact);
       }
     };
@@ -331,21 +334,22 @@ export default function ChatPage() {
     // Visibility change: user returned to tab or device woke up
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
+        const wasConnected = chatWebSocket.isConnected();
         // Reconnect WebSocket if disconnected
-        if (!chatWebSocket.isConnected()) {
+        if (!wasConnected) {
           chatWebSocket
             .connect()
             .catch((err) =>
               console.error('WebSocket reconnect on visibility failed:', err)
             );
         }
-        syncMissedData();
+        syncMissedData(!wasConnected);
       }
     };
 
-    // WebSocket reconnected after a drop
+    // WebSocket reconnected after a drop — always reload since we missed WS events
     const handleReconnected = () => {
-      syncMissedData();
+      syncMissedData(true);
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);

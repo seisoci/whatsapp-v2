@@ -29,17 +29,41 @@ export class ChatWebSocketClient {
   private subscribedRooms: Set<string> = new Set();
   private pingInterval: NodeJS.Timeout | null = null;
   private hasConnectedBefore = false;
+  private isConnecting = false;
 
   /**
    * Connect to WebSocket server
    */
   connect(): Promise<void> {
+    // Guard: skip if already open or in progress
+    if (this.isConnecting) {
+      return Promise.resolve();
+    }
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      return Promise.resolve();
+    }
+
+    // Cancel any pending scheduled reconnect — this call takes priority
+    if (this.reconnectTimeout) {
+      clearTimeout(this.reconnectTimeout);
+      this.reconnectTimeout = null;
+    }
+
+    this.isConnecting = true;
+
     return new Promise((resolve, reject) => {
       try {
         const token = getAccessToken();
         if (!token) {
+          this.isConnecting = false;
           reject(new Error('No authentication token'));
           return;
+        }
+
+        // Close stale connection before opening new one
+        if (this.ws && this.ws.readyState !== WebSocket.CLOSED) {
+          this.ws.onclose = null; // Prevent triggering scheduleReconnect
+          this.ws.close();
         }
 
         // Use WSS for production (https) and WS for development (http)
@@ -55,6 +79,7 @@ export class ChatWebSocketClient {
           this.reconnectAttempts = 0;
           this.isIntentionalClose = false;
           this.hasConnectedBefore = true;
+          this.isConnecting = false;
 
           // Resubscribe to previously subscribed rooms
           this.subscribedRooms.forEach(phoneNumberId => {
@@ -82,12 +107,14 @@ export class ChatWebSocketClient {
         };
 
         this.ws.onerror = (error) => {
+          this.isConnecting = false;
           console.error('❌ WebSocket error:', error);
           reject(error);
         };
 
         this.ws.onclose = async (event) => {
           this.stopHeartbeat();
+          this.isConnecting = false;
 
            // Check for auth failure (4001: Missing token, 4002: Invalid/Expired token)
            if (event.code === 4001 || event.code === 4002) {
