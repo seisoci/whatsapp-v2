@@ -128,10 +128,16 @@ export class RedisService {
   static async keys(pattern: string): Promise<string[]> {
     const result: string[] = [];
     let cursor = '0';
+    const MAX_ITERATIONS = 10_000; // safety cap — Redis guarantees termination, but guard against bugs
+    let iterations = 0;
     do {
       const [nextCursor, batch] = await redisClient.scan(cursor, 'MATCH', pattern, 'COUNT', 100);
       cursor = nextCursor;
       result.push(...batch);
+      if (++iterations >= MAX_ITERATIONS) {
+        console.error(`[Redis] SCAN exceeded ${MAX_ITERATIONS} iterations for pattern: ${pattern}`);
+        break;
+      }
     } while (cursor !== '0');
     return result;
   }
