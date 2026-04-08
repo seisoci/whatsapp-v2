@@ -1639,10 +1639,10 @@ export default function ChatPage() {
                     {showThemeMenu && (
                       <div className="nb-theme-menu absolute left-0 top-full z-50 mt-1 w-52 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-600 dark:bg-gray-800">
                         {([
-                          { value: 'default', label: 'Default', emoji: '💬' },
-                          { value: 'neo-brutalism', label: 'Neo Brutalism', emoji: '🖤' },
-                          { value: 'hand-drawn', label: 'Hand-Drawn', emoji: '✏️' },
-                          { value: 'playful-geometric', label: 'Playful Geometric', emoji: '🎈' },
+                          { value: 'default', label: 'Default', dotClass: 'bg-slate-400' },
+                          { value: 'neo-brutalism', label: 'Neo Brutalism', dotClass: 'bg-neutral-900' },
+                          { value: 'hand-drawn', label: 'Hand-Drawn', dotClass: 'bg-[#6B8E6E]' },
+                          { value: 'playful-geometric', label: 'Playful Geometric', dotClass: 'bg-[#F472B6]' },
                         ] as const).map((theme) => (
                           <button
                             key={theme.value}
@@ -1655,7 +1655,10 @@ export default function ChatPage() {
                               chatTheme === theme.value ? 'bg-blue-50 font-medium text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'
                             }`}
                           >
-                            <span>{theme.emoji}</span>
+                            <span
+                              className={`h-2.5 w-2.5 rounded-full ${theme.dotClass}`}
+                              aria-hidden="true"
+                            />
                             <span>{theme.label}</span>
                             {chatTheme === theme.value && <span className="ml-auto text-blue-500">✓</span>}
                           </button>
