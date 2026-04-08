@@ -141,7 +141,7 @@ const startServer = async () => {
     // Start server with WebSocket support
     const port = parseInt(env.PORT);
 
-    const server = Bun.serve({
+    const server = Bun.serve<{ request: Request }>({
       fetch(req, server) {
         // Store server reference in request for upgrade
         const url = new URL(req.url);

@@ -17,7 +17,6 @@ export {
 } from '../validators/common.validator';
 
 export {
-  registerSchema,
   loginSchema,
   refreshTokenSchema,
 } from '../validators/auth.validator';

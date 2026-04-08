@@ -50,11 +50,11 @@ export class WhatsAppService {
       );
 
       if (!response.ok) {
-        const error = await response.json();
+        const error = await response.json() as any;
         throw new Error(error.error?.message || 'Failed to get phone number info');
       }
 
-      return await response.json();
+      return await response.json() as WhatsAppPhoneNumberInfo;
     } catch (error: any) {
       console.error('WhatsApp API Error:', error);
       throw new Error(`WhatsApp API Error: ${error.message}`);
@@ -80,11 +80,11 @@ export class WhatsAppService {
       );
 
       if (!response.ok) {
-        const error = await response.json();
+        const error = await response.json() as any;
         throw new Error(error.error?.message || 'Failed to get business account info');
       }
 
-      return await response.json();
+      return await response.json() as WhatsAppBusinessAccount;
     } catch (error: any) {
       console.error('WhatsApp API Error:', error);
       throw new Error(`WhatsApp API Error: ${error.message}`);
@@ -131,7 +131,7 @@ export class WhatsAppService {
       );
 
       if (!response.ok) {
-        const error = await response.json();
+        const error = await response.json() as any;
         throw new Error(error.error?.message || 'Failed to register phone number');
       }
 
@@ -172,7 +172,7 @@ export class WhatsAppService {
       );
 
       if (!response.ok) {
-        const error = await response.json();
+        const error = await response.json() as any;
         throw new Error(error.error?.message || 'Failed to send message');
       }
 
@@ -202,7 +202,7 @@ export class WhatsAppService {
       );
 
       if (!response.ok) {
-        const error = await response.json();
+        const error = await response.json() as any;
         throw new Error(error.error?.message || 'Failed to get messaging limits');
       }
 
@@ -240,7 +240,7 @@ export class WhatsAppService {
       );
 
       if (!response.ok) {
-        const error = await response.json();
+        const error = await response.json() as any;
         throw new Error(error.error?.message || 'Failed to request verification code');
       }
 
@@ -275,7 +275,7 @@ export class WhatsAppService {
       );
 
       if (!response.ok) {
-        const error = await response.json();
+        const error = await response.json() as any;
         throw new Error(error.error?.message || 'Failed to verify code');
       }
 
@@ -311,7 +311,7 @@ export class WhatsAppService {
       );
 
       if (!response.ok) {
-        const error = await response.json();
+        const error = await response.json() as any;
         throw new Error(error.error?.message || 'Failed to set two-step verification');
       }
 
@@ -343,7 +343,7 @@ export class WhatsAppService {
       );
 
       if (!response.ok) {
-        const error = await response.json();
+        const error = await response.json() as any;
         throw new Error(error.error?.message || 'Failed to get display name status');
       }
 
@@ -388,7 +388,7 @@ export class WhatsAppService {
       );
 
       if (!response.ok) {
-        const error = await response.json();
+        const error = await response.json() as any;
         throw new Error(error.error?.message || 'Failed to update business profile');
       }
 
@@ -431,7 +431,7 @@ export class WhatsAppService {
         );
 
         if (!response.ok) {
-          const error = await response.json();
+          const error = await response.json() as any;
           throw new Error(error.error?.message || 'Failed to upload media');
         }
 
@@ -461,7 +461,7 @@ export class WhatsAppService {
       );
 
       if (!response.ok) {
-        const error = await response.json();
+        const error = await response.json() as any;
         throw new Error(error.error?.message || 'Failed to upload media');
       }
 
@@ -495,11 +495,11 @@ export class WhatsAppService {
       });
 
       if (!sessionResponse.ok) {
-        const error = await sessionResponse.json();
+        const error = await sessionResponse.json() as any;
         throw new Error(error.error?.message || 'Failed to initiate upload session');
       }
 
-      const sessionData = await sessionResponse.json();
+      const sessionData = await sessionResponse.json() as any;
       const uploadSessionId = sessionData.id;
 
       if (!uploadSessionId) {
@@ -519,11 +519,11 @@ export class WhatsAppService {
       });
 
       if (!uploadResponse.ok) {
-        const error = await uploadResponse.json();
+        const error = await uploadResponse.json() as any;
         throw new Error(error.error?.message || 'Failed to upload file content');
       }
 
-      const uploadResult = await uploadResponse.json();
+      const uploadResult = await uploadResponse.json() as any;
       
       // The handle 'h' is what we need for the template
       if (!uploadResult.h) {
@@ -556,7 +556,7 @@ export class WhatsAppService {
       );
 
       if (!response.ok) {
-        const error = await response.json();
+        const error = await response.json() as any;
         throw new Error(error.error?.message || 'Failed to delete profile picture');
       }
 
@@ -598,7 +598,7 @@ export class WhatsAppService {
       });
 
       if (!response.ok) {
-        const error = await response.json();
+        const error = await response.json() as any;
         throw new Error(error.error?.message || 'Failed to get message templates');
       }
 
@@ -628,7 +628,7 @@ export class WhatsAppService {
       );
 
       if (!response.ok) {
-        const error = await response.json();
+        const error = await response.json() as any;
         throw new Error(error.error?.message || 'Failed to get message template');
       }
 
@@ -666,7 +666,7 @@ export class WhatsAppService {
       );
 
       if (!response.ok) {
-        const error = await response.json();
+        const error = await response.json() as any;
         throw new Error(error.error?.message || 'Failed to create message template');
       }
 
@@ -701,7 +701,7 @@ export class WhatsAppService {
       );
 
       if (!response.ok) {
-        const error = await response.json();
+        const error = await response.json() as any;
         console.error('WhatsApp API Error Full:', JSON.stringify(error, null, 2));
         throw new Error(JSON.stringify(error));
       }
@@ -733,7 +733,7 @@ export class WhatsAppService {
       );
 
       if (!response.ok) {
-        const error = await response.json();
+        const error = await response.json() as any;
         throw new Error(error.error?.message || 'Failed to delete message template');
       }
 

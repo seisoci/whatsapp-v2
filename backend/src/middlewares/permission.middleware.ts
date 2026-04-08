@@ -68,7 +68,7 @@ export const hasPermission = (permissions: string | string[], requireAll: boolea
       }
 
       // Super admin (roleId === 1) bypasses all permission checks
-      if (user.roleId === 1) {
+      if (user.roleId === '1') {
         // Store user and role in context for later use
         c.set('user', user);
         c.set('role', user.role);

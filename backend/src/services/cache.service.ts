@@ -12,7 +12,7 @@ class CacheService {
    */
   async set<T = any>(key: string, value: T, ttlSeconds?: number): Promise<void> {
     const fullKey = this.prefix + key;
-    await RedisService.set(fullKey, value, ttlSeconds);
+    await RedisService.set(fullKey, value as string | object, ttlSeconds);
   }
 
   /**

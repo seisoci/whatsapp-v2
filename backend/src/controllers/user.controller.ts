@@ -298,7 +298,7 @@ export class UserController {
       }
 
       // Prevent deleting super admin
-      if (user.roleId === 1) {
+      if (user.roleId === '1') {
         return c.json(
           {
             success: false,

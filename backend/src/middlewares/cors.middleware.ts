@@ -42,7 +42,7 @@ export const corsMiddleware = async (c: Context, next: Next) => {
 
   // Handle preflight requests
   if (c.req.method === 'OPTIONS') {
-    return c.text('', 204);
+    return c.text('', 204 as any);
   }
 
   await next();

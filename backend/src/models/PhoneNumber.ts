@@ -36,6 +36,25 @@ export class PhoneNumber {
   @Column({ name: 'is_active', default: true })
   isActive: boolean; // Status aktif/non-aktif di sistem kita
 
+  // Cached fields dari WhatsApp API (di-sync secara berkala)
+  @Column({ name: 'display_phone_number', type: 'varchar', nullable: true })
+  displayPhoneNumber: string | null;
+
+  @Column({ name: 'verified_name', type: 'varchar', nullable: true })
+  verifiedName: string | null;
+
+  @Column({ name: 'quality_rating', type: 'varchar', nullable: true, default: 'UNKNOWN' })
+  qualityRating: string | null;
+
+  @Column({ name: 'messaging_limit_tier', type: 'varchar', nullable: true, default: 'TIER_NOT_SET' })
+  messagingLimitTier: string | null;
+
+  @Column({ name: 'is_official_business_account', type: 'boolean', nullable: true, default: false })
+  isOfficialBusinessAccount: boolean | null;
+
+  @Column({ name: 'last_sync_at', type: 'timestamp', nullable: true })
+  lastSyncAt: Date | null;
+
   // Audit fields
   @Column({ name: 'created_by', nullable: true })
   createdBy: string | null;

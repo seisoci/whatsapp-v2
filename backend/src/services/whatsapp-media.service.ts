@@ -164,7 +164,7 @@ export class WhatsAppMediaService {
         return null;
       }
 
-      return await response.json();
+      return await response.json() as { url: string; mime_type: string; sha256: string; file_size: number };
     } catch (error: any) {
       console.error('Failed to get media URL from WhatsApp:', error);
       return null;

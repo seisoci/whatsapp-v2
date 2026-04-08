@@ -218,13 +218,13 @@ class StorageService {
       return new Promise((resolve, reject) => {
         const chunks: Buffer[] = [];
 
-        this.client.getObject(this.defaultBucket, fileName, (err, stream) => {
+        (this.client.getObject as any)(this.defaultBucket, fileName, (err: any, stream: any) => {
           if (err) {
             reject(err);
             return;
           }
 
-          stream.on('data', (chunk) => chunks.push(chunk));
+          stream.on('data', (chunk: Buffer) => chunks.push(chunk));
           stream.on('end', () => resolve(Buffer.concat(chunks)));
           stream.on('error', reject);
         });
@@ -401,11 +401,11 @@ class StorageService {
       cutoffDate.setDate(cutoffDate.getDate() - days);
 
       const filesToDelete = files.filter((file) => {
-        return file.lastModified < cutoffDate;
+        return (file.lastModified ?? new Date(0)) < cutoffDate;
       });
 
       if (filesToDelete.length > 0) {
-        const fileNames = filesToDelete.map((f) => f.name);
+        const fileNames = filesToDelete.map((f) => f.name).filter((n): n is string => n !== undefined);
         await this.deleteFiles(fileNames);
       }
 

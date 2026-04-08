@@ -157,7 +157,7 @@ export class RedisService {
     const data = await fetchFunction();
 
     // Cache the result
-    await this.set(key, data, ttlSeconds);
+    await this.set(key, data as string | object, ttlSeconds);
 
     return data;
   }

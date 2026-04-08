@@ -124,13 +124,13 @@ export class MinioService {
       return new Promise((resolve, reject) => {
         const chunks: Buffer[] = [];
 
-        minioClient.getObject(DEFAULT_BUCKET, fileName, (err, stream) => {
+        (minioClient.getObject as any)(DEFAULT_BUCKET, fileName, (err: any, stream: any) => {
           if (err) {
             reject(err);
             return;
           }
 
-          stream.on('data', (chunk) => chunks.push(chunk));
+          stream.on('data', (chunk: Buffer) => chunks.push(chunk));
           stream.on('end', () => resolve(Buffer.concat(chunks)));
           stream.on('error', reject);
         });

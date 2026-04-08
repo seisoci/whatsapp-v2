@@ -8,7 +8,6 @@ export {
   passwordSchema,
   emailSchema,
   usernameSchema,
-  registerSchema,
   loginSchema,
   refreshTokenSchema,
 } from './validators';
