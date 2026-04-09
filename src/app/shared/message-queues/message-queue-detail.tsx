@@ -76,10 +76,23 @@ export default function MessageQueueDetail({ item }: { item: MessageQueueItem })
           {/* Template Info */}
           <div>
             <Title as="h5" className="text-sm font-semibold mb-2">Template</Title>
+            <DetailRow label="Sender">
+              <div className="space-y-0.5">
+                {item.sender_name && <div className="font-medium">{item.sender_name}</div>}
+                <code className="text-xs bg-gray-100 px-1 py-0.5 rounded">{item.sender_phone || '-'}</code>
+              </div>
+            </DetailRow>
             <DetailRow label="Template Name">{item.template_name}</DetailRow>
             <DetailRow label="Category"><CategoryBadge category={item.template_category} /></DetailRow>
             <DetailRow label="Language">{item.template_language}</DetailRow>
-            <DetailRow label="Recipient">{item.recipient_phone}</DetailRow>
+            <DetailRow label="Recipient">
+              <div className="space-y-0.5">
+                {item.contact_name && (
+                  <div className="font-medium">{item.contact_name}</div>
+                )}
+                <code className="text-xs bg-gray-100 px-1 py-0.5 rounded">{item.recipient_phone}</code>
+              </div>
+            </DetailRow>
             {item.wamid && (
               <DetailRow label="WAMID">
                 <code className="text-xs bg-gray-100 px-1 py-0.5 rounded">{item.wamid}</code>

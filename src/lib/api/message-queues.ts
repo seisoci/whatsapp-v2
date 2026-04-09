@@ -11,7 +11,10 @@ export interface MessageQueueItem {
   api_endpoint_id: string | null;
   api_endpoint_name: string | null;
   phone_number_id: string;
+  sender_phone: string | null;
+  sender_name: string | null;
   contact_id: string | null;
+  contact_name: string | null;
   user_id: string | null;
   user_name: string | null;
   recipient_phone: string;

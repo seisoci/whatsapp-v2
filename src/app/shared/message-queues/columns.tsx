@@ -48,15 +48,40 @@ export const createMessageQueueColumns = ({
       );
     },
   }),
+  columnHelper.accessor('sender_phone', {
+    id: 'sender_phone',
+    size: 160,
+    header: 'Sender',
+    enableSorting: false,
+    cell: ({ row }) => (
+      <div>
+        {row.original.sender_name && (
+          <div className="font-medium text-xs truncate max-w-[140px]" title={row.original.sender_name}>
+            {row.original.sender_name}
+          </div>
+        )}
+        <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded">
+          {row.original.sender_phone || '-'}
+        </code>
+      </div>
+    ),
+  }),
   columnHelper.accessor('recipient_phone', {
     id: 'recipient_phone',
-    size: 140,
+    size: 160,
     header: 'Recipient',
     enableSorting: false,
     cell: ({ row }) => (
-      <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded">
-        {row.original.recipient_phone}
-      </code>
+      <div>
+        {row.original.contact_name && (
+          <div className="font-medium text-xs truncate max-w-[140px]" title={row.original.contact_name}>
+            {row.original.contact_name}
+          </div>
+        )}
+        <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded">
+          {row.original.recipient_phone}
+        </code>
+      </div>
     ),
   }),
   columnHelper.accessor('wamid', {

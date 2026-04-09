@@ -36,6 +36,7 @@ export class MessageQueueController {
         .leftJoinAndSelect('mq.apiEndpoint', 'apiEndpoint')
         .leftJoinAndSelect('mq.user', 'user')
         .leftJoinAndSelect('mq.contact', 'contact')
+        .leftJoinAndSelect('mq.phoneNumber', 'phoneNumber')
         .orderBy('mq.createdAt', 'DESC');
 
       if (queue_status) {
@@ -67,7 +68,12 @@ export class MessageQueueController {
           api_endpoint_id: item.apiEndpointId,
           api_endpoint_name: item.apiEndpoint?.name || null,
           phone_number_id: item.phoneNumberId,
+          sender_phone: item.phoneNumber?.displayPhoneNumber || null,
+          sender_name: item.phoneNumber?.name || item.phoneNumber?.verifiedName || null,
           contact_id: item.contactId,
+          contact_name: item.contact
+            ? (item.contact.businessName || item.contact.profileName || null)
+            : null,
           user_id: item.userId,
           user_name: item.user?.username || null,
           recipient_phone: item.recipientPhone,
@@ -138,7 +144,12 @@ export class MessageQueueController {
           api_endpoint_id: item.apiEndpointId,
           api_endpoint_name: item.apiEndpoint?.name || null,
           phone_number_id: item.phoneNumberId,
+          sender_phone: item.phoneNumber?.displayPhoneNumber || null,
+          sender_name: item.phoneNumber?.name || item.phoneNumber?.verifiedName || null,
           contact_id: item.contactId,
+          contact_name: item.contact
+            ? (item.contact.businessName || item.contact.profileName || null)
+            : null,
           user_id: item.userId,
           user_name: item.user?.username || null,
           recipient_phone: item.recipientPhone,
