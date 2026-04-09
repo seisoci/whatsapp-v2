@@ -23,6 +23,7 @@ import {
   PiMicrophone,
   PiVideoCamera,
   PiPlay,
+  PiTimer,
   PiCopy,
   PiArchive,
   PiArrowCounterClockwise,
@@ -174,7 +175,9 @@ export default function ChatPage() {
 
   // State
   const [phoneNumbers, setPhoneNumbers] = useState<any[]>([]);
-  const [selectedPhoneNumberId, setSelectedPhoneNumberId] = useState('');
+  const [selectedPhoneNumberId, setSelectedPhoneNumberId] = useState<string>(
+    () => (typeof window !== 'undefined' ? localStorage.getItem('chat:selectedPhoneNumberId') ?? '' : '')
+  );
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -226,6 +229,19 @@ export default function ChatPage() {
   const isNeoBrutalism = chatTheme === 'neo-brutalism';
   const isHandDrawn = chatTheme === 'hand-drawn';
   const isPlayfulGeometric = chatTheme === 'playful-geometric';
+
+  // Send delay (seconds) — 0 means send immediately
+  const [sendDelay, setSendDelay] = useState<number>(() => {
+    if (typeof window === 'undefined') return 0;
+    const saved = parseInt(localStorage.getItem('chat:sendDelay') ?? '0', 10);
+    return isNaN(saved) || saved < 0 ? 0 : Math.min(saved, 60);
+  });
+  const [showDelayPopup, setShowDelayPopup] = useState(false);
+  const [delayInput, setDelayInput] = useState(String(sendDelay));
+  const delayPopupRef = useRef<HTMLDivElement>(null);
+  const [cancelableSendIds, setCancelableSendIds] = useState<Set<string>>(new Set());
+  const cancelSendRefs = useRef<Map<string, { timeout: NodeJS.Timeout; cancel: () => void }>>(new Map());
+  const cancelSendSilentIds = useRef<Set<string>>(new Set()); // IDs to cancel without restoring input
 
   // Load pinned contacts from localStorage on mount
   useEffect(() => {
@@ -284,6 +300,7 @@ export default function ChatPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const refocusAfterSendRef = useRef(false); // signal to refocus textarea after send completes
   const isMobileRef = useRef(false);
   useEffect(() => {
     isMobileRef.current = /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -302,6 +319,14 @@ export default function ChatPage() {
     el.style.height = 'auto';
     el.style.height = Math.min(el.scrollHeight, 200) + 'px';
   }, [messageInput]);
+
+  // Refocus textarea after send completes (runs after React re-enables the textarea)
+  useEffect(() => {
+    if (!sending && refocusAfterSendRef.current) {
+      refocusAfterSendRef.current = false;
+      textareaRef.current?.focus();
+    }
+  }, [sending]);
 
   // Sync missed data on page visibility change (tab switch, device wake) and WebSocket reconnect
   useEffect(() => {
@@ -785,9 +810,13 @@ export default function ChatPage() {
       const numbers = Array.isArray(response) ? response : response.data || [];
       setPhoneNumbers(numbers);
 
-      // Auto-select first number
-      if (numbers.length > 0 && !selectedPhoneNumberId) {
-        setSelectedPhoneNumberId(numbers[0].id);
+      // Restore previously selected number, or fall back to first
+      const saved = typeof window !== 'undefined' ? localStorage.getItem('chat:selectedPhoneNumberId') : null;
+      const validSaved = saved && numbers.some((n: any) => n.id === saved);
+      if (!selectedPhoneNumberId || !numbers.some((n: any) => n.id === selectedPhoneNumberId)) {
+        const id = validSaved ? saved! : numbers[0]?.id ?? '';
+        setSelectedPhoneNumberId(id);
+        if (id) localStorage.setItem('chat:selectedPhoneNumberId', id);
       }
     } catch (error) {
       console.error('Failed to load phone numbers:', error);
@@ -960,6 +989,15 @@ export default function ChatPage() {
   };
 
   const handleContactClick = async (contact: Contact) => {
+    // Cancel all pending delayed sends silently before switching contacts
+    if (cancelSendRefs.current.size > 0) {
+      cancelSendRefs.current.forEach((entry, msgId) => {
+        cancelSendSilentIds.current.add(msgId);
+        clearTimeout(entry.timeout);
+        entry.cancel();
+      });
+    }
+
     // Immediate reset to prevent flashing old content
     setMessages([]);
     setMessagesLoading(true);
@@ -1032,6 +1070,14 @@ export default function ChatPage() {
     }
   };
 
+  const handleCancelSend = (msgId: string) => {
+    const entry = cancelSendRefs.current.get(msgId);
+    if (entry) {
+      clearTimeout(entry.timeout);
+      entry.cancel();
+    }
+  };
+
   const handleSendMessage = async () => {
     // Allow sending if there's text OR an attachment
     if (
@@ -1069,6 +1115,36 @@ export default function ChatPage() {
     setMessageInput(''); // Clear input immediately
     setPendingAttachment(null); // Clear attachment
     setMessages((prev) => [...prev, optimisticMessage]); // Add to UI optimistically
+    scrollToBottom('smooth'); // Scroll to show optimistic message immediately
+
+    // If send delay is set, hold before sending so user can cancel
+    if (sendDelay > 0) {
+      const msgId = optimisticMessage.id;
+      setCancelableSendIds((prev) => new Set([...prev, msgId]));
+
+      const cancelled = await new Promise<boolean>((resolve) => {
+        const timeout = setTimeout(() => resolve(false), sendDelay * 1000);
+        cancelSendRefs.current.set(msgId, { timeout, cancel: () => resolve(true) });
+      });
+
+      cancelSendRefs.current.delete(msgId);
+      setCancelableSendIds((prev) => {
+        const next = new Set(prev);
+        next.delete(msgId);
+        return next;
+      });
+
+      if (cancelled) {
+        const isSilent = cancelSendSilentIds.current.has(msgId);
+        cancelSendSilentIds.current.delete(msgId);
+        setMessages((prev) => prev.filter((m) => m.id !== msgId));
+        if (!isSilent) {
+          setMessageInput(messageToSend);
+          if (attachmentToSend) setPendingAttachment(attachmentToSend);
+        }
+        return;
+      }
+    }
 
     // Update contact list order: Move active contact to top and update last message
     setContacts((prev) => {
@@ -1192,6 +1268,7 @@ export default function ChatPage() {
           'Failed to send message'
       );
     } finally {
+      refocusAfterSendRef.current = true;
       setSending(false);
       setUploadingAttachment(false);
     }
@@ -1559,6 +1636,18 @@ export default function ChatPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showThemeMenu]);
 
+  // Close delay popup when clicking outside
+  useEffect(() => {
+    if (!showDelayPopup) return;
+    const handleClickOutside = (event: MouseEvent) => {
+      if (delayPopupRef.current && !delayPopupRef.current.contains(event.target as Node)) {
+        setShowDelayPopup(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showDelayPopup]);
+
   // Close contact options menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -1671,7 +1760,9 @@ export default function ChatPage() {
                           typeof selected === 'string'
                             ? selected
                             : selected?.value;
-                        setSelectedPhoneNumberId(value || '');
+                        const id = value || '';
+                        setSelectedPhoneNumberId(id);
+                        if (id) localStorage.setItem('chat:selectedPhoneNumberId', id);
                       }}
                       options={phoneNumbers.map((phone) => ({
                         label: phone.verifiedName || phone.displayPhoneNumber,
@@ -2512,7 +2603,16 @@ export default function ChatPage() {
                                               return format(date, 'HH:mm');
                                             })()}
                                           </span>
-                                          {isOwn && (
+                                          {isOwn && cancelableSendIds.has(msg.id) ? (
+                                            <button
+                                              onClick={() => handleCancelSend(msg.id)}
+                                              className="ml-1 flex items-center gap-0.5 rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-medium text-red-600 hover:bg-red-200"
+                                              title="Batalkan pengiriman"
+                                            >
+                                              <PiX className="h-3 w-3" />
+                                              Batal
+                                            </button>
+                                          ) : isOwn && (
                                             <span
                                               className={
                                                 isOwn ? 'text-gray-600 dark:text-gray-300' : ''
@@ -2810,6 +2910,16 @@ export default function ChatPage() {
                               )}
                             </div>
                           </div>
+                          {/* Prominent cancel button — shown outside bubble during send delay */}
+                          {isOwn && cancelableSendIds.has(msg.id) && (
+                            <button
+                              onClick={() => handleCancelSend(msg.id)}
+                              className="self-center flex-shrink-0 rounded-full bg-red-500 p-2 text-white shadow-lg hover:bg-red-600 active:scale-95 transition-all"
+                              title="Batalkan pengiriman"
+                            >
+                              <PiXCircle className="h-5 w-5" />
+                            </button>
+                          )}
                         </div>
                       );
                     })}
@@ -3204,30 +3314,90 @@ export default function ChatPage() {
                   <p className="mt-1 text-sm">
                     Choose a contact to start chatting
                   </p>
-                  <Button
-                    variant="solid"
-                    className="mt-4"
-                    onClick={() => {
-                      if (!selectedPhoneNumberId) return;
-                      openModal({
-                        view: (
-                          <SendTemplateModal
-                            phoneNumberId={selectedPhoneNumberId}
-                            contacts={contacts}
-                            onSuccess={(contactId) => {
-                              // Find the newly messaged contact and open
-                              // The websocket event will handle fetching, but here we trigger loadContacts to be sure
-                              loadContacts();
+                  <div className="mt-4 flex items-center justify-center gap-2">
+                    <Button
+                      variant="solid"
+                      onClick={() => {
+                        if (!selectedPhoneNumberId) return;
+                        openModal({
+                          view: (
+                            <SendTemplateModal
+                              phoneNumberId={selectedPhoneNumberId}
+                              contacts={contacts}
+                              onSuccess={() => {
+                                loadContacts();
+                              }}
+                            />
+                          ),
+                          customSize: 1200,
+                        });
+                      }}
+                      disabled={!selectedPhoneNumberId}
+                    >
+                      Send Template Message
+                    </Button>
+
+                    {/* Send delay settings */}
+                    <div ref={delayPopupRef} className="relative">
+                      <button
+                        title="Send delay settings"
+                        onClick={() => {
+                          setDelayInput(String(sendDelay));
+                          setShowDelayPopup((v) => !v);
+                        }}
+                        className="flex h-10 w-10 items-center justify-center rounded-md border border-gray-200 bg-white text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-700"
+                      >
+                        <PiTimer className="h-5 w-5" />
+                        {sendDelay > 0 && (
+                          <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-white">
+                            {sendDelay}
+                          </span>
+                        )}
+                      </button>
+
+                      {showDelayPopup && (
+                        <div className="absolute bottom-full right-0 mb-2 w-56 rounded-lg border border-gray-200 bg-white p-3 shadow-lg">
+                          <p className="mb-2 text-xs font-semibold text-gray-700">
+                            Send Delay
+                          </p>
+                          <p className="mb-3 text-xs text-gray-500">
+                            Pesan ditahan selama N detik sebelum dikirim. Set 0 untuk kirim langsung.
+                          </p>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="number"
+                              min={0}
+                              max={60}
+                              value={delayInput}
+                              onChange={(e) => setDelayInput(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  const val = Math.max(0, Math.min(60, parseInt(delayInput, 10) || 0));
+                                  setSendDelay(val);
+                                  localStorage.setItem('chat:sendDelay', String(val));
+                                  setShowDelayPopup(false);
+                                }
+                              }}
+                              className="w-full rounded border border-gray-300 px-2 py-1 text-center text-sm focus:border-primary focus:outline-none"
+                              placeholder="0"
+                            />
+                            <span className="text-xs text-gray-500">detik</span>
+                          </div>
+                          <button
+                            onClick={() => {
+                              const val = Math.max(0, Math.min(60, parseInt(delayInput, 10) || 0));
+                              setSendDelay(val);
+                              localStorage.setItem('chat:sendDelay', String(val));
+                              setShowDelayPopup(false);
                             }}
-                          />
-                        ),
-                        customSize: 1200,
-                      });
-                    }}
-                    disabled={!selectedPhoneNumberId}
-                  >
-                    Send Template Message
-                  </Button>
+                            className="mt-2 w-full rounded bg-primary px-3 py-1.5 text-xs font-medium text-white hover:bg-primary/90"
+                          >
+                            Simpan
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
