@@ -519,6 +519,7 @@ export default function ChatPage() {
                 ? (prevContacts[contactIndex].unreadCount || 0) + 1
                 : prevContacts[contactIndex].unreadCount;
 
+            const eventContact = event.data.contact || {};
             const updatedContact = {
               ...prevContacts[contactIndex],
               // lastMessage must fully match the Contact interface from lib/api/chat.ts
@@ -536,7 +537,10 @@ export default function ChatPage() {
               },
               lastMessageTimestamp: rawMessage.timestamp,
               // Update session info if available in event (after lastMessage so session fields override)
-              ...(event.data.contact || {}),
+              ...eventContact,
+              // Preserve existing name fields if event sends null (don't overwrite good data with null)
+              profileName: eventContact.profileName ?? prevContacts[contactIndex].profileName,
+              businessName: eventContact.businessName ?? prevContacts[contactIndex].businessName,
               // Override unread count with our calculated value
               unreadCount: newUnreadCount,
             };
@@ -2119,14 +2123,14 @@ export default function ChatPage() {
                       <Avatar
                         src={
                           contact.profilePictureUrl ||
-                          `https://ui-avatars.com/api/?name=${encodeURIComponent(contact.profileName || contact.phoneNumber)}`
+                          `https://ui-avatars.com/api/?name=${encodeURIComponent(contact.businessName || contact.profileName || contact.phoneNumber)}`
                         }
-                        name={contact.profileName || contact.phoneNumber}
+                        name={contact.businessName || contact.profileName || contact.phoneNumber}
                         className="h-10 w-10"
                       />
                       <div className="min-w-0 flex-1">
                         <h6 className={`truncate text-xs font-semibold ${isPlayfulGeometric ? 'font-[var(--font-outfit)] text-[#1E293B]' : ''}`}>
-                          {contact.profileName || contact.phoneNumber}
+                          {contact.businessName || contact.profileName || contact.phoneNumber}
                         </h6>
                         <p className="truncate text-[10px] text-gray-500">
                           {contact.phoneNumber}
@@ -2325,9 +2329,10 @@ export default function ChatPage() {
                     <Avatar
                       src={
                         selectedContact.profilePictureUrl ||
-                        `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedContact.profileName || selectedContact.phoneNumber)}`
+                        `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedContact.businessName || selectedContact.profileName || selectedContact.phoneNumber)}`
                       }
                       name={
+                        selectedContact.businessName ||
                         selectedContact.profileName ||
                         selectedContact.phoneNumber
                       }
@@ -2336,7 +2341,8 @@ export default function ChatPage() {
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5">
                         <h6 className="truncate text-xs font-semibold">
-                          {selectedContact.profileName ||
+                          {selectedContact.businessName ||
+                            selectedContact.profileName ||
                             selectedContact.phoneNumber}
                         </h6>
                         <span className="text-[10px] font-semibold text-gray-500">

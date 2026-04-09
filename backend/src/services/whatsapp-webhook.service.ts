@@ -242,7 +242,7 @@ export class WhatsAppWebhookService {
         waId: waId,
         phoneNumber: messageData.from,
         phoneNumberId: internalPhoneNumberId,
-        profileName: profileName || messageData.from,
+        profileName: profileName || null,
         profilePictureUrl: s3ProfilePictureUrl, // Use S3 URL, not temp WhatsApp URL
       });
       await contactRepo.save(contact);
