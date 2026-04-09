@@ -6,7 +6,10 @@ import { validateEmail } from './common-rules';
 export const createUserSchema = z.object({
   name: z.string().min(1, { message: 'Name is required' }),
   email: validateEmail,
-  password: z.string().min(8, { message: 'Password must be at least 8 characters' }),
+  password: z
+    .string()
+    .min(8, { message: 'Password must be at least 8 characters' })
+    .regex(/[A-Z]/, { message: 'Password must contain at least one uppercase letter' }),
   password_confirmation: z.string().min(8, { message: 'Password confirmation must be at least 8 characters' }),
 }).refine((data) => data.password === data.password_confirmation, {
   message: "Passwords don't match",
@@ -17,7 +20,12 @@ export const createUserSchema = z.object({
 export const updateUserSchema = z.object({
   name: z.string().min(1, { message: 'Name is required' }),
   email: validateEmail,
-  password: z.string().min(8, { message: 'Password must be at least 8 characters' }).optional().or(z.literal('')),
+  password: z
+    .string()
+    .min(8, { message: 'Password must be at least 8 characters' })
+    .regex(/[A-Z]/, { message: 'Password must contain at least one uppercase letter' })
+    .optional()
+    .or(z.literal('')),
   password_confirmation: z.string().optional().or(z.literal('')),
 }).refine((data) => {
   // If password is provided, confirmation must match

@@ -13,15 +13,12 @@ export const emailSchema = z
   .trim()
   .max(100, 'Email terlalu panjang');
 
-// Password validation - minimum 8 karakter, harus ada huruf besar, kecil, angka, dan simbol
+// Password validation - minimum 8 karakter, minimal ada huruf besar
 export const passwordSchema = z
   .string()
   .min(8, 'Password harus minimal 8 karakter')
   .max(100, 'Password terlalu panjang')
-  .regex(/[a-z]/, 'Password harus mengandung huruf kecil')
-  .regex(/[A-Z]/, 'Password harus mengandung huruf besar')
-  .regex(/[0-9]/, 'Password harus mengandung angka')
-  .regex(/[^a-zA-Z0-9]/, 'Password harus mengandung simbol khusus');
+  .regex(/[A-Z]/, 'Password harus mengandung huruf besar');
 
 // Username validation - hanya huruf, angka, underscore, dan hyphen
 export const usernameSchema = z

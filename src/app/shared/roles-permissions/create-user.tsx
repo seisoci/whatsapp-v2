@@ -15,7 +15,10 @@ const createUserSchema = z
   .object({
     username: z.string().min(3, 'Username must be at least 3 characters'),
     email: z.string().email('Invalid email address'),
-    password: z.string().min(8, 'Password must be at least 8 characters'),
+    password: z
+      .string()
+      .min(8, 'Password must be at least 8 characters')
+      .regex(/[A-Z]/, 'Password must contain at least one uppercase letter'),
     confirmPassword: z
       .string()
       .min(8, 'Password confirmation must be at least 8 characters'),
@@ -63,7 +66,7 @@ export default function CreateUser({ onSuccess }: { onSuccess?: () => void }) {
         username: data.username,
         email: data.email,
         password: data.password,
-        roleId: parseInt(data.roleId),
+        roleId: Number(data.roleId),
         isActive: data.isActive === 'active',
         emailVerified: true,
       });
@@ -77,7 +80,11 @@ export default function CreateUser({ onSuccess }: { onSuccess?: () => void }) {
       }
     } catch (error: any) {
       console.error('Create user error:', error);
-      toast.error(error.message || 'Failed to create user');
+      toast.error(
+        error?.response?.data?.message ||
+          error?.message ||
+          'Failed to create user'
+      );
     } finally {
       setLoading(false);
     }

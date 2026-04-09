@@ -67,7 +67,7 @@ export default function EditUser({ user, onSuccess }: EditUserProps) {
       const response = await usersApi.update(user.id, {
         username: data.username,
         email: data.email,
-        roleId: parseInt(data.roleId),
+        roleId: Number(data.roleId),
         isActive: data.isActive === 'active',
       });
 
@@ -80,7 +80,11 @@ export default function EditUser({ user, onSuccess }: EditUserProps) {
       }
     } catch (error: any) {
       console.error('Update user error:', error);
-      toast.error(error.message || 'Failed to update user');
+      toast.error(
+        error?.response?.data?.message ||
+          error?.message ||
+          'Failed to update user'
+      );
     } finally {
       setLoading(false);
     }

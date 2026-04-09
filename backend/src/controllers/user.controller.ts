@@ -5,17 +5,28 @@ import { User } from '../models/User';
 import { userPaginationSchema, emailSchema, usernameSchema, passwordSchema } from '../validators/common.validator';
 import { withPermissions } from '../utils/controller.decorator';
 
+const roleIdSchema = z.union([z.string(), z.number()]).transform((value) => String(value));
+
 const createUserSchema = z.object({
   email: emailSchema,
   username: usernameSchema,
   password: passwordSchema,
-  roleId: z.string().min(1, 'Role ID harus disediakan.'),
+  roleId: roleIdSchema.pipe(z.string().min(1, 'Role ID harus disediakan.')),
   isActive: z.boolean().optional().default(true),
   emailVerified: z.boolean().optional().default(false),
 });
 
 const resetPasswordSchema = z.object({
   newPassword: passwordSchema,
+});
+
+const updateUserSchema = z.object({
+  email: emailSchema.optional(),
+  username: usernameSchema.optional(),
+  password: passwordSchema.optional(),
+  roleId: roleIdSchema.optional(),
+  isActive: z.boolean().optional(),
+  emailVerified: z.boolean().optional(),
 });
 
 export class UserController {
@@ -250,7 +261,17 @@ export class UserController {
   static async update(c: Context) {
     try {
       const { id } = c.req.param();
-      const body = await c.req.json();
+      const rawBody = await c.req.json();
+      const parsed = updateUserSchema.safeParse(rawBody);
+
+      if (!parsed.success) {
+        return c.json(
+          { success: false, message: parsed.error.errors[0]?.message || 'Data tidak valid.' },
+          400
+        );
+      }
+
+      const body = parsed.data;
 
       const userRepository = AppDataSource.getRepository(User);
       const user = await userRepository.findOne({ where: { id } });
@@ -268,6 +289,7 @@ export class UserController {
       // Update fields
       if (body.username) user.username = body.username;
       if (body.email) user.email = body.email;
+      if (body.password) user.password = body.password;
       if (body.isActive !== undefined) user.isActive = body.isActive;
       if (body.emailVerified !== undefined) user.emailVerified = body.emailVerified;
       if (body.roleId) user.roleId = body.roleId;
@@ -414,4 +436,3 @@ export const UserControllerWithPermissions = withPermissions(
   UserController,
   UserController.permissions
 );
-
