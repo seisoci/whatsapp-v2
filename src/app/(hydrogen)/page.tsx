@@ -131,7 +131,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="@container">
+    <div>
       <div className="flex flex-col gap-4 mb-6 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <Title as="h2" className="text-2xl lg:text-3xl font-bold mb-2">
