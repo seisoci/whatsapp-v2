@@ -50,7 +50,7 @@ export default function CreateEditRole({ role, onSuccess }: CreateEditRoleProps)
           description: data.description,
         });
         if (response.success) {
-          toast.success('Role updated successfully');
+          toast.success(response.message || 'Role updated successfully');
           closeModal();
           onSuccess?.();
         } else {
@@ -65,7 +65,7 @@ export default function CreateEditRole({ role, onSuccess }: CreateEditRoleProps)
         });
 
         if (response.success) {
-          toast.success('Role created successfully');
+          toast.success(response.message || 'Role created successfully');
           closeModal();
           onSuccess?.();
         } else {

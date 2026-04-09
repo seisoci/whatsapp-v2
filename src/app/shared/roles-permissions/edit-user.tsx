@@ -72,7 +72,7 @@ export default function EditUser({ user, onSuccess }: EditUserProps) {
       });
 
       if (response.success) {
-        toast.success('User updated successfully');
+        toast.success(response.message || 'User updated successfully');
         closeModal();
         onSuccess?.();
       } else {

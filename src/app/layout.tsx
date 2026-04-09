@@ -15,6 +15,7 @@ import {
 } from '@/app/fonts';
 import cn from '@core/utils/class-names';
 import NextProgress from '@core/components/next-progress';
+import { Toaster } from 'react-hot-toast';
 
 import 'swiper/css';
 import 'swiper/css/navigation';
@@ -69,6 +70,15 @@ export default function RootLayout({
                 {children}
                 <GlobalDrawer />
                 <GlobalModal />
+                <Toaster
+                  position="top-center"
+                  toastOptions={{
+                    duration: 3500,
+                    style: {
+                      zIndex: 10001,
+                    },
+                  }}
+                />
               </JotaiProvider>
             </AuthGuard>
           </ThemeProvider>

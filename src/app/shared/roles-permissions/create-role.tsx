@@ -33,7 +33,7 @@ export default function CreateRole({ onSuccess }: { onSuccess?: () => void }) {
       });
 
       if (response.success) {
-        toast.success('Role created successfully');
+        toast.success(response.message || 'Role created successfully');
         closeModal();
         onSuccess?.();
       } else {
@@ -41,7 +41,11 @@ export default function CreateRole({ onSuccess }: { onSuccess?: () => void }) {
       }
     } catch (error: any) {
       console.error('Create role error:', error);
-      toast.error(error.message || 'Failed to create role');
+      toast.error(
+        error?.response?.data?.message ||
+          error?.message ||
+          'Failed to create role'
+      );
     } finally {
       setLoading(false);
     }

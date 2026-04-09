@@ -14,6 +14,7 @@ import {
 } from 'rizzui';
 import { PERMISSIONS } from '@/data/users-data';
 import { Form } from '@core/ui/form';
+import toast from 'react-hot-toast';
 import {
   RolePermissionInput,
   rolePermissionSchema,
@@ -29,6 +30,7 @@ export default function EditRole() {
     setTimeout(() => {
       console.log('data', data);
       setLoading(false);
+      toast.success('Role updated successfully');
       closeModal();
     }, 600);
   };

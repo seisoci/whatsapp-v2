@@ -72,7 +72,7 @@ export default function CreateUser({ onSuccess }: { onSuccess?: () => void }) {
       });
 
       if (response.success) {
-        toast.success('User created successfully');
+        toast.success(response.message || 'User created successfully');
         closeModal();
         onSuccess?.();
       } else {
@@ -101,6 +101,7 @@ export default function CreateUser({ onSuccess }: { onSuccess?: () => void }) {
       validationSchema={createUserSchema}
       useFormProps={{
         defaultValues: {
+          roleId: '',
           isActive: 'active',
         },
       }}
@@ -156,7 +157,7 @@ export default function CreateUser({ onSuccess }: { onSuccess?: () => void }) {
               render={({ field: { name, onChange, value } }) => (
                 <Select
                   options={roles}
-                  value={value}
+                  value={value ?? ''}
                   onChange={onChange}
                   name={name}
                   label="Role"
@@ -179,7 +180,7 @@ export default function CreateUser({ onSuccess }: { onSuccess?: () => void }) {
               render={({ field: { name, onChange, value } }) => (
                 <Select
                   options={statusOptions}
-                  value={value}
+                  value={value ?? 'active'}
                   onChange={onChange}
                   name={name}
                   label="Status"

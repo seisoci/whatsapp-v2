@@ -35,6 +35,7 @@ export class MessageQueueController {
       const qb = repo.createQueryBuilder('mq')
         .leftJoinAndSelect('mq.apiEndpoint', 'apiEndpoint')
         .leftJoinAndSelect('mq.user', 'user')
+        .leftJoinAndSelect('mq.contact', 'contact')
         .orderBy('mq.createdAt', 'DESC');
 
       if (queue_status) {
