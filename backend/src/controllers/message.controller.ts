@@ -212,7 +212,7 @@ export class MessageController {
         );
       }
 
-      const { contactId, phoneNumberId, type, text, template, media } =
+      const { contactId, phoneNumberId, type, text, template, media, contacts } =
         validation.data;
 
       // Get authenticated user ID from context
@@ -346,6 +346,28 @@ export class MessageController {
           });
           break;
 
+        case 'contacts':
+          if (!contacts || contacts.length === 0) {
+            return c.json(
+              {
+                success: false,
+                message: 'Contacts data is required for contacts messages',
+              },
+              400
+            );
+          }
+
+          result = await WhatsAppMessagingService.sendContactMessage({
+            phoneNumberId: phoneNumber.phoneNumberId,
+            internalPhoneNumberId: phoneNumber.id,
+            accessToken: phoneNumber.accessToken,
+            to: contact.waId,
+            contacts,
+            contactId: contact.id,
+            userId,
+          });
+          break;
+
         default:
           return c.json(
             {
@@ -372,12 +394,18 @@ export class MessageController {
               mediaUrl: savedMessage.mediaUrl,
               mediaCaption: savedMessage.mediaCaption,
               mediaFilename: savedMessage.mediaFilename,
+              mediaMimeType: savedMessage.mediaMimeType,
+              contactsPayload: savedMessage.contactsPayload || null,
               direction: savedMessage.direction,
               timestamp:
                 savedMessage.timestamp instanceof Date
                   ? savedMessage.timestamp.toISOString()
                   : savedMessage.timestamp,
               status: savedMessage.status,
+              readAt:
+                savedMessage.readAt instanceof Date
+                  ? savedMessage.readAt.toISOString()
+                  : savedMessage.readAt,
               userId: savedMessage.userId,
               user: savedMessage.user,
             },

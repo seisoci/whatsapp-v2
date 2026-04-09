@@ -22,6 +22,84 @@ interface SessionStatus {
 }
 
 export class WhatsAppMessagingService {
+  private static normalizeContactType(type?: string): 'HOME' | 'WORK' | undefined {
+    if (!type) return undefined;
+
+    const normalized = type.trim().toUpperCase();
+    if (normalized === 'HOME' || normalized === 'WORK') {
+      return normalized;
+    }
+
+    return undefined;
+  }
+
+  private static normalizeContactsPayload(contacts: any[]): any[] {
+    return contacts.map((contact) => ({
+      ...(contact.addresses?.length
+        ? {
+            addresses: contact.addresses.map((address: any) => ({
+              ...(address.street ? { street: address.street } : {}),
+              ...(address.city ? { city: address.city } : {}),
+              ...(address.state ? { state: address.state } : {}),
+              ...(address.zip ? { zip: address.zip } : {}),
+              ...(address.country ? { country: address.country } : {}),
+              ...(address.country_code
+                ? { country_code: String(address.country_code).toLowerCase() }
+                : {}),
+              ...(this.normalizeContactType(address.type)
+                ? { type: this.normalizeContactType(address.type) }
+                : {}),
+            })),
+          }
+        : {}),
+      ...(contact.birthday ? { birthday: contact.birthday } : {}),
+      name: {
+        formatted_name: contact.name?.formatted_name || contact.name?.first_name || 'Contact',
+        ...(contact.name?.first_name ? { first_name: contact.name.first_name } : {}),
+        ...(contact.name?.last_name ? { last_name: contact.name.last_name } : {}),
+        ...(contact.name?.middle_name ? { middle_name: contact.name.middle_name } : {}),
+        ...(contact.name?.suffix ? { suffix: contact.name.suffix } : {}),
+        ...(contact.name?.prefix ? { prefix: contact.name.prefix } : {}),
+      },
+      phones: (contact.phones || []).map((phone: any) => ({
+        phone: phone.phone,
+        ...(this.normalizeContactType(phone.type)
+          ? { type: this.normalizeContactType(phone.type) }
+          : {}),
+        ...(phone.wa_id ? { wa_id: String(phone.wa_id).replace(/\D/g, '') } : {}),
+      })),
+      ...(contact.emails?.length
+        ? {
+            emails: contact.emails.map((email: any) => ({
+              email: email.email,
+              ...(this.normalizeContactType(email.type)
+                ? { type: this.normalizeContactType(email.type) }
+                : {}),
+            })),
+          }
+        : {}),
+      ...(contact.org
+        ? {
+            org: {
+              ...(contact.org.company ? { company: contact.org.company } : {}),
+              ...(contact.org.department ? { department: contact.org.department } : {}),
+              ...(contact.org.title ? { title: contact.org.title } : {}),
+            },
+          }
+        : {}),
+      ...(contact.urls?.length
+        ? {
+            urls: contact.urls.map((url: any) => ({
+              url: url.url,
+              ...(this.normalizeContactType(url.type)
+                ? { type: this.normalizeContactType(url.type) }
+                : {}),
+            })),
+          }
+        : {}),
+    }));
+  }
+
   /**
    * Check if we can send a message to this contact
    * based on 24-hour session window
@@ -417,6 +495,76 @@ export class WhatsAppMessagingService {
   }
 
   /**
+   * Send contacts message
+   */
+  static async sendContactMessage(params: {
+    phoneNumberId: string;
+    internalPhoneNumberId?: string;
+    accessToken: string;
+    to: string;
+    contacts: any[];
+    contactId?: string;
+    userId?: string;
+  }): Promise<any> {
+    if (params.contactId) {
+      const sessionStatus = await this.checkSessionStatus(params.contactId);
+      if (!sessionStatus.canSend) {
+        throw new Error(sessionStatus.reason || 'Cannot send message. Session expired.');
+      }
+    }
+
+    const normalizedContacts = this.normalizeContactsPayload(params.contacts);
+
+    const response = await fetch(
+      `${WHATSAPP_API_BASE_URL}/${params.phoneNumberId}/messages`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${params.accessToken}`,
+        },
+        body: JSON.stringify({
+          messaging_product: 'whatsapp',
+          to: params.to,
+          type: 'contacts',
+          contacts: normalizedContacts,
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const error: any = await response.json();
+      console.error('[sendContactMessage] WhatsApp API error:', JSON.stringify(error, null, 2));
+      const details = error.error?.error_data?.details || '';
+      throw new Error(`${error.error?.message || 'Failed to send contact message'}${details ? ` — ${details}` : ''}`);
+    }
+
+    const result: any = await response.json();
+
+    let savedMessage = null;
+    if (params.contactId) {
+      try {
+        savedMessage = await this.storeOutgoingMessage({
+          contactId: params.contactId,
+          phoneNumberId: params.internalPhoneNumberId || params.phoneNumberId,
+          wamid: result?.messages?.[0]?.id || null,
+          toNumber: params.to,
+          fromNumber: params.to,
+          messageType: 'contacts',
+          contactsPayload: normalizedContacts,
+          status: 'sent',
+          userId: params.userId,
+        });
+        console.log('✅ Outgoing contact message saved to database');
+      } catch (dbError: any) {
+        console.error('❌ Failed to store outgoing contact message:', dbError.message);
+      }
+    }
+
+    return { ...result, savedMessage };
+  }
+
+  /**
    * Store outgoing message in database
    */
   private static async storeOutgoingMessage(params: {
@@ -434,6 +582,7 @@ export class WhatsAppMessagingService {
     mediaId?: string;
     mediaFilename?: string;
     mediaMimeType?: string;
+    contactsPayload?: any[];
     status: string;
     userId?: string; // User who sent the message
   }): Promise<Message> {
@@ -461,6 +610,7 @@ export class WhatsAppMessagingService {
       mediaId: params.mediaId,
       mediaFilename: params.mediaFilename,
       mediaMimeType: params.mediaMimeType,
+      contactsPayload: params.contactsPayload,
       timestamp: new Date(),
       sentAt: new Date(),
     });

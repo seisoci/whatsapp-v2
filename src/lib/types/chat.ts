@@ -88,7 +88,7 @@ export interface TemplateParameter {
 export interface SendMessageRequest {
   contactId: string;
   phoneNumberId: string;
-  type: 'text' | 'template' | 'image' | 'video' | 'document' | 'audio';
+  type: 'text' | 'template' | 'image' | 'video' | 'document' | 'audio' | 'contacts';
   text?: {
     body: string;
   };
@@ -103,6 +103,34 @@ export interface SendMessageRequest {
     caption?: string;
     filename?: string;
   };
+  contacts?: Array<{
+    addresses?: Array<{
+      street?: string;
+      city?: string;
+      state?: string;
+      zip?: string;
+      country?: string;
+      country_code?: string;
+      type?: 'HOME' | 'WORK';
+    }>;
+    birthday?: string;
+    name: {
+      formatted_name: string;
+      first_name?: string;
+      last_name?: string;
+      middle_name?: string;
+      suffix?: string;
+      prefix?: string;
+    };
+    phones: Array<{
+      phone: string;
+      type?: 'HOME' | 'WORK';
+      wa_id?: string;
+    }>;
+    emails?: Array<{ email: string; type?: 'HOME' | 'WORK' }>;
+    org?: { company?: string; department?: string; title?: string };
+    urls?: Array<{ url: string; type?: 'HOME' | 'WORK' }>;
+  }>;
 }
 
 export interface Tag {

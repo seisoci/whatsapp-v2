@@ -31,6 +31,7 @@ import {
   PiPushPin,
   PiHouse,
   PiPalette,
+  PiAddressBook,
 } from 'react-icons/pi';
 import Link from 'next/link';
 import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
@@ -39,6 +40,7 @@ import 'yet-another-react-lightbox/styles.css';
 import Video from 'yet-another-react-lightbox/plugins/video';
 import Zoom from 'yet-another-react-lightbox/plugins/zoom';
 import { chatApi, type Contact, type Message } from '@/lib/api/chat';
+import { contactsApi } from '@/lib/api/contacts';
 import { uploadApi } from '@/lib/api-client';
 import { chatWebSocket } from '@/lib/websocket/chat-websocket';
 
@@ -279,6 +281,13 @@ export default function ChatPage() {
     setContactOptionsMenuId(null);
   };
 
+  // Contact send modal state
+  const [showContactModal, setShowContactModal] = useState(false);
+  const [contactPickerSearch, setContactPickerSearch] = useState('');
+  const [contactPickerList, setContactPickerList] = useState<Contact[]>([]);
+  const [contactPickerLoading, setContactPickerLoading] = useState(false);
+  const [sendingContact, setSendingContact] = useState(false);
+
   // Attachment state
   const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
   const [pendingAttachment, setPendingAttachment] = useState<{
@@ -311,6 +320,16 @@ export default function ChatPage() {
     loadPhoneNumbers();
     connectWebSocket();
   }, []);
+
+  // Load initial contacts when contact picker modal opens
+  useEffect(() => {
+    if (!showContactModal) return;
+    setContactPickerLoading(true);
+    contactsApi.getAll({ limit: 50 }).then((res: any) => {
+      const list = Array.isArray(res.data?.data) ? res.data.data : Array.isArray(res.data) ? res.data : [];
+      setContactPickerList(list);
+    }).catch(() => {}).finally(() => setContactPickerLoading(false));
+  }, [showContactModal]);
 
   // Auto-resize textarea whenever messageInput changes (covers typing, quick replies, emoji inserts)
   useEffect(() => {
@@ -1271,6 +1290,82 @@ export default function ChatPage() {
       refocusAfterSendRef.current = true;
       setSending(false);
       setUploadingAttachment(false);
+    }
+  };
+
+  const handleSendContact = async (pickedContact: Contact) => {
+    if (!selectedContact || !selectedPhoneNumberId) return;
+
+    const displayName = pickedContact.profileName || pickedContact.businessName || pickedContact.phoneNumber;
+    const rawPhone = pickedContact.phoneNumber || pickedContact.waId || '';
+    const normalizedWaId = rawPhone.replace(/\D/g, '');
+    const formattedPhone = rawPhone.startsWith('+')
+      ? rawPhone
+      : normalizedWaId
+        ? `+${normalizedWaId}`
+        : rawPhone;
+    const contactPayload = [{
+      name: {
+        formatted_name: displayName,
+        first_name:
+          (pickedContact.profileName || pickedContact.businessName || rawPhone)
+            .trim()
+            .split(/\s+/)[0] || displayName,
+      },
+      phones: [{
+        phone: formattedPhone,
+        type: 'HOME' as 'HOME' | 'WORK',
+        wa_id: normalizedWaId || undefined,
+      }],
+    }];
+
+    const optimisticMessage = {
+      id: `temp-${Date.now()}`,
+      wamid: null,
+      contactId: selectedContact.id,
+      messageType: 'contacts',
+      textBody: null,
+      mediaUrl: null,
+      mediaCaption: null,
+      mediaFilename: null,
+      mediaMimeType: null,
+      direction: 'outgoing' as const,
+      timestamp: new Date().toISOString(),
+      status: 'pending',
+      readAt: null,
+      contactsPayload: contactPayload,
+    };
+
+    setMessages((prev) => [...prev, optimisticMessage]);
+    scrollToBottom('smooth');
+    setShowContactModal(false);
+    setContactPickerSearch('');
+    setSendingContact(true);
+
+    try {
+      const result = await chatApi.sendMessage({
+        contactId: selectedContact.id,
+        phoneNumberId: selectedPhoneNumberId,
+        type: 'contacts',
+        contacts: contactPayload,
+      });
+
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === optimisticMessage.id
+            ? { ...msg, ...(result.message || {}), contactsPayload: contactPayload }
+            : msg
+        )
+      );
+    } catch (error: any) {
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === optimisticMessage.id ? { ...msg, status: 'failed' } : msg
+        )
+      );
+      alert(error?.response?.data?.message || error.message || 'Failed to send contact');
+    } finally {
+      setSendingContact(false);
     }
   };
 
@@ -3080,6 +3175,15 @@ export default function ChatPage() {
                           >
                             <PiMicrophone className="h-4 w-4" /> Audio
                           </button>
+                          <button
+                            onClick={() => {
+                              setShowAttachmentMenu(false);
+                              setShowContactModal(true);
+                            }}
+                            className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm hover:bg-gray-100"
+                          >
+                            <PiAddressBook className="h-4 w-4" /> Contact
+                          </button>
                         </div>
                       )}
                     </div>
@@ -3412,6 +3516,81 @@ export default function ChatPage() {
         slides={lightboxSlides}
         plugins={[Video, Zoom]}
       />
+
+      {/* Send Contact Modal — contact picker from database */}
+      {showContactModal && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4">
+          <div className="flex w-full max-w-sm flex-col rounded-xl bg-white shadow-2xl dark:bg-gray-800" style={{ maxHeight: '80vh' }}>
+            {/* Header */}
+            <div className="flex flex-shrink-0 items-center justify-between border-b border-gray-100 px-5 py-4 dark:border-gray-700">
+              <div className="flex items-center gap-2">
+                <PiAddressBook className="h-5 w-5 text-gray-600 dark:text-gray-300" />
+                <h3 className="font-semibold text-gray-900 dark:text-gray-100">Pilih Kontak</h3>
+              </div>
+              <button
+                onClick={() => { setShowContactModal(false); setContactPickerSearch(''); }}
+                className="rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700"
+              >
+                <PiX className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Search */}
+            <div className="flex-shrink-0 px-4 py-3">
+              <input
+                type="search"
+                autoFocus
+                placeholder="Cari nama atau nomor..."
+                value={contactPickerSearch}
+                onChange={(e) => {
+                  const q = e.target.value;
+                  setContactPickerSearch(q);
+                  setContactPickerLoading(true);
+                  contactsApi.getAll({ search: q, limit: 50 }).then((res: any) => {
+                    const list = Array.isArray(res.data?.data) ? res.data.data : Array.isArray(res.data) ? res.data : [];
+                    setContactPickerList(list);
+                  }).catch(() => {}).finally(() => setContactPickerLoading(false));
+                }}
+                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-base outline-none focus:border-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+              />
+            </div>
+
+            {/* Contact list */}
+            <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-3">
+              {contactPickerLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="h-6 w-6 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
+                </div>
+              ) : contactPickerList.length === 0 ? (
+                <p className="py-8 text-center text-sm text-gray-400">
+                  {contactPickerSearch ? 'Kontak tidak ditemukan' : 'Ketik untuk mencari kontak'}
+                </p>
+              ) : (
+                contactPickerList.map((c) => {
+                  const name = c.profileName || c.businessName || c.phoneNumber;
+                  const sub = c.phoneNumber || c.waId;
+                  return (
+                    <button
+                      key={c.id}
+                      onClick={() => handleSendContact(c)}
+                      disabled={sendingContact}
+                      className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left hover:bg-gray-50 disabled:opacity-50 dark:hover:bg-gray-700"
+                    >
+                      <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-blue-100 text-sm font-semibold text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+                        {name.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium text-gray-900 dark:text-gray-100">{name}</p>
+                        <p className="truncate text-xs text-gray-500">{sub}</p>
+                      </div>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

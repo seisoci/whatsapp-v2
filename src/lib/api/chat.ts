@@ -51,7 +51,7 @@ export const chatApi = {
   }) => apiClient.get('/chat/messages', { params }).then(r => r.data),
 
   sendMessage: (data: SendMessageRequest) =>
-    apiClient.post('/chat/messages', data).then(r => r.data),
+    apiClient.post('/chat/messages', data).then(r => r.data ?? r),
 
   markMessageAsRead: (messageId: string) =>
     apiClient.put(`/chat/messages/${messageId}/read`).then(r => r.data),
