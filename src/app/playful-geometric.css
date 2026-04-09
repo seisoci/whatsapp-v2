@@ -644,8 +644,8 @@ body.playful-geometric button[class*="bg-primary"]:not(.nb-theme-btn):hover,
 .playful-geometric .nb-chat-composer .rizzui-textarea-field:focus,
 .playful-geometric .nb-chat-composer textarea.rizzui-textarea-field:focus,
 .playful-geometric .nb-chat-composer .rizzui-textarea-root span:focus-within {
-  border-color: var(--pg-accent) !important;
-  box-shadow: 4px 4px 0 0 var(--pg-accent) !important;
+  border-color: #1E293B !important;
+  box-shadow: none !important;
 }
 
 .playful-geometric .nb-chat-composer button:not(.nb-theme-btn),

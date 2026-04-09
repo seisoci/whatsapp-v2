@@ -169,29 +169,8 @@ export default function ChatPage() {
   const { openModal } = useModal();
 
   // Calculate sidebar offset based on layout
-  const getSidebarOffset = () => {
-    if (layout === LAYOUT_OPTIONS.BERYLLIUM) {
-      // Beryllium: 88px fixed + (414px expanded OR 110px collapsed)
-      return expandedLeft
-        ? 'xl:left-[502px]' // 88 + 414
-        : 'xl:left-[198px]'; // 88 + 110
-    }
-
-    // Hydrogen, Helium, Carbon, Boron: 270px/288px
-    if (
-      [
-        LAYOUT_OPTIONS.HYDROGEN,
-        LAYOUT_OPTIONS.HELIUM,
-        LAYOUT_OPTIONS.CARBON,
-        LAYOUT_OPTIONS.BORON,
-      ].includes(layout)
-    ) {
-      return 'xl:left-[270px] 2xl:left-72';
-    }
-
-    // Lithium: no sidebar
-    return '';
-  };
+  // Chat page is fullscreen (fixed inset-0) and covers the sidebar via z-[9999] > z-50
+  const getSidebarOffset = () => '';
 
   // State
   const [phoneNumbers, setPhoneNumbers] = useState<any[]>([]);
@@ -315,6 +294,14 @@ export default function ChatPage() {
     loadPhoneNumbers();
     connectWebSocket();
   }, []);
+
+  // Auto-resize textarea whenever messageInput changes (covers typing, quick replies, emoji inserts)
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 200) + 'px';
+  }, [messageInput]);
 
   // Sync missed data on page visibility change (tab switch, device wake) and WebSocket reconnect
   useEffect(() => {
@@ -1240,11 +1227,6 @@ export default function ChatPage() {
     const value = e.target.value;
     setMessageInput(value);
 
-    // Auto-grow textarea height (max 200px)
-    const el = e.target;
-    el.style.height = 'auto';
-    el.style.height = Math.min(el.scrollHeight, 200) + 'px';
-
     // Check if user typed "/" to trigger suggestions
     if (value.startsWith('/')) {
       const searchTerm = value.slice(1).toLowerCase();
@@ -1526,16 +1508,17 @@ export default function ChatPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lightboxOpen, showChat]);
 
-  // Sync theme class on <body> so modal portal (outside theme div) also gets styled
+  // Sync theme class on <body> so modal portal (outside theme div) also gets styled.
+  // When lightbox is open, remove theme classes so the lightbox uses its default styles.
   useEffect(() => {
     document.body.classList.remove('neo-brutalism', 'hand-drawn', 'playful-geometric');
-    if (chatTheme !== 'default') {
+    if (chatTheme !== 'default' && !lightboxOpen) {
       document.body.classList.add(chatTheme);
     }
     return () => {
       document.body.classList.remove('neo-brutalism', 'hand-drawn', 'playful-geometric');
     };
-  }, [chatTheme]);
+  }, [chatTheme, lightboxOpen]);
 
 
   // Close lightbox via UI (X button / swipe) — syncs history
@@ -3016,44 +2999,60 @@ export default function ChatPage() {
                         </div>
                       )}
 
-                      <Textarea
-                        ref={textareaRef}
-                        value={messageInput}
-                        onChange={handleInputChange}
-                        onKeyDown={handleInputKeyDown}
-                        onPaste={handlePaste}
-                        placeholder={
-                          selectedContact.isSessionActive
-                            ? 'Type a message...'
-                            : 'Session expired. User must reply to open 24h window.'
-                        }
-                        disabled={sending || !selectedContact.isSessionActive}
-                        className={`w-full resize-none [&_textarea]:!bg-white [&_textarea]:!placeholder-gray-900 dark:[&_textarea]:!bg-gray-800 ${
-                          isPlayfulGeometric
-                            ? '[&_textarea]:!rounded-[24px] [&_textarea]:!border-2 [&_textarea]:!border-[#1E293B] [&_textarea]:!bg-white [&_textarea]:!text-[#1E293B] disabled:[&_textarea]:!border-[#CBD5E1] disabled:[&_textarea]:!bg-[#F8FAFC] disabled:[&_textarea]:!text-[#64748B]'
-                            : ''
-                        }`}
-                        style={
-                          isPlayfulGeometric
-                            ? sending || !selectedContact.isSessionActive
-                              ? {
-                                  background: '#F8FAFC',
-                                  color: '#64748B',
-                                  border: '2px solid #CBD5E1',
-                                  borderRadius: '24px',
-                                  boxShadow: 'none',
-                                }
-                              : {
-                                  background: '#FFFFFF',
-                                  color: '#1E293B',
-                                  border: '2px solid #1E293B',
-                                  borderRadius: '24px',
-                                  boxShadow: '4px 4px 0 0 transparent',
-                                }
-                            : undefined
-                        }
-                        rows={1}
-                      />
+                      <div className="relative">
+                        <Textarea
+                          ref={textareaRef}
+                          value={messageInput}
+                          onChange={handleInputChange}
+                          onKeyDown={handleInputKeyDown}
+                          onPaste={handlePaste}
+                          placeholder={
+                            selectedContact.isSessionActive
+                              ? 'Type a message...'
+                              : 'Session expired. User must reply to open 24h window.'
+                          }
+                          disabled={sending || !selectedContact.isSessionActive}
+                          maxLength={4096}
+                          className={`w-full resize-none [&_textarea]:!bg-white [&_textarea]:!placeholder-gray-900 dark:[&_textarea]:!bg-gray-800 ${
+                            isPlayfulGeometric
+                              ? '[&_textarea]:!rounded-[24px] [&_textarea]:!border-2 [&_textarea]:!border-[#1E293B] [&_textarea]:!bg-white [&_textarea]:!text-[#1E293B] disabled:[&_textarea]:!border-[#CBD5E1] disabled:[&_textarea]:!bg-[#F8FAFC] disabled:[&_textarea]:!text-[#64748B]'
+                              : ''
+                          }`}
+                          style={
+                            isPlayfulGeometric
+                              ? sending || !selectedContact.isSessionActive
+                                ? {
+                                    background: '#F8FAFC',
+                                    color: '#64748B',
+                                    border: '2px solid #CBD5E1',
+                                    borderRadius: '24px',
+                                    boxShadow: 'none',
+                                  }
+                                : {
+                                    background: '#FFFFFF',
+                                    color: '#1E293B',
+                                    border: '2px solid #1E293B',
+                                    borderRadius: '24px',
+                                    boxShadow: '4px 4px 0 0 transparent',
+                                  }
+                              : undefined
+                          }
+                          rows={1}
+                        />
+                        {messageInput.length > 0 && (
+                          <span
+                            className={`pointer-events-none absolute bottom-1.5 right-2 text-[10px] tabular-nums ${
+                              messageInput.length >= 4096
+                                ? 'text-red-500'
+                                : messageInput.length >= 3500
+                                  ? 'text-amber-500'
+                                  : 'text-gray-400'
+                            }`}
+                          >
+                            {messageInput.length}/4096
+                          </span>
+                        )}
+                      </div>
                     </div>
 
                     {/* Emoji Button */}

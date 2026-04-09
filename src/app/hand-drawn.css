@@ -579,7 +579,12 @@ body.hand-drawn button[class*="primary-default"]:not(.nb-theme-btn):hover {
 .hand-drawn .absolute.bottom-full button:hover,
 .hand-drawn .absolute.top-full button:hover {
   background: rgba(219,231,223,0.6) !important;
+  color: var(--hd-secondary) !important;
   transform: none !important;
+}
+.hand-drawn .absolute.bottom-full button:hover *,
+.hand-drawn .absolute.top-full button:hover * {
+  color: var(--hd-secondary) !important;
 }
 
 /* ── Audio Elements ── */
