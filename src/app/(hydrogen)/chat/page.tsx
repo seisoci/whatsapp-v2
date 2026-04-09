@@ -2337,11 +2337,11 @@ export default function ChatPage() {
                           className={`group flex items-start gap-1 ${isOwn ? 'flex-row-reverse' : ''} ${!messagesLoading ? 'animate-fade-in-up' : ''}`}
                         >
                           <div
-                            className={`max-w-[65%] ${isOwn ? 'items-end' : 'items-start'} flex flex-col`}
+                            className={`max-w-[85%] sm:max-w-[65%] min-w-0 ${isOwn ? 'items-end' : 'items-start'} flex flex-col`}
                           >
                             {/* Message Content */}
                             <div
-                              className={`px-2.5 py-1 relative transition-all ${
+                              className={`w-full min-w-0 px-2.5 py-1 relative transition-all ${
                                 isNeoBrutalism
                                   ? `border border-[#1F1F1F]/30 text-[#1F1F1F] ${isOwn ? 'bg-[#B0BEC520] shadow-[2px_2px_0_#1F1F1F]/20' : 'bg-white shadow-[2px_2px_0_#1F1F1F]/20'}`
                                   : isHandDrawn
