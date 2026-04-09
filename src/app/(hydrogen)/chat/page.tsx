@@ -22,6 +22,7 @@ import {
   PiPaperclipHorizontal,
   PiMicrophone,
   PiVideoCamera,
+  PiPlay,
   PiCopy,
   PiArchive,
   PiArrowCounterClockwise,
@@ -2394,11 +2395,36 @@ export default function ChatPage() {
                                               }}
                                             />
                                           ) : headerMediaType === 'video' ? (
-                                            <video
-                                              src={headerMediaUrl}
-                                              controls
-                                              className="max-h-[200px] max-w-[220px] rounded"
-                                            />
+                                            <div
+                                              className="relative cursor-pointer overflow-hidden rounded"
+                                              style={{ width: 260, maxWidth: '100%' }}
+                                              onClick={() => {
+                                                setLightboxSlides([
+                                                  {
+                                                    type: 'video',
+                                                    sources: [
+                                                      {
+                                                        src: headerMediaUrl,
+                                                        type: 'video/mp4',
+                                                      },
+                                                    ],
+                                                  },
+                                                ]);
+                                                setLightboxOpen(true);
+                                              }}
+                                            >
+                                              <video
+                                                src={`${headerMediaUrl}#t=0.001`}
+                                                preload="metadata"
+                                                className="w-full rounded"
+                                                style={{ maxHeight: 200, display: 'block' }}
+                                              />
+                                              <div className="absolute inset-0 flex items-center justify-center bg-black/25 transition-colors hover:bg-black/35">
+                                                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/90 shadow-md">
+                                                  <PiPlay className="ml-1 h-7 w-7 text-gray-800" />
+                                                </div>
+                                              </div>
+                                            </div>
                                           ) : (
                                             <a
                                               href={headerMediaUrl}
@@ -2636,28 +2662,36 @@ export default function ChatPage() {
                                     />
                                   )}
                                   {msg.messageType === 'video' && (
-                                    <video
-                                      src={msg.mediaUrl}
-                                      controls
-                                      className="mb-2 max-h-[200px] max-w-[220px] cursor-pointer rounded"
-                                      onClick={(e) => {
-                                        // If clicking on video (not controls), open in lightbox
-                                        if (e.target === e.currentTarget) {
-                                          setLightboxSlides([
-                                            {
-                                              type: 'video',
-                                              sources: [
-                                                {
-                                                  src: msg.mediaUrl,
-                                                  type: 'video/mp4',
-                                                },
-                                              ],
-                                            },
-                                          ]);
-                                          setLightboxOpen(true);
-                                        }
+                                    <div
+                                      className="relative mb-2 cursor-pointer overflow-hidden rounded"
+                                      style={{ width: 260, maxWidth: '100%' }}
+                                      onClick={() => {
+                                        setLightboxSlides([
+                                          {
+                                            type: 'video',
+                                            sources: [
+                                              {
+                                                src: msg.mediaUrl,
+                                                type: 'video/mp4',
+                                              },
+                                            ],
+                                          },
+                                        ]);
+                                        setLightboxOpen(true);
                                       }}
-                                    />
+                                    >
+                                      <video
+                                        src={`${msg.mediaUrl}#t=0.001`}
+                                        preload="metadata"
+                                        className="w-full rounded"
+                                        style={{ maxHeight: 200, display: 'block' }}
+                                      />
+                                      <div className="absolute inset-0 flex items-center justify-center bg-black/25 transition-colors hover:bg-black/35">
+                                        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/90 shadow-md">
+                                          <PiPlay className="ml-1 h-7 w-7 text-gray-800" />
+                                        </div>
+                                      </div>
+                                    </div>
                                   )}
                                   {msg.messageType === 'audio' && (
                                     <audio
