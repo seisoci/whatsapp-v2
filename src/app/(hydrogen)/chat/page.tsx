@@ -1805,7 +1805,7 @@ export default function ChatPage() {
                     placeholder="Search Contact"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="nb-sidebar-search flex-1"
+                    className="nb-sidebar-search flex-1 [&_input]:text-base"
                   />
                   <Button
                     onClick={() => {
@@ -2788,14 +2788,14 @@ export default function ChatPage() {
                                       href={msg.mediaUrl}
                                       target="_blank"
                                       rel="noopener noreferrer"
-                                      className={`mb-2 flex items-center gap-3 rounded-lg p-3 transition-colors ${
+                                      className={`mb-2 flex w-full items-start gap-3 rounded-lg p-3 transition-colors ${
                                         isOwn
                                           ? 'bg-blue-400/30 hover:bg-blue-400/40'
                                           : 'bg-gray-200/80 hover:bg-gray-300/80'
                                       }`}
                                     >
                                       <div
-                                        className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg ${
+                                        className={`mt-0.5 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg ${
                                           isOwn
                                             ? 'bg-blue-300/50'
                                             : 'bg-gray-300'
@@ -2805,7 +2805,7 @@ export default function ChatPage() {
                                       </div>
                                       <div className="min-w-0 flex-1">
                                         <p
-                                          className={`truncate text-sm font-medium ${
+                                          className={`break-words text-sm font-medium ${
                                             isOwn
                                               ? 'text-gray-800 dark:text-gray-100'
                                               : 'text-gray-800'
@@ -3123,7 +3123,7 @@ export default function ChatPage() {
                           }
                           disabled={sending || !selectedContact.isSessionActive}
                           maxLength={4096}
-                          className={`w-full resize-none [&_textarea]:!bg-white [&_textarea]:!placeholder-gray-900 dark:[&_textarea]:!bg-gray-800 ${
+                          className={`w-full resize-none [&_textarea]:text-base [&_textarea]:!bg-white [&_textarea]:!placeholder-gray-900 dark:[&_textarea]:!bg-gray-800 ${
                             isPlayfulGeometric
                               ? '[&_textarea]:!rounded-[24px] [&_textarea]:!border-2 [&_textarea]:!border-[#1E293B] [&_textarea]:!bg-white [&_textarea]:!text-[#1E293B] disabled:[&_textarea]:!border-[#CBD5E1] disabled:[&_textarea]:!bg-[#F8FAFC] disabled:[&_textarea]:!text-[#64748B]'
                               : ''
