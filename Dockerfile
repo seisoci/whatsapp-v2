@@ -1,5 +1,5 @@
 # Next.js Frontend Dockerfile - Multi-stage build
-FROM node:20-alpine AS base
+FROM node:24-alpine AS base
 
 # Install dependencies only when needed
 FROM base AS deps
@@ -10,7 +10,7 @@ WORKDIR /app
 COPY package.json pnpm-lock.yaml* ./
 
 # Enable corepack and install pnpm version from package.json
-RUN corepack enable && corepack prepare pnpm@9.1.4 --activate
+RUN corepack enable && corepack prepare pnpm@10.33.0 --activate
 
 # Install dependencies
 # Use --frozen-lockfile in CI/production for reproducibility
@@ -38,7 +38,7 @@ ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_TURNSTILE_SITE_KEY=$NEXT_PUBLIC_TURNSTILE_SITE_KEY
 ENV NEXT_TELEMETRY_DISABLED=1
 
-RUN corepack enable && corepack prepare pnpm@9.1.4 --activate && pnpm build
+RUN corepack enable && corepack prepare pnpm@10.33.0 --activate && pnpm build
 
 # Production image, copy all the files and run next
 FROM base AS runner

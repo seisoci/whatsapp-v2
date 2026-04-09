@@ -72,10 +72,17 @@ export default function RootLayout({
                 <GlobalModal />
                 <Toaster
                   position="top-center"
+                  containerStyle={{
+                    top: 16,
+                    left: 16,
+                    right: 16,
+                    bottom: 'auto',
+                  }}
                   toastOptions={{
                     duration: 3500,
                     style: {
                       zIndex: 10001,
+                      pointerEvents: 'auto',
                     },
                   }}
                 />
