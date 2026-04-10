@@ -245,12 +245,31 @@ export default function ChatPage() {
   const cancelSendRefs = useRef<Map<string, { timeout: NodeJS.Timeout; cancel: () => void }>>(new Map());
   const cancelSendSilentIds = useRef<Set<string>>(new Set()); // IDs to cancel without restoring input
 
-  // Notification sound for incoming messages
-  const notificationAudioRef = useRef<HTMLAudioElement | null>(null);
+  // Notification sound for incoming messages (Web Audio API — zero latency)
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const audioBufferRef = useRef<AudioBuffer | null>(null);
   useEffect(() => {
-    notificationAudioRef.current = new Audio('/whatsapp.mp3');
-    notificationAudioRef.current.volume = 1.0;
+    const ctx = new AudioContext();
+    audioCtxRef.current = ctx;
+    fetch('/whatsapp.mp3')
+      .then((res) => res.arrayBuffer())
+      .then((buf) => ctx.decodeAudioData(buf))
+      .then((decoded) => { audioBufferRef.current = decoded; })
+      .catch(() => {});
+    return () => { ctx.close(); };
   }, []);
+
+  const playNotificationSound = () => {
+    const ctx = audioCtxRef.current;
+    const buffer = audioBufferRef.current;
+    if (!ctx || !buffer) return;
+    // Resume context jika browser suspend (autoplay policy)
+    if (ctx.state === 'suspended') ctx.resume();
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    source.connect(ctx.destination);
+    source.start(0);
+  };
 
   // Load pinned contacts from localStorage on mount
   useEffect(() => {
@@ -486,13 +505,7 @@ export default function ChatPage() {
 
       // Play notification sound for every incoming message
       if (event.data?.message?.direction === 'incoming') {
-        const audio = notificationAudioRef.current;
-        if (audio) {
-          audio.currentTime = 0;
-          audio.play().catch(() => {
-            // Browser may block autoplay before user interaction — silently ignore
-          });
-        }
+        playNotificationSound();
       }
 
       if (event.phoneNumberId === selectedPhoneNumberId) {
