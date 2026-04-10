@@ -38,8 +38,8 @@ export class PermissionController {
       const queryBuilder = menuRepo
         .createQueryBuilder('menu')
         .leftJoinAndSelect('menu.permissions', 'permissions')
-        .orderBy('menu.sort', 'ASC')
-        .addOrderBy('menu.createdAt', 'DESC');
+        .orderBy('menu.parentId', 'ASC')
+        .addOrderBy('menu.sort', 'ASC');
 
       // Search by menu title or permissions
       if (validated.search) {
@@ -59,19 +59,38 @@ export class PermissionController {
         queryBuilder.andWhere('permissions.slug LIKE :action', { action: `%-${validated.action}` });
       }
 
-      // Count total menus
-      const total = await queryBuilder.getCount();
+      // Fetch all menus first to build hierarchical order
+      const allMenus = await queryBuilder.getMany();
 
-      // Check if pagination=all to skip pagination
+      // Build hierarchical order: root menus ordered by sort, children follow their parent
+      const rootMenus = allMenus
+        .filter((m) => !m.parentId || m.parentId === 0)
+        .sort((a, b) => a.sort - b.sort);
+
+      const childrenByParent = new Map<string, typeof allMenus>();
+      for (const menu of allMenus) {
+        if (menu.parentId && Number(menu.parentId) !== 0) {
+          const key = String(menu.parentId);
+          if (!childrenByParent.has(key)) childrenByParent.set(key, []);
+          childrenByParent.get(key)!.push(menu);
+        }
+      }
+
+      const orderedMenus: typeof allMenus = [];
+      for (const root of rootMenus) {
+        orderedMenus.push(root);
+        const children = (childrenByParent.get(String(root.id)) || []).sort((a, b) => a.sort - b.sort);
+        orderedMenus.push(...children);
+      }
+
+      // Count total and apply pagination on ordered list
+      const total = orderedMenus.length;
       let menus;
       if (validated.pagination === 'all') {
-        menus = await queryBuilder.getMany();
+        menus = orderedMenus;
       } else {
-        // Apply pagination
-        menus = await queryBuilder
-          .skip((validated.page - 1) * validated.limit)
-          .take(validated.limit)
-          .getMany();
+        const start = (validated.page - 1) * validated.limit;
+        menus = orderedMenus.slice(start, start + validated.limit);
       }
 
       // Define CRUD action order
@@ -436,12 +455,33 @@ export class PermissionController {
     try {
       const menuRepo = AppDataSource.getRepository(MenuManager);
 
-      const menus = await menuRepo.find({
+      const allMenus = await menuRepo.find({
         relations: ['permissions'],
-        order: { sort: 'ASC' },
+        order: { parentId: 'ASC', sort: 'ASC' },
       });
 
-      const grouped = menus.map((menu) => ({
+      // Build hierarchical order
+      const rootMenus = allMenus
+        .filter((m) => !m.parentId || m.parentId === 0)
+        .sort((a, b) => a.sort - b.sort);
+
+      const childrenByParent = new Map<string, typeof allMenus>();
+      for (const menu of allMenus) {
+        if (menu.parentId && Number(menu.parentId) !== 0) {
+          const key = String(menu.parentId);
+          if (!childrenByParent.has(key)) childrenByParent.set(key, []);
+          childrenByParent.get(key)!.push(menu);
+        }
+      }
+
+      const orderedMenus: typeof allMenus = [];
+      for (const root of rootMenus) {
+        orderedMenus.push(root);
+        const children = (childrenByParent.get(String(root.id)) || []).sort((a, b) => a.sort - b.sort);
+        orderedMenus.push(...children);
+      }
+
+      const grouped = orderedMenus.map((menu) => ({
         id: menu.id,
         title: menu.title,
         slug: menu.slug,
