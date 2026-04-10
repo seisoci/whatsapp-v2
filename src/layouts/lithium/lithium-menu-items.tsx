@@ -168,6 +168,11 @@ export const lithiumMenuItems: LithiumMenuItem = {
         icon: PiLockKeyDuotone,
       },
       {
+        name: 'Template Role Management',
+        href: routes.templateRoles,
+        icon: PiFileTextDuotone,
+      },
+      {
         name: 'Webhook',
         href: routes.apiManagement,
         icon: PiWebhooksLogoDuotone,
@@ -197,6 +202,11 @@ export const lithiumMenuItems: LithiumMenuItem = {
         name: 'Permissions',
         href: routes.permissions,
         icon: PiLockKeyDuotone,
+      },
+      {
+        name: 'Template Role Management',
+        href: routes.templateRoles,
+        icon: PiFileTextDuotone,
       },
       {
         name: 'Webhook',

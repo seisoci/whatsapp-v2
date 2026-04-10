@@ -13,6 +13,7 @@ import { QuickReply } from '../models/QuickReply';
 import { Tag } from '../models/Tag';
 import { ApiEndpoint } from '../models/ApiEndpoint';
 import { MessageQueue } from '../models/MessageQueue';
+import { TemplateRoleAccess } from '../models/TemplateRoleAccess';
 
 export const AppDataSource = new DataSource({
   type: 'postgres',
@@ -39,6 +40,7 @@ export const AppDataSource = new DataSource({
     Tag,
     ApiEndpoint,
     MessageQueue,
+    TemplateRoleAccess,
   ],
   migrations: [__dirname + '/../migrations/**/*.ts'],
   migrationsRun: false, // Run migrations manually in index.ts

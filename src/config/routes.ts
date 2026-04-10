@@ -108,4 +108,6 @@ export const routes = {
     create: "/templates/create",
     edit: (id: string) => `/templates/${id}/edit`,
   },
+
+  templateRoles: "/template-roles",
 };

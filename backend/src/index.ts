@@ -24,6 +24,7 @@ import mediaRouter from './routes/media.routes';
 import apiEndpointRouter from './routes/api-endpoint.routes';
 import publicApiRouter from './routes/public-api.routes';
 import messageQueueRouter from './routes/message-queue.routes';
+import templateRoleRouter from './routes/template-role.routes';
 import { handleWebSocketUpgrade } from './routes/websocket.routes';
 import { chatWebSocketManager } from './services/chat-websocket.service';
 import { QueueDispatcherService } from './services/queue-dispatcher.service';
@@ -77,6 +78,7 @@ app.route(`${env.API_PREFIX}/tags`, tagRouter);
 app.route(`${env.API_PREFIX}/media`, mediaRouter);
 app.route(`${env.API_PREFIX}/api-endpoints`, apiEndpointRouter);
 app.route(`${env.API_PREFIX}/message-queues`, messageQueueRouter);
+app.route(`${env.API_PREFIX}/template-roles`, templateRoleRouter);
 app.route(`${env.API_PREFIX}`, publicApiRouter);
 
 // 404 handler

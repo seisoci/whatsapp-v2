@@ -1,6 +1,7 @@
 import { Context } from 'hono';
 import { AppDataSource } from '../config/database';
 import { PhoneNumber } from '../models/PhoneNumber';
+import { TemplateRoleAccess } from '../models/TemplateRoleAccess';
 import { WhatsAppService } from '../services/whatsapp.service';
 import { withPermissions } from '../utils/controller.decorator';
 
@@ -9,8 +10,8 @@ export class TemplateController {
    * Permission definitions
    */
   static permissions = {
-    index: 'template-index',
-    show: 'template-index',
+    index: ['template-index', 'chat-index'],
+    show: ['template-index', 'chat-index'],
     store: 'template-store',
     update: 'template-update',
     destroy: 'template-destroy',
@@ -96,6 +97,34 @@ export class TemplateController {
           }
         })
       );
+
+      // Filter templates berdasarkan role user (whitelist)
+      // Logic:
+      //   - Super admin → lihat semua template
+      //   - User lain → HANYA lihat template yang di-assign ke role-nya di template_role_access
+      //   - Template yang tidak ada di template_role_access → tidak terlihat oleh non-super-admin
+      const currentUser = c.get('user');
+      const userRoleId = currentUser?.role?.id;
+      const isSuperAdmin = currentUser?.isSuperAdmin?.();
+
+      if (!isSuperAdmin && userRoleId) {
+        const accessRepo = AppDataSource.getRepository(TemplateRoleAccess);
+
+        // Ambil template ID yang di-assign ke role user ini
+        const allowedAccess = await accessRepo.find({
+          where: { roleId: userRoleId },
+          select: { templateId: true },
+        });
+
+        const allowedTemplateIds = new Set(allowedAccess.map((a) => a.templateId));
+
+        // Hanya tampilkan template yang ada di whitelist role user
+        const filtered = allTemplates.filter((template: any) =>
+          allowedTemplateIds.has(template.id)
+        );
+
+        return c.json({ success: true, data: filtered }, 200);
+      }
 
       return c.json(
         {

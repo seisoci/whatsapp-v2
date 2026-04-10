@@ -2422,13 +2422,6 @@ export default function ChatPage() {
                       : { scrollBehavior: 'auto', backgroundImage: 'url(/background.png)', backgroundRepeat: 'repeat', backgroundSize: 'auto' }
                   }
                 >
-                  {/* Loading overlay - show while messages load */}
-                  {messagesLoading && (
-                    <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center bg-white/50 backdrop-blur-sm">
-                      {/* This is a global overlay just in case, but rely on invisible class for container */}
-                    </div>
-                  )}
-
                   <div className="space-y-3">
                     {messages.map((msg) => {
                       const isOwn = msg.direction === 'outgoing';

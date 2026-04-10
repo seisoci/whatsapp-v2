@@ -26,7 +26,7 @@ body.neo-brutalism,
 }
 
 /* ── Main grid container ── */
-.neo-brutalism > div {
+.neo-brutalism > div:not([data-rht-toaster]) {
   background: #FFFFFF !important;
 }
 

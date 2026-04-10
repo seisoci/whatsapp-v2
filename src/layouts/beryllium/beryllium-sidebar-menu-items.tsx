@@ -57,6 +57,11 @@ export const berylliumSidebarMenuItems = [
         href: routes.templates.dashboard,
         icon: <PiFileTextDuotone />,
       },
+      {
+        name: 'Template Roles',
+        href: routes.templateRoles,
+        icon: <PiUserGearDuotone />,
+      },
     ],
   },
   {

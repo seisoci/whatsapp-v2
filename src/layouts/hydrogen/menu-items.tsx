@@ -73,6 +73,10 @@ export const menuItems = [
         href: routes.permissions,
       },
       {
+        name: 'Template Role Management',
+        href: routes.templateRoles,
+      },
+      {
         name: 'Webhook',
         href: routes.apiManagement,
       },

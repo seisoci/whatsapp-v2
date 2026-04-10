@@ -92,6 +92,11 @@ export const menuItems = [
         icon: PiLockKeyDuotone,
       },
       {
+        name: 'Template Role Management',
+        href: routes.templateRoles,
+        icon: PiFileTextDuotone,
+      },
+      {
         name: 'Webhook',
         href: routes.apiManagement,
         icon: PiCodeDuotone,

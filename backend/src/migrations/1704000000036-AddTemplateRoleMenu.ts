@@ -1,0 +1,88 @@
+import { MigrationInterface, QueryRunner } from 'typeorm';
+
+/**
+ * Add Template Role Management menu and permissions
+ * Page: /template-roles
+ */
+export class AddTemplateRoleMenu1704000000036 implements MigrationInterface {
+  name = 'AddTemplateRoleMenu1704000000036';
+
+  public async up(queryRunner: QueryRunner): Promise<void> {
+    // Insert menu for template-roles under WhatsApp section
+    await queryRunner.query(`
+      INSERT INTO menu_managers ("parentId", title, slug, "pathUrl", icon, type, position, sort)
+      VALUES (0, 'Template Roles', 'template-role', '/template-roles', 'PiUserGearDuotone', 'module', 'sidebar', 8)
+      ON CONFLICT (slug) DO UPDATE SET
+        title = EXCLUDED.title,
+        "pathUrl" = EXCLUDED."pathUrl",
+        icon = EXCLUDED.icon,
+        type = EXCLUDED.type,
+        position = EXCLUDED.position,
+        sort = EXCLUDED.sort
+    `);
+
+    // Get the menu id
+    const [menu] = await queryRunner.query(
+      `SELECT id FROM menu_managers WHERE slug = 'template-role'`
+    );
+    const menuId = menu?.id;
+    if (!menuId) return;
+
+    // Insert permissions: template-role-index and template-role-update
+    // (using existing template-index/update since template-role controller uses those)
+    // But we add dedicated ones for granular control
+    const permissions = [
+      { slug: 'template-role-index', name: 'Template Role List', description: 'List template role access' },
+      { slug: 'template-role-update', name: 'Template Role Update', description: 'Manage template role access' },
+    ];
+
+    for (const perm of permissions) {
+      await queryRunner.query(
+        `INSERT INTO permissions ("menuManagerId", name, slug, description)
+         VALUES ($1, $2, $3, $4)
+         ON CONFLICT (slug) DO UPDATE SET
+           "menuManagerId" = EXCLUDED."menuManagerId",
+           name = EXCLUDED.name,
+           description = EXCLUDED.description`,
+        [menuId, perm.name, perm.slug, perm.description]
+      );
+    }
+
+    // Assign all new permissions to Super Admin (role_id = 1)
+    const newPermissions = await queryRunner.query(
+      `SELECT id FROM permissions WHERE slug IN ('template-role-index', 'template-role-update')`
+    );
+
+    for (const perm of newPermissions) {
+      const exists = await queryRunner.query(
+        `SELECT 1 FROM permission_role WHERE permission_id = $1 AND role_id = $2`,
+        [perm.id, '1']
+      );
+      if (exists.length === 0) {
+        await queryRunner.query(
+          `INSERT INTO permission_role (permission_id, role_id) VALUES ($1, $2)`,
+          [perm.id, '1']
+        );
+      }
+    }
+
+    // Assign menu to Super Admin
+    const menuExists = await queryRunner.query(
+      `SELECT 1 FROM menu_manager_role WHERE menu_manager_id = $1 AND role_id = $2`,
+      [menuId, '1']
+    );
+    if (menuExists.length === 0) {
+      await queryRunner.query(
+        `INSERT INTO menu_manager_role (menu_manager_id, role_id) VALUES ($1, $2)`,
+        [menuId, '1']
+      );
+    }
+
+    console.log('✅ Template Role menu and permissions seeded successfully');
+  }
+
+  public async down(queryRunner: QueryRunner): Promise<void> {
+    await queryRunner.query(`DELETE FROM permissions WHERE slug IN ('template-role-index', 'template-role-update')`);
+    await queryRunner.query(`DELETE FROM menu_managers WHERE slug = 'template-role'`);
+  }
+}

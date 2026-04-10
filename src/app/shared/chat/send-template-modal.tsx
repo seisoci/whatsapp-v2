@@ -42,16 +42,19 @@ export default function SendTemplateModal({
   const [headerMediaFile, setHeaderMediaFile] = useState<File | null>(null);
 
   useEffect(() => {
+    if (!phoneNumberId) return;
+
     const fetchTemplates = async () => {
       try {
         const response = await templatesApi.getAll({ phoneNumberDbId: phoneNumberId });
-        const data = Array.isArray(response)
-          ? response
-          : (response as any).data || [];
+        const data = Array.isArray(response.data)
+          ? response.data
+          : [];
         setTemplates(data.filter((t: any) => t.status === 'APPROVED'));
-      } catch (error) {
-        console.error('Failed to fetch templates:', error);
-        toast.error('Failed to load templates');
+      } catch (error: any) {
+        const msg = error?.message || error?.response?.data?.message || 'Failed to load templates';
+        console.error('Failed to fetch templates:', msg, error);
+        toast.error(msg);
       }
     };
     fetchTemplates();

@@ -83,6 +83,10 @@ export const berylliumMenuItems: MenuItemsType[] = [
             name: 'Templates',
             href: routes.templates.dashboard,
           },
+          {
+            name: 'Template Roles',
+            href: routes.templateRoles,
+          },
         ],
       },
       {
