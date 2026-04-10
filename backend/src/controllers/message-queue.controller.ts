@@ -2,12 +2,14 @@ import { Context } from 'hono';
 import { AppDataSource } from '../config/database';
 import { MessageQueue } from '../models/MessageQueue';
 import { z } from 'zod';
+import { Brackets } from 'typeorm';
 
 const listQuerySchema = z.object({
   page: z.coerce.number().min(1).default(1),
   limit: z.coerce.number().min(1).max(10000).default(25),
   queue_status: z.enum(['pending', 'processing', 'completed', 'failed', 'cancelled']).optional(),
   template_name: z.string().optional(),
+  search: z.string().optional(),
   is_billable: z.enum(['true', 'false']).optional(),
   date_from: z.string().optional(),
   date_to: z.string().optional(),
@@ -28,7 +30,7 @@ export class MessageQueueController {
         }, 400);
       }
 
-      const { page, limit, queue_status, template_name, is_billable, date_from, date_to } = validation.data;
+      const { page, limit, queue_status, template_name, search, is_billable, date_from, date_to } = validation.data;
       const offset = (page - 1) * limit;
 
       const repo = AppDataSource.getRepository(MessageQueue);
@@ -44,6 +46,12 @@ export class MessageQueueController {
       }
       if (template_name) {
         qb.andWhere('mq.templateName ILIKE :template_name', { template_name: `%${template_name}%` });
+      }
+      if (search) {
+        qb.andWhere(new Brackets(sqb => {
+          sqb.where('mq.templateName ILIKE :search', { search: `%${search}%` })
+            .orWhere('mq.recipientPhone ILIKE :search', { search: `%${search}%` });
+        }));
       }
       if (is_billable !== undefined) {
         qb.andWhere('mq.isBillable = :is_billable', { is_billable: is_billable === 'true' });

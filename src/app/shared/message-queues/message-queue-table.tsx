@@ -119,7 +119,7 @@ export default function MessageQueueTable() {
     null,
   ]);
   const [queueStatus, setQueueStatus] = useState('');
-  const [templateName, setTemplateName] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
   const [billable, setBillable] = useState('');
 
   const tableContainerRef = useRef<HTMLDivElement>(null);
@@ -138,7 +138,7 @@ export default function MessageQueueTable() {
         limit: pagination.pageSize,
       };
       if (queueStatus) filters.queue_status = queueStatus;
-      if (templateName) filters.template_name = templateName;
+      if (searchTerm) filters.search = searchTerm;
       if (billable) filters.is_billable = billable;
       if (dateRange[0]) filters.date_from = format(dateRange[0], 'yyyy-MM-dd');
       if (dateRange[1]) filters.date_to = format(dateRange[1], 'yyyy-MM-dd');
@@ -189,7 +189,7 @@ export default function MessageQueueTable() {
       fetchData(false);
     }, 400);
     return () => clearTimeout(timer);
-  }, [templateName]);
+  }, [searchTerm]);
 
   // Other filter changes (immediate)
   useEffect(() => {
@@ -224,11 +224,11 @@ export default function MessageQueueTable() {
       <Flex className="mb-3 flex-wrap gap-3" align="end">
         <div className="w-52">
           <Input
-            placeholder="Search template..."
+            placeholder="Search template or phone..."
             prefix={<PiMagnifyingGlass className="h-4 w-4" />}
             size="sm"
-            value={templateName}
-            onChange={(e) => setTemplateName(e.target.value)}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
         <div className="w-40">

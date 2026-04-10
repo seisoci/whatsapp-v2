@@ -61,6 +61,7 @@ export interface MessageQueueFilters {
   limit?: number;
   queue_status?: string;
   template_name?: string;
+  search?: string;
   is_billable?: string;
   date_from?: string;
   date_to?: string;
@@ -73,6 +74,7 @@ export const messageQueuesApi = {
     if (filters?.limit) params.set('limit', String(filters.limit));
     if (filters?.queue_status) params.set('queue_status', filters.queue_status);
     if (filters?.template_name) params.set('template_name', filters.template_name);
+    if (filters?.search) params.set('search', filters.search);
     if (filters?.is_billable) params.set('is_billable', filters.is_billable);
     if (filters?.date_from) params.set('date_from', filters.date_from);
     if (filters?.date_to) params.set('date_to', filters.date_to);
