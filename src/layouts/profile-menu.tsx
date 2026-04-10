@@ -2,7 +2,6 @@
 
 import { Title, Text, Avatar, Button, Popover } from 'rizzui';
 import cn from '@core/utils/class-names';
-import { routes } from '@/config/routes';
 import { useAuth } from '@/lib/auth-context';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -65,18 +64,6 @@ function ProfileMenuPopover({ children }: React.PropsWithChildren<{}>) {
 }
 
 const menuItems = [
-  // {
-  //   name: 'My Profile',
-  //   href: routes.profile,
-  // },
-  // {
-  //   name: 'Account Settings',
-  //   href: routes.forms.profileSettings,
-  // },
-  // {
-  //   name: 'Activity Log',
-  //   href: '#',
-  // },
   {
     name: 'Change Password',
     href: '#',
