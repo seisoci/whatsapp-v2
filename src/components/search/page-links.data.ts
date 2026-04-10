@@ -1,5 +1,4 @@
 import { routes } from "@core/config/routes";
-import { DUMMY_ID } from "@core/config/constants";
 
 export const pageLinks = [
   {
@@ -14,10 +13,6 @@ export const pageLinks = [
 
   {
     name: "Pages",
-  },
-  {
-    name: "Profile",
-    href: routes.profile,
   },
   {
     name: "Welcome",

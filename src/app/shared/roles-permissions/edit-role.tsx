@@ -12,13 +12,13 @@ import {
   Button,
   CheckboxGroup,
 } from 'rizzui';
-import { PERMISSIONS } from '@/data/users-data';
 import { Form } from '@core/ui/form';
 import toast from 'react-hot-toast';
 import {
   RolePermissionInput,
   rolePermissionSchema,
 } from '@/validators/edit-role.schema';
+import { PERMISSIONS } from '@/app/shared/roles-permissions/constants';
 
 export default function EditRole() {
   const { closeModal } = useModal();

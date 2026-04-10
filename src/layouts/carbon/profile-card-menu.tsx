@@ -3,7 +3,6 @@ import { Avatar, Button, Popover, Title, Text } from 'rizzui';
 import cn from '@core/utils/class-names';
 import { ReactNode, useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
-import { routes } from '@/config/routes';
 import Link from 'next/link';
 import { Placement } from '@floating-ui/react';
 
@@ -20,11 +19,6 @@ type ProfileCardMenuProps = {
 };
 
 const menuItems = [
-  {
-    name: 'My Profile',
-    href: routes.profile,
-  },
-
   {
     name: 'Activity Log',
     href: '#',

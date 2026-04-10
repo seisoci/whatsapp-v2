@@ -1,6 +1,6 @@
 import React from 'react';
-import { OptionalPortal } from '../../../components/Portal';
 import cn from '../../../utils/class-names';
+import { OptionalPortal } from './portal';
 import { useFocusReturn } from './use-focus-return';
 import { usePopoverContext } from './popover-context';
 import { useMergedRef } from './use-merged-ref';

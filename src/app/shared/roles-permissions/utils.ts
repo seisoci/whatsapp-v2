@@ -1,5 +1,5 @@
 import { ROLES } from '@/config/constants';
-import { PERMISSIONS, STATUSES } from '@/data/users-data';
+import { PERMISSIONS, STATUSES } from '@/app/shared/roles-permissions/constants';
 
 export const statuses = Object.values(STATUSES).map((status) => ({
   label: status,

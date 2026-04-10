@@ -1,7 +1,6 @@
 'use client';
 
 import { routes } from '@/config/routes';
-import { messagesData } from '@/data/messages';
 import { useMedia } from '@core/hooks/use-media';
 import cn from '@core/utils/class-names';
 import dayjs from 'dayjs';
@@ -12,6 +11,17 @@ import { PiCheck } from 'react-icons/pi';
 import { Avatar, Badge, Popover, Text, Title } from 'rizzui';
 
 dayjs.extend(relativeTime);
+
+const messagesData = [
+  {
+    id: 1,
+    message: 'No recent messages',
+    avatar: ['/avatar.webp'],
+    name: 'System',
+    unRead: false,
+    sendTime: new Date().toISOString(),
+  },
+];
 
 function MessagesList({
   setIsOpen,

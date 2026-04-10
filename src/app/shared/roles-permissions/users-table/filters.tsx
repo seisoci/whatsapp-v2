@@ -1,11 +1,13 @@
 'use client';
 
-import { STATUSES } from '@/data/users-data';
+import {
+  STATUSES,
+  rolesList,
+} from '@/app/shared/roles-permissions/constants';
 import { Badge, Box, Button, Flex, Input, Text, Title } from 'rizzui';
 import StatusField from '@core/components/controlled-table/status-field';
 import { type Table as ReactTableType } from '@tanstack/react-table';
 import { PiMagnifyingGlassBold, PiTrashDuotone } from 'react-icons/pi';
-import { rolesList } from '@/data/roles-permissions';
 import ModalButton from '@/app/shared/modal-button';
 import CreateUser from '../create-user';
 

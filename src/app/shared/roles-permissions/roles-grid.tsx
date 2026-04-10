@@ -1,5 +1,5 @@
 import RoleCard from '@/app/shared/roles-permissions/role-card';
-import { rolesList } from '@/data/roles-permissions';
+import { rolesList } from '@/app/shared/roles-permissions/constants';
 import cn from '@core/utils/class-names';
 
 interface RolesGridProps {

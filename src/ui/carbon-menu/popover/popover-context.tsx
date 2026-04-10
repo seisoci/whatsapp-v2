@@ -1,4 +1,4 @@
-import { PortalProps } from '../../../components/Portal';
+import { PortalProps } from './portal';
 import { FloatingPosition } from './types';
 import { PopoverWidth } from './use-popover';
 import { createContextHook } from './create-custom-context';

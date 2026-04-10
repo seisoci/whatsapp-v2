@@ -1,7 +1,7 @@
-import { useIsomorphicEffect } from '../../hooks/use-event-listener';
+import { useIsomorphicEffect } from '../../../hooks/use-event-listener';
 import React, { forwardRef, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { assignRef } from '../../ui/carbon-menu/popover/use-merged-ref';
+import { assignRef } from './use-merged-ref';
 
 function createPortalNode(props: React.ComponentPropsWithoutRef<'div'>) {
   const node = document.createElement('div');
@@ -14,10 +14,7 @@ function createPortalNode(props: React.ComponentPropsWithoutRef<'div'>) {
 }
 
 export interface PortalProps extends React.ComponentPropsWithoutRef<'div'> {
-  /** Portal children, for example, custom modal or popover */
   children: React.ReactNode;
-
-  /** Element inside which portal should be created, by default a new div element is created and appended to the `document.body` */
   target?: HTMLElement | string;
 }
 
@@ -56,3 +53,21 @@ export const Portal = forwardRef<HTMLDivElement, PortalProps>(
 );
 
 Portal.displayName = 'Portal';
+
+export interface OptionalPortalProps extends PortalProps {
+  withinPortal?: boolean;
+}
+
+export function OptionalPortal({
+  withinPortal = true,
+  children,
+  ...others
+}: OptionalPortalProps) {
+  if (withinPortal) {
+    return <Portal {...others}>{children}</Portal>;
+  }
+
+  return <>{children}</>;
+}
+
+OptionalPortal.displayName = 'OptionalPortal';

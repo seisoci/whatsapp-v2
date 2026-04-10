@@ -5,8 +5,6 @@ import { PiPlusBold } from 'react-icons/pi';
 import { Button } from 'rizzui/button';
 import PageHeader from '@/app/shared/page-header';
 import UsersTable from '@/app/shared/users/users-table';
-import { usersData } from '@/data/users-data';
-import ExportButton from '@/app/shared/export-button';
 import { useModal } from '@/app/shared/modal-views/use-modal';
 import CreateUser from '@/app/shared/roles-permissions/create-user';
 
@@ -38,11 +36,6 @@ export default function UsersPage() {
     <>
       <PageHeader title={pageHeader.title} breadcrumb={pageHeader.breadcrumb}>
         <div className="mt-4 flex items-center gap-3 @lg:mt-0">
-          <ExportButton
-            data={usersData}
-            fileName="users_data"
-            header="ID,Full Name,Email,Role,Status,Created Date"
-          />
           <Button
             onClick={handleCreateUser}
             className="w-full @lg:w-auto"

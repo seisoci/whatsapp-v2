@@ -1,6 +1,5 @@
 'use client';
 
-import { notificationsData } from '@/data/notifications';
 import { useMedia } from '@core/hooks/use-media';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -10,6 +9,16 @@ import { PiCheck } from 'react-icons/pi';
 import { Badge, Checkbox, Popover, Text, Title } from 'rizzui';
 
 dayjs.extend(relativeTime);
+
+const notificationsData = [
+  {
+    id: 1,
+    name: 'No recent notifications',
+    icon: PiCheck,
+    unRead: false,
+    sendTime: new Date().toISOString(),
+  },
+];
 
 function NotificationsList({
   setIsOpen,

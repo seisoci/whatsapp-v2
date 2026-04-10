@@ -1,4 +1,3 @@
-import { DUMMY_ID } from '@/config/constants';
 import { routes } from '@/config/routes';
 import { atom } from 'jotai';
 import { IconType } from 'react-icons/lib';
@@ -38,7 +37,6 @@ import {
   PiHouseLine,
   PiListNumbers,
   PiLockKey,
-  PiMagicWand,
   PiMapPinLine,
   PiNewspaperClipping,
   PiNoteBlank,
@@ -137,11 +135,6 @@ export const carbonMenuItems: MenuItemsType[] = [
     title: 'Pages',
     icon: PiCards,
     menuItems: [
-      {
-        name: 'Profile',
-        href: routes.profile,
-        icon: PiMagicWand,
-      },
       {
         name: 'Welcome',
         href: routes.welcome,

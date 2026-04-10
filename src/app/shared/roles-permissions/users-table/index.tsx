@@ -1,6 +1,9 @@
 'use client';
 
-import { usersData } from '@/data/users-data';
+import {
+  usersTableData,
+  type UsersTableDataType,
+} from '@/app/shared/roles-permissions/constants';
 import { useTanStackTable } from '@core/components/table/custom/use-TanStack-Table';
 import { usersColumns } from './columns';
 import Table from '@core/components/table';
@@ -8,11 +11,9 @@ import TableFooter from '@core/components/table/footer';
 import TablePagination from '@core/components/table/pagination';
 import Filters from './filters';
 
-export type UsersTableDataType = (typeof usersData)[number];
-
 export default function UsersTable() {
   const { table, setData } = useTanStackTable<UsersTableDataType>({
-    tableData: usersData,
+    tableData: usersTableData,
     columnConfig: usersColumns,
     options: {
       initialState: {
