@@ -8,7 +8,6 @@ import { Contact } from '../models/Contact';
 import { Message } from '../models/Message';
 import { MessageStatusUpdate } from '../models/MessageStatusUpdate';
 import { PhoneNumber } from '../models/PhoneNumber';
-import { ApiEndpoint } from '../models/ApiEndpoint';
 import { MessageQueue } from '../models/MessageQueue';
 import { WhatsAppMessagingService } from './whatsapp-messaging.service';
 import { WhatsAppMediaService } from './whatsapp-media.service';
@@ -250,7 +249,10 @@ export class WhatsAppWebhookService {
       // Update profile name and picture if we have new info
       let updated = false;
 
-      if (profileName && contact.profileName !== profileName) {
+      // Only update profileName if current name is missing or is just the phone number.
+      // Once a contact has a real name set, don't overwrite it from WhatsApp profile.
+      const currentNameIsMissing = !contact.profileName || contact.profileName === contact.waId || contact.profileName === contact.phoneNumber;
+      if (profileName && currentNameIsMissing) {
         contact.profileName = profileName;
         updated = true;
       }
