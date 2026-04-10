@@ -83,10 +83,6 @@ export const berylliumMenuItems: MenuItemsType[] = [
             name: 'Templates',
             href: routes.templates.dashboard,
           },
-          {
-            name: 'Template Roles',
-            href: routes.templateRoles,
-          },
         ],
       },
       {
@@ -105,6 +101,10 @@ export const berylliumMenuItems: MenuItemsType[] = [
           {
             name: 'Permissions',
             href: routes.permissions,
+          },
+          {
+            name: 'Template Roles',
+            href: routes.templateRoles,
           },
           {
             name: 'Webhook',

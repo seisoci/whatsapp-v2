@@ -57,11 +57,6 @@ export const berylliumSidebarMenuItems = [
         href: routes.templates.dashboard,
         icon: <PiFileTextDuotone />,
       },
-      {
-        name: 'Template Roles',
-        href: routes.templateRoles,
-        icon: <PiUserGearDuotone />,
-      },
     ],
   },
   {
@@ -83,6 +78,11 @@ export const berylliumSidebarMenuItems = [
         name: 'Permissions',
         href: routes.permissions,
         icon: <PiLockKeyDuotone />,
+      },
+      {
+        name: 'Template Roles',
+        href: routes.templateRoles,
+        icon: <PiUserGearDuotone />,
       },
       {
         name: 'Webhook',
