@@ -245,6 +245,13 @@ export default function ChatPage() {
   const cancelSendRefs = useRef<Map<string, { timeout: NodeJS.Timeout; cancel: () => void }>>(new Map());
   const cancelSendSilentIds = useRef<Set<string>>(new Set()); // IDs to cancel without restoring input
 
+  // Notification sound for incoming messages
+  const notificationAudioRef = useRef<HTMLAudioElement | null>(null);
+  useEffect(() => {
+    notificationAudioRef.current = new Audio('/whatsapp.mp3');
+    notificationAudioRef.current.volume = 1.0;
+  }, []);
+
   // Load pinned contacts from localStorage on mount
   useEffect(() => {
     const saved = localStorage.getItem('pinnedContacts');
@@ -476,6 +483,17 @@ export default function ChatPage() {
 
     const handleNewMessage = async (event: any) => {
       console.log('[WS] New message event:', event);
+
+      // Play notification sound for every incoming message
+      if (event.data?.message?.direction === 'incoming') {
+        const audio = notificationAudioRef.current;
+        if (audio) {
+          audio.currentTime = 0;
+          audio.play().catch(() => {
+            // Browser may block autoplay before user interaction — silently ignore
+          });
+        }
+      }
 
       if (event.phoneNumberId === selectedPhoneNumberId) {
         const rawMessage = event.data.message;
