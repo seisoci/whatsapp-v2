@@ -337,9 +337,20 @@ export default function ChatPage() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const refocusAfterSendRef = useRef(false); // signal to refocus textarea after send completes
   const isMobileRef = useRef(false);
+
+  // Refs that give WebSocket handlers always-fresh values without stale closures.
+  // Updated synchronously via useLayoutEffect so they're current before any render-triggered effects.
+  const selectedContactRef = useRef(selectedContact);
+  const selectedPhoneNumberIdRef = useRef(selectedPhoneNumberId);
+  const chatFilterRef = useRef(chatFilter);
   useEffect(() => {
     isMobileRef.current = /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   }, []);
+
+  // Keep refs in sync so WebSocket handlers always read the latest values
+  useLayoutEffect(() => { selectedContactRef.current = selectedContact; }, [selectedContact]);
+  useLayoutEffect(() => { selectedPhoneNumberIdRef.current = selectedPhoneNumberId; }, [selectedPhoneNumberId]);
+  useLayoutEffect(() => { chatFilterRef.current = chatFilter; }, [chatFilter]);
 
   // Load phone numbers on mount
   useEffect(() => {
@@ -570,12 +581,20 @@ export default function ChatPage() {
     const handleNewMessage = async (event: any) => {
       console.log('[WS] New message event:', event);
 
-      // Play notification sound for every incoming message
+      // Use refs so this handler always reads the latest state values
+      // without needing to re-register on every render.
+      const currentPhoneNumberId = selectedPhoneNumberIdRef.current;
+      const currentContact = selectedContactRef.current;
+      const currentFilter = chatFilterRef.current;
+
+      if (event.phoneNumberId !== currentPhoneNumberId) return;
+
+      // Play notification only for messages belonging to the active phone number
       if (event.data?.message?.direction === 'incoming') {
         playNotificationSound();
       }
 
-      if (event.phoneNumberId === selectedPhoneNumberId) {
+      if (true) { // kept block structure for minimal diff
         const rawMessage = event.data.message;
 
         // Format message to match Message interface from lib/api/chat.ts
@@ -617,7 +636,7 @@ export default function ChatPage() {
             // Calculate unread count first before merging
             const newUnreadCount =
               rawMessage.direction === 'incoming' &&
-              selectedContact?.id !== contactId
+              currentContact?.id !== contactId
                 ? (prevContacts[contactIndex].unreadCount || 0) + 1
                 : prevContacts[contactIndex].unreadCount;
 
@@ -656,7 +675,7 @@ export default function ChatPage() {
             });
 
             // Also update selectedContact if it matches - use updatedContact for consistency
-            if (selectedContact?.id === contactId) {
+            if (currentContact?.id === contactId) {
               if (event.data.contact) {
                 // Use the already-merged updatedContact to ensure consistency
                 setSelectedContact(updatedContact);
@@ -712,8 +731,8 @@ export default function ChatPage() {
             // If filter is 'archived', only show archived contacts
             // If filter is 'all' or 'unread', only show non-archived contacts
             const shouldAddToCurrentFilter =
-              (chatFilter === 'archived' && isContactArchived) ||
-              (chatFilter !== 'archived' && !isContactArchived);
+              (currentFilter === 'archived' && isContactArchived) ||
+              (currentFilter !== 'archived' && !isContactArchived);
 
             if (shouldAddToCurrentFilter) {
               const newContact = {
@@ -768,7 +787,7 @@ export default function ChatPage() {
         });
 
         // If this contact's conversation is open, add message
-        if (event.data.contactId === selectedContact?.id) {
+        if (event.data.contactId === currentContact?.id) {
           console.log(
             '[WS] Message for currently open chat, adding to messages'
           );
@@ -817,7 +836,7 @@ export default function ChatPage() {
           // mark as read immediately so other users see unread count = 0
           if (formattedMessage.direction === 'incoming') {
             chatApi
-              .markConversationAsRead(selectedContact.id)
+              .markConversationAsRead(currentContact!.id)
               .catch((error) =>
                 console.error('[WS] Failed to mark message as read:', error)
               );
@@ -828,7 +847,7 @@ export default function ChatPage() {
 
     const handleStatusUpdate = (event: any) => {
       // Only check contactId - phoneNumberId is implicit in WebSocket subscription
-      if (event.data.contactId === selectedContact?.id) {
+      if (event.data.contactId === selectedContactRef.current?.id) {
         setMessages((prev) =>
           prev.map((msg) => {
             // Robust Matching Logic:
@@ -916,8 +935,10 @@ export default function ChatPage() {
       chatWebSocket.off('message:status', handleStatusUpdate);
       chatWebSocket.off('contact:updated', handleContactUpdated);
     };
+    // Handlers use refs for selectedContact / chatFilter / selectedPhoneNumberId,
+    // so we only need to re-register when the phone number changes (e.g. user switches inbox).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedPhoneNumberId, selectedContact?.id]);
+  }, [selectedPhoneNumberId]);
 
   const connectWebSocket = async () => {
     try {
