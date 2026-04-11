@@ -373,6 +373,73 @@ export default function ChatPage() {
     }
   }, [sending]);
 
+  // Auto-focus textarea when user types or pastes anywhere on the chat page,
+  // as long as no other input/textarea/contenteditable is already focused.
+  // Mirrors WhatsApp Web behaviour: typing in the chat panel goes straight to the input.
+  useEffect(() => {
+    if (!selectedContact) return;
+
+    const isInputFocused = () => {
+      const el = document.activeElement;
+      if (!el) return false;
+      const tag = el.tagName;
+      return (
+        tag === 'INPUT' ||
+        tag === 'TEXTAREA' ||
+        (el as HTMLElement).isContentEditable
+      );
+    };
+
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      // Ignore modifier-only keys, function keys, navigation keys, and Escape
+      if (
+        e.key === 'Escape' ||
+        e.key === 'Tab' ||
+        e.key === 'Enter' ||
+        e.key.startsWith('Arrow') ||
+        e.key.startsWith('F') ||
+        e.ctrlKey || e.metaKey || e.altKey
+      ) return;
+
+      if (isInputFocused()) return;
+      const ta = textareaRef.current;
+      if (!ta || ta.disabled) return;
+
+      ta.focus();
+      // Don't call e.preventDefault() — let the keystroke land in the textarea naturally
+    };
+
+    const handleGlobalPaste = (e: ClipboardEvent) => {
+      if (isInputFocused()) return;
+      const ta = textareaRef.current;
+      if (!ta || ta.disabled) return;
+
+      e.preventDefault();
+
+      const items = e.clipboardData?.items;
+      if (items && attachFileFromClipboard(items)) {
+        ta.focus();
+        return;
+      }
+
+      // Text paste
+      const text = e.clipboardData?.getData('text') ?? '';
+      if (!text) return;
+
+      ta.focus();
+      if (!document.execCommand('insertText', false, text)) {
+        setMessageInput((prev) => prev + text);
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    window.addEventListener('paste', handleGlobalPaste);
+    return () => {
+      window.removeEventListener('keydown', handleGlobalKeyDown);
+      window.removeEventListener('paste', handleGlobalPaste);
+    };
+  }, [selectedContact, sending]);
+
   // Sync missed data on page visibility change (tab switch, device wake) and WebSocket reconnect
   useEffect(() => {
     // wsWasConnected: only reload messages via HTTP when WS dropped (to avoid race with live WS messages)
@@ -529,6 +596,10 @@ export default function ChatPage() {
           reactionEmoji: rawMessage.reactionEmoji || null,
           reactionMessageId: rawMessage.reactionMessageId || null,
           contactsPayload: rawMessage.contactsPayload || null,
+          locationLatitude: rawMessage.locationLatitude || null,
+          locationLongitude: rawMessage.locationLongitude || null,
+          locationName: rawMessage.locationName || null,
+          locationAddress: rawMessage.locationAddress || null,
           // User info (for outgoing messages)
           userId: rawMessage.userId || null,
           user: rawMessage.user || null,
@@ -1054,6 +1125,7 @@ export default function ChatPage() {
 
     // Immediate reset to prevent flashing old content
     setMessages([]);
+    setMessageInput('');
     setMessagesLoading(true);
     setLoading(true);
 
@@ -1488,6 +1560,54 @@ export default function ChatPage() {
     }
   };
 
+  // Sanitize href — only allow http/https to prevent javascript: scheme injection.
+  // React 19 already warns about javascript: in href, but this is defense-in-depth.
+  const sanitizeHref = (url: string | null | undefined): string => {
+    if (!url) return '#';
+    try {
+      const parsed = new URL(url);
+      if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return '#';
+      return url;
+    } catch {
+      return '#';
+    }
+  };
+
+  // Render text with clickable links (safe — no dangerouslySetInnerHTML).
+  // Only http/https URLs are linked; javascript: and other schemes are ignored.
+  const renderTextWithLinks = (text: string) => {
+    const urlRegex = /https?:\/\/[^\s<>"']+/g;
+    const parts: React.ReactNode[] = [];
+    let lastIndex = 0;
+    let match: RegExpExecArray | null;
+
+    while ((match = urlRegex.exec(text)) !== null) {
+      if (match.index > lastIndex) {
+        parts.push(text.slice(lastIndex, match.index));
+      }
+      const url = match[0];
+      parts.push(
+        <a
+          key={match.index}
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline break-all hover:opacity-80"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {url}
+        </a>
+      );
+      lastIndex = match.index + url.length;
+    }
+
+    if (lastIndex < text.length) {
+      parts.push(text.slice(lastIndex));
+    }
+
+    return parts;
+  };
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'sent':
@@ -1569,24 +1689,57 @@ export default function ChatPage() {
     }
   };
 
-  // Handle paste event for images
+  const DOCUMENT_MIME_TYPES = new Set([
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'application/vnd.ms-powerpoint',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    'text/plain',
+  ]);
+
+  const attachFileFromClipboard = (items: DataTransferItemList) => {
+    for (const item of items) {
+      if (item.kind !== 'file') continue;
+
+      const file = item.getAsFile();
+      if (!file) continue;
+
+      if (item.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          setPendingAttachment({ file, preview: ev.target?.result as string, type: 'image' });
+        };
+        reader.readAsDataURL(file);
+        return true;
+      }
+
+      if (item.type.startsWith('video/')) {
+        setPendingAttachment({ file, preview: undefined, type: 'video' });
+        return true;
+      }
+
+      if (item.type.startsWith('audio/')) {
+        setPendingAttachment({ file, preview: undefined, type: 'audio' });
+        return true;
+      }
+
+      if (DOCUMENT_MIME_TYPES.has(item.type)) {
+        setPendingAttachment({ file, preview: undefined, type: 'document' });
+        return true;
+      }
+    }
+    return false;
+  };
+
+  // Handle paste event on textarea (image, video, audio, document, or text)
   const handlePaste = (e: React.ClipboardEvent) => {
     const items = e.clipboardData?.items;
     if (!items) return;
-
-    for (const item of items) {
-      if (item.type.startsWith('image/')) {
-        e.preventDefault();
-        const file = item.getAsFile();
-        if (file) {
-          const reader = new FileReader();
-          reader.onload = (ev) => {
-            setPendingAttachment({ file, preview: ev.target?.result as string, type: 'image' });
-          };
-          reader.readAsDataURL(file);
-        }
-        break;
-      }
+    if (attachFileFromClipboard(items)) {
+      e.preventDefault();
     }
   };
 
@@ -2626,7 +2779,7 @@ export default function ChatPage() {
                                             </div>
                                           ) : (
                                             <a
-                                              href={headerMediaUrl}
+                                              href={sanitizeHref(headerMediaUrl)}
                                               target="_blank"
                                               rel="noopener noreferrer"
                                               className={`flex items-center gap-3 rounded-lg p-3 transition-colors ${isOwn ? 'bg-[#c6f0bf] hover:bg-[#b8e8b0] dark:bg-[#025144] dark:hover:bg-[#036b58]' : 'bg-gray-200/80 hover:bg-gray-300/80'}`}
@@ -2844,6 +2997,54 @@ export default function ChatPage() {
                                     )}
                                   </div>
                                 </div>
+                              ) : msg.messageType === 'location' &&
+                                msg.locationLatitude != null &&
+                                msg.locationLongitude != null ? (
+                                // Location message — static map not used (blocked by CSP img-src).
+                                // Show a coordinate card that links to Google Maps.
+                                <div className="flex min-w-[220px] flex-col gap-1">
+                                  <a
+                                    href={`https://www.google.com/maps?q=${msg.locationLatitude},${msg.locationLongitude}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                                      isOwn
+                                        ? 'bg-blue-400/20 text-blue-800 hover:bg-blue-400/30 dark:text-blue-200'
+                                        : 'bg-gray-100 text-gray-800 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-100'
+                                    }`}
+                                  >
+                                    <span className="text-base">📍</span>
+                                    <div className="min-w-0">
+                                      {msg.locationName && (
+                                        <p className="truncate font-semibold">{msg.locationName}</p>
+                                      )}
+                                      {msg.locationAddress && (
+                                        <p className="truncate text-xs opacity-75">{msg.locationAddress}</p>
+                                      )}
+                                      {!msg.locationName && !msg.locationAddress && (
+                                        <p className="truncate">
+                                          {msg.locationLatitude}, {msg.locationLongitude}
+                                        </p>
+                                      )}
+                                    </div>
+                                  </a>
+                                  <div className="flex items-center justify-end gap-1">
+                                    <span className={`text-[10px] ${isOwn ? 'text-gray-500 dark:text-gray-400' : 'text-gray-500'}`}>
+                                      {(() => {
+                                        const date = new Date(msg.timestamp);
+                                        const now = new Date();
+                                        const diff = differenceInCalendarDays(now, date);
+                                        if (diff >= 1) return format(date, 'dd/MM/yyyy HH:mm');
+                                        return format(date, 'HH:mm');
+                                      })()}
+                                    </span>
+                                    {isOwn && (
+                                      <span className={isOwn ? 'text-gray-600 dark:text-gray-300' : ''}>
+                                        {getStatusIcon(msg.status)}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
                               ) : msg.mediaUrl ? (
                                 <div className="flex flex-col">
                                   {msg.messageType === 'image' && (
@@ -2910,7 +3111,7 @@ export default function ChatPage() {
                                   )}
                                   {msg.messageType === 'document' && (
                                     <a
-                                      href={msg.mediaUrl}
+                                      href={sanitizeHref(msg.mediaUrl)}
                                       target="_blank"
                                       rel="noopener noreferrer"
                                       className={`mb-2 flex w-full items-start gap-3 rounded-lg p-3 transition-colors ${
@@ -2957,7 +3158,7 @@ export default function ChatPage() {
                                   )}
                                   {(msg.mediaCaption || msg.textBody) && (
                                     <p className="mb-1 text-sm whitespace-pre-wrap">
-                                      {msg.mediaCaption || msg.textBody}
+                                      {renderTextWithLinks(msg.mediaCaption || msg.textBody || '')}
                                     </p>
                                   )}
 
@@ -2996,7 +3197,7 @@ export default function ChatPage() {
                               ) : (
                                 <div className="flex flex-wrap items-end gap-2">
                                   <p className="text-[13px] leading-normal whitespace-pre-wrap">
-                                    {msg.textBody}
+                                    {msg.textBody ? renderTextWithLinks(msg.textBody) : null}
                                   </p>
                                   <div className="min-w-[60px] flex-1" />
                                   <div className="flex flex-shrink-0 items-center gap-1.5 select-none">

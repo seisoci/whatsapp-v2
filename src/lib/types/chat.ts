@@ -48,6 +48,11 @@ export interface Message {
   readAt: string | null;
   reactionEmoji?: string | null;
   reactionMessageId?: string | null;
+  // Location message
+  locationLatitude?: number | null;
+  locationLongitude?: number | null;
+  locationName?: string | null;
+  locationAddress?: string | null;
   // Contacts message
   contactsPayload?: any[] | null;
   // Template fields
