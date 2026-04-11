@@ -8,7 +8,6 @@ export class QuickReplyController {
     try {
       const user = c.get('user');
       const quickReplies = await AppDataSource.getRepository(QuickReply).find({
-        where: { userId: user.userId },
         order: { createdAt: 'DESC' },
       });
 
