@@ -183,17 +183,34 @@ async function apiRequest<T = any>(
 
   let response = await fetch(url, { ...fetchConfig, headers });
 
-  // Handle 401 - Token expired
+  // Handle 401 - Token expired: attempt silent refresh once, then retry original request.
+  // If refresh fails, refreshAccessToken() clears tokens and redirects to /sign-in.
   if (response.status === 401 && token) {
     const newToken = await refreshAccessToken();
 
     if (newToken) {
       headers.Authorization = `Bearer ${newToken}`;
       response = await fetch(url, { ...fetchConfig, headers });
+    } else {
+      // Refresh failed — tokens cleared, redirect already triggered inside refreshAccessToken.
+      // Throw a clear error so any pending catch block gets a sensible message.
+      throw {
+        response: { status: 401, data: { message: 'Session expired. Please log in again.' } },
+        message: 'Session expired. Please log in again.',
+      };
     }
   }
 
-  const data: any = await response.json();
+  let data: any;
+  try {
+    data = await response.json();
+  } catch {
+    // Response body is not JSON (e.g. 502/504 HTML error pages from proxy)
+    throw {
+      response: { status: response.status, data: { message: response.statusText } },
+      message: `Server error (${response.status})`,
+    };
+  }
 
   if (!response.ok) {
     throw {
