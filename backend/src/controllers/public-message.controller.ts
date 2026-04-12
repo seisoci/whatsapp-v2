@@ -97,7 +97,9 @@ export class PublicMessageController {
         }, 400);
       }
 
-      const { phone_number, template_name, template } = validation.data;
+      const { template_name, template } = validation.data;
+      // Normalize: strip +, spaces, dashes → e.g. "+62 823-1256-2724" → "6282312562724"
+      const phone_number = validation.data.phone_number.replace(/\D/g, '');
 
       // 2. API Endpoint from middleware
       const apiEndpoint = c.get('apiEndpoint') as ApiEndpoint;
