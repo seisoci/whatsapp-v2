@@ -127,10 +127,10 @@ export class PublicMessageController {
         }, 503);
       }
 
-      // 4. Resolve/Create Contact
+      // 4. Resolve/Create Contact (scoped to this phone number)
       const contactRepo = AppDataSource.getRepository(Contact);
       let contact = await contactRepo.findOne({
-        where: { waId: phone_number }
+        where: { waId: phone_number, phoneNumberId: phoneNumber.id }
       });
 
       if (!contact) {
