@@ -294,6 +294,22 @@ export class WhatsAppMessagingService {
 
     // Store message in database
     if (params.contactId) {
+      // Resolve actual display phone number for fromNumber field
+      let senderDisplayNumber = params.phoneNumberId; // fallback: WA numeric ID
+      try {
+        const internalId = params.internalPhoneNumberId || params.phoneNumberId;
+        const phoneRepo = AppDataSource.getRepository(PhoneNumber);
+        const phoneRecord = await phoneRepo.findOne({
+          where: { id: internalId },
+          select: ['displayPhoneNumber', 'phoneNumberId'],
+        });
+        if (phoneRecord?.displayPhoneNumber) {
+          senderDisplayNumber = phoneRecord.displayPhoneNumber;
+        }
+      } catch (err) {
+        console.warn('[TemplateMessage] Failed to fetch displayPhoneNumber:', err);
+      }
+
       // Fetch template definition and render body text with variables
       let renderedTextBody: string | undefined;
       try {
@@ -376,7 +392,7 @@ export class WhatsAppMessagingService {
         phoneNumberId: params.internalPhoneNumberId || params.phoneNumberId,
         wamid: result.messages[0].id,
         toNumber: params.to,
-        fromNumber: params.phoneNumberId,
+        fromNumber: senderDisplayNumber,
         messageType: 'template',
         textBody: renderedTextBody,
         templateName: params.templateName,
