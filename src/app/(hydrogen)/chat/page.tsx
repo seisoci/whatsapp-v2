@@ -32,6 +32,7 @@ import {
   PiHouse,
   PiPalette,
   PiAddressBook,
+  PiArrowBendUpLeft,
 } from 'react-icons/pi';
 import Link from 'next/link';
 import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
@@ -210,6 +211,7 @@ export default function ChatPage() {
   const [totalContacts, setTotalContacts] = useState(0);
   const [unreadCount, setUnreadCount] = useState(0);
   const [archivedCount, setArchivedCount] = useState(0);
+  const [replyToMessage, setReplyToMessage] = useState<Message | null>(null);
 
   // Pinned chats (local storage)
   const [pinnedContacts, setPinnedContacts] = useState<string[]>([]);
@@ -540,6 +542,7 @@ export default function ChatPage() {
   useEffect(() => {
     if (selectedContact) {
       loadMessages();
+      setReplyToMessage(null); // Clear reply context when switching contacts
       // Auto-focus textarea for immediate typing
       setTimeout(() => {
         if (textareaRef.current) {
@@ -1257,13 +1260,17 @@ export default function ChatPage() {
       timestamp: new Date().toISOString(),
       status: 'pending',
       readAt: null,
+      contextMessageId: replyToMessage?.wamid || null,
+      contextFrom: null,
     };
 
     const messageToSend = messageText;
     const attachmentToSend = pendingAttachment;
+    const replyContext = replyToMessage; // Capture before clearing
 
     setMessageInput(''); // Clear input immediately
     setPendingAttachment(null); // Clear attachment
+    setReplyToMessage(null); // Clear reply context
     setMessages((prev) => [...prev, optimisticMessage]); // Add to UI optimistically
     scrollToBottom('smooth'); // Scroll to show optimistic message immediately
 
@@ -1368,6 +1375,7 @@ export default function ChatPage() {
             filename:
               attachmentToSend.type === 'document' ? mediaFilename : undefined,
           },
+          ...(replyContext?.wamid ? { context: { message_id: replyContext.wamid } } : {}),
         };
       } else {
         // Send text message
@@ -1378,6 +1386,7 @@ export default function ChatPage() {
           text: {
             body: messageToSend,
           },
+          ...(replyContext?.wamid ? { context: { message_id: replyContext.wamid } } : {}),
         };
       }
 
@@ -2639,6 +2648,21 @@ export default function ChatPage() {
                           id={`msg-${msg.id}`}
                           className={`group flex items-start gap-1 ${isOwn ? 'flex-row-reverse' : ''} ${!messagesLoading ? 'animate-fade-in-up' : ''}`}
                         >
+                          {/* Reply button (appears on hover) */}
+                          {msg.messageType !== 'reaction' && selectedContact?.isSessionActive && (
+                            <button
+                              onClick={() => {
+                                setReplyToMessage(msg);
+                                textareaRef.current?.focus();
+                              }}
+                              className={`mt-2 flex-shrink-0 rounded-full p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-gray-200 dark:hover:bg-gray-700 ${
+                                isOwn ? 'order-first' : ''
+                              }`}
+                              title="Reply"
+                            >
+                              <PiArrowBendUpLeft className="h-3.5 w-3.5 text-gray-400" />
+                            </button>
+                          )}
                           <div
                             className={`max-w-[85%] sm:max-w-[65%] min-w-0 ${isOwn ? 'items-end' : 'items-start'} flex flex-col`}
                           >
@@ -3378,6 +3402,63 @@ export default function ChatPage() {
                         }
                   }
                 >
+
+                  {/* Reply Preview Bar */}
+                  {replyToMessage && (
+                    <div
+                      className={`flex items-center gap-2 rounded-lg border px-3 py-2 mb-2 ${
+                        isNeoBrutalism
+                          ? 'border-[#1F1F1F]/20 bg-[#1F1F1F]/5'
+                          : isHandDrawn
+                          ? 'border-[#8b7355]/30 bg-[#e8e5d8]'
+                          : isPlayfulGeometric
+                          ? 'border-violet-200 bg-violet-50 dark:border-violet-800 dark:bg-violet-900/20'
+                          : 'border-gray-200 bg-white dark:border-gray-700 dark:bg-[#202c33]'
+                      }`}
+                    >
+                      <div
+                        className={`w-1 self-stretch rounded-full flex-shrink-0 ${
+                          replyToMessage.direction === 'outgoing'
+                            ? isPlayfulGeometric
+                              ? 'bg-violet-400'
+                              : 'bg-emerald-500'
+                            : isPlayfulGeometric
+                            ? 'bg-pink-400'
+                            : 'bg-gray-400'
+                        }`}
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p
+                          className={`text-xs font-semibold truncate ${
+                            replyToMessage.direction === 'outgoing'
+                              ? isPlayfulGeometric
+                                ? 'text-violet-600 dark:text-violet-300'
+                                : 'text-emerald-700 dark:text-emerald-300'
+                              : isPlayfulGeometric
+                              ? 'text-pink-600 dark:text-pink-300'
+                              : 'text-gray-600 dark:text-gray-300'
+                          }`}
+                        >
+                          {replyToMessage.direction === 'outgoing'
+                            ? replyToMessage.user?.username || 'You'
+                            : selectedContact?.profileName || selectedContact?.waId || 'Contact'}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                          {replyToMessage.textBody ||
+                            replyToMessage.mediaCaption ||
+                            `[${replyToMessage.messageType}]`}
+                        </p>
+                      </div>
+                      <ActionIcon
+                        variant="text"
+                        size="sm"
+                        onClick={() => setReplyToMessage(null)}
+                        className="flex-shrink-0"
+                      >
+                        <PiX className="h-4 w-4 text-gray-400" />
+                      </ActionIcon>
+                    </div>
+                  )}
 
                   {/* Attachment Preview */}
                   {pendingAttachment && (

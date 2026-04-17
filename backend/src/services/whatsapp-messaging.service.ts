@@ -176,6 +176,7 @@ export class WhatsAppMessagingService {
     contactId?: string;
     preview_url?: boolean;
     userId?: string; // User who sent the message
+    context?: { message_id: string }; // Reply context
   }): Promise<any> {
     // Validate session if contactId provided
     if (params.contactId) {
@@ -200,6 +201,7 @@ export class WhatsAppMessagingService {
           messaging_product: 'whatsapp',
           to: params.to,
           type: 'text',
+          ...(params.context ? { context: { message_id: params.context.message_id } } : {}),
           text: {
             body: params.text,
             preview_url: params.preview_url || false,
@@ -228,7 +230,8 @@ export class WhatsAppMessagingService {
           messageType: 'text',
           textBody: params.text,
           status: 'sent',
-          userId: params.userId, // Add userId
+          userId: params.userId,
+          contextMessageId: params.context?.message_id,
         });
         console.log('✅ Outgoing message saved to database');
       } catch (dbError: any) {
@@ -427,6 +430,7 @@ export class WhatsAppMessagingService {
     filename?: string;
     contactId?: string;
     userId?: string; // User who sent the message
+    context?: { message_id: string }; // Reply context
   }): Promise<any> {
     // Validate session if contactId provided
     if (params.contactId) {
@@ -463,6 +467,7 @@ export class WhatsAppMessagingService {
           messaging_product: 'whatsapp',
           to: params.to,
           type: params.mediaType,
+          ...(params.context ? { context: { message_id: params.context.message_id } } : {}),
           [params.mediaType]: mediaObject,
         }),
       }
@@ -491,7 +496,8 @@ export class WhatsAppMessagingService {
           mediaId: params.mediaId,
           mediaFilename: params.filename,
           status: 'sent',
-          userId: params.userId, // Add userId
+          userId: params.userId,
+          contextMessageId: params.context?.message_id,
         });
         console.log('✅ Outgoing media message saved to database');
       } catch (dbError: any) {
@@ -521,6 +527,7 @@ export class WhatsAppMessagingService {
     contacts: any[];
     contactId?: string;
     userId?: string;
+    context?: { message_id: string }; // Reply context
   }): Promise<any> {
     if (params.contactId) {
       const sessionStatus = await this.checkSessionStatus(params.contactId);
@@ -543,6 +550,7 @@ export class WhatsAppMessagingService {
           messaging_product: 'whatsapp',
           to: params.to,
           type: 'contacts',
+          ...(params.context ? { context: { message_id: params.context.message_id } } : {}),
           contacts: normalizedContacts,
         }),
       }
@@ -570,6 +578,7 @@ export class WhatsAppMessagingService {
           contactsPayload: normalizedContacts,
           status: 'sent',
           userId: params.userId,
+          contextMessageId: params.context?.message_id,
         });
         console.log('✅ Outgoing contact message saved to database');
       } catch (dbError: any) {
@@ -601,6 +610,7 @@ export class WhatsAppMessagingService {
     contactsPayload?: any[];
     status: string;
     userId?: string; // User who sent the message
+    contextMessageId?: string; // Reply context
   }): Promise<Message> {
     const messageRepo = AppDataSource.getRepository(Message);
     const contactRepo = AppDataSource.getRepository(Contact);
@@ -627,6 +637,7 @@ export class WhatsAppMessagingService {
       mediaFilename: params.mediaFilename,
       mediaMimeType: params.mediaMimeType,
       contactsPayload: params.contactsPayload,
+      contextMessageId: params.contextMessageId || null,
       timestamp: new Date(),
       sentAt: new Date(),
     });

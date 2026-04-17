@@ -212,7 +212,7 @@ export class MessageController {
         );
       }
 
-      const { contactId, phoneNumberId, type, text, template, media, contacts } =
+      const { contactId, phoneNumberId, type, text, template, media, contacts, context } =
         validation.data;
 
       // Get authenticated user ID from context
@@ -289,7 +289,8 @@ export class MessageController {
             to: contact.waId,
             text: text.body,
             contactId: contact.id,
-            userId: userId, // Add userId
+            userId: userId,
+            context: context,
           });
           break;
 
@@ -342,7 +343,8 @@ export class MessageController {
             caption: media.caption,
             filename: media.filename,
             contactId: contact.id,
-            userId: userId, // Add userId
+            userId: userId,
+            context: context,
           });
           break;
 
@@ -365,6 +367,7 @@ export class MessageController {
             contacts,
             contactId: contact.id,
             userId,
+            context: context,
           });
           break;
 

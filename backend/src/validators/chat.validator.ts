@@ -102,6 +102,11 @@ export const sendMessageSchema = z.object({
     }).optional(),
     urls: z.array(contactUrlSchema).optional(),
   })).optional(),
+
+  // Reply context (replying to a specific message)
+  context: z.object({
+    message_id: z.string(),
+  }).optional(),
 });
 
 /**

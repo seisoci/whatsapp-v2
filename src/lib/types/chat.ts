@@ -139,6 +139,10 @@ export interface SendMessageRequest {
     org?: { company?: string; department?: string; title?: string };
     urls?: Array<{ url: string; type?: 'HOME' | 'WORK' }>;
   }>;
+  // Reply context
+  context?: {
+    message_id: string;
+  };
 }
 
 export interface Tag {
