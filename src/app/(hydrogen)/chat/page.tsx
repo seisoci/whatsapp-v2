@@ -218,6 +218,7 @@ export default function ChatPage() {
   const [hasMoreMessages, setHasMoreMessages] = useState(false);
   const [loadingOlderMessages, setLoadingOlderMessages] = useState(false);
   const loadingOlderRef = useRef(false); // prevent concurrent loads
+  const loadingMoreContactsRef = useRef(false); // prevent concurrent contact pagination loads
 
   // Pinned chats (local storage)
   const [pinnedContacts, setPinnedContacts] = useState<string[]>([]);
@@ -985,6 +986,9 @@ export default function ChatPage() {
 
   const loadContacts = async (page: number = 1, append: boolean = false) => {
     if (!selectedPhoneNumberId) return;
+    if (append && loadingMoreContactsRef.current) return; // prevent duplicate pagination requests
+    if (append) loadingMoreContactsRef.current = true;
+    else loadingMoreContactsRef.current = false; // reset on fresh load
 
     if (!append) setLoading(true);
     try {
@@ -1040,6 +1044,7 @@ export default function ChatPage() {
       });
     } finally {
       setLoading(false);
+      loadingMoreContactsRef.current = false;
     }
   };
 
@@ -1134,7 +1139,14 @@ export default function ChatPage() {
         });
 
         // Merge: API messages + unique optimistic messages (in chronological order)
-        return [...msgs, ...uniqueOptimisticMessages];
+        // Deduplicate by ID as a safety net against race conditions (WS + HTTP concurrent updates)
+        const merged = [...msgs, ...uniqueOptimisticMessages];
+        const seenIds = new Set<string>();
+        return merged.filter((m) => {
+          if (seenIds.has(m.id)) return false;
+          seenIds.add(m.id);
+          return true;
+        });
       });
 
       // Wait for DOM render
@@ -2763,7 +2775,7 @@ export default function ChatPage() {
                       <div className="h-6 w-6 animate-spin rounded-full border-2 border-gray-300 border-t-primary" />
                     </div>
                   )}
-                  {messages.map((msg) => {
+                  {messages.filter((msg, idx, arr) => arr.findIndex(m => m.id === msg.id) === idx).map((msg) => {
                       const isOwn = msg.direction === 'outgoing';
                       return (
                         <div
