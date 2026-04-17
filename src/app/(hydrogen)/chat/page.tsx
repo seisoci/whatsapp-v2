@@ -2747,11 +2747,18 @@ export default function ChatPage() {
                   </div>
                 </div>
 
+                {/* Messages loading spinner overlay */}
+                {messagesLoading && (
+                  <div className="flex min-h-0 flex-1 items-center justify-center">
+                    <div className="h-8 w-8 animate-spin rounded-full border-2 border-gray-200 border-t-primary" />
+                  </div>
+                )}
+
                 {/* Messages */}
                 <div
                   ref={chatContainerRef}
                   onScroll={handleScroll}
-                  className={`custom-scrollbar-message relative min-h-0 flex-1 overflow-y-auto p-4 ${messagesLoading ? 'invisible' : 'visible'}`}
+                  className={`custom-scrollbar-message relative min-h-0 flex-1 overflow-y-auto p-4 ${messagesLoading ? 'hidden' : 'block'}`}
                   style={
                     isNeoBrutalism
                       ? { scrollBehavior: 'auto', background: '#FFFFFF', borderBottom: '2px solid #1F1F1F' }
