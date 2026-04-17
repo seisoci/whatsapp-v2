@@ -213,6 +213,12 @@ export default function ChatPage() {
   const [archivedCount, setArchivedCount] = useState(0);
   const [replyToMessage, setReplyToMessage] = useState<Message | null>(null);
 
+  // Message pagination state
+  const [messagePage, setMessagePage] = useState(1);
+  const [hasMoreMessages, setHasMoreMessages] = useState(false);
+  const [loadingOlderMessages, setLoadingOlderMessages] = useState(false);
+  const loadingOlderRef = useRef(false); // prevent concurrent loads
+
   // Pinned chats (local storage)
   const [pinnedContacts, setPinnedContacts] = useState<string[]>([]);
   const [showThemeMenu, setShowThemeMenu] = useState(false);
@@ -552,6 +558,7 @@ export default function ChatPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedContact?.id]);
+
 
   // Load quick replies on mount
   useEffect(() => {
@@ -1062,15 +1069,27 @@ export default function ChatPage() {
     setLoading(true);
     setMessagesLoading(true); // Hide messages container
     setMessages([]); // Clear old messages so we don't flash them or previous conversation
+    setMessagePage(1);
+    setHasMoreMessages(false);
 
     try {
       const response = await chatApi.getMessages({
         contactId: targetContact.id,
+        page: 1,
         limit: 50,
       });
 
       // API client already unwraps response.data
       const msgs = Array.isArray(response) ? response : response.data || [];
+      const pagination = (response as any).pagination;
+
+      // Track if there are more pages
+      if (pagination && pagination.page < pagination.totalPages) {
+        setHasMoreMessages(true);
+        setMessagePage(1);
+      } else {
+        setHasMoreMessages(false);
+      }
 
       // Preserve optimistic messages (messages with temp- IDs) when merging with API data
       setMessages((prevMessages) => {
@@ -1137,6 +1156,73 @@ export default function ChatPage() {
     } finally {
       setLoading(false);
       setMessagesLoading(false); // Reveal messages
+    }
+  };
+
+  /**
+   * Load older messages (pagination) — triggered when user scrolls to top
+   */
+  const loadOlderMessages = async () => {
+    if (!selectedContact || !hasMoreMessages || loadingOlderRef.current) return;
+    loadingOlderRef.current = true;
+    setLoadingOlderMessages(true);
+
+    const nextPage = messagePage + 1;
+
+    try {
+      const response = await chatApi.getMessages({
+        contactId: selectedContact.id,
+        page: nextPage,
+        limit: 50,
+      });
+
+      const olderMsgs = Array.isArray(response) ? response : response.data || [];
+      const pagination = (response as any).pagination;
+
+      if (olderMsgs.length > 0) {
+        // Preserve scroll position: measure current scrollHeight before prepending
+        const container = chatContainerRef.current;
+        const prevScrollHeight = container?.scrollHeight || 0;
+
+        setMessages((prev) => {
+          // Deduplicate by ID
+          const existingIds = new Set(prev.map((m) => m.id));
+          const newMsgs = olderMsgs.filter((m) => !existingIds.has(m.id));
+          return [...newMsgs, ...prev];
+        });
+
+        setMessagePage(nextPage);
+
+        // Restore scroll position after DOM update
+        requestAnimationFrame(() => {
+          if (container) {
+            const newScrollHeight = container.scrollHeight;
+            container.scrollTop = newScrollHeight - prevScrollHeight;
+          }
+        });
+      }
+
+      // Check if there are more pages
+      if (pagination && nextPage < pagination.totalPages) {
+        setHasMoreMessages(true);
+      } else {
+        setHasMoreMessages(false);
+      }
+    } catch (error) {
+      console.error('Failed to load older messages:', error);
+    } finally {
+      setLoadingOlderMessages(false);
+      loadingOlderRef.current = false;
+    }
+  };
+
+  /**
+   * Scroll handler for the chat container to trigger pagination
+   */
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const container = e.currentTarget;
+    if (container.scrollTop < 100 && hasMoreMessages && !loadingOlderRef.current) {
+      loadOlderMessages();
     }
   };
 
@@ -2618,6 +2704,7 @@ export default function ChatPage() {
                 {/* Messages */}
                 <div
                   ref={chatContainerRef}
+                  onScroll={handleScroll}
                   className={`custom-scrollbar-message relative min-h-0 flex-1 overflow-y-auto p-4 ${messagesLoading ? 'invisible' : 'visible'}`}
                   style={
                     isNeoBrutalism
@@ -2637,7 +2724,12 @@ export default function ChatPage() {
                   }
                 >
                   <div className="space-y-3">
-                    {messages.map((msg) => {
+                  {loadingOlderMessages && (
+                    <div className="flex justify-center py-2">
+                      <div className="h-6 w-6 animate-spin rounded-full border-2 border-gray-300 border-t-primary" />
+                    </div>
+                  )}
+                  {messages.map((msg) => {
                       const isOwn = msg.direction === 'outgoing';
                       return (
                         <div

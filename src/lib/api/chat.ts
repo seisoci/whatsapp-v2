@@ -48,7 +48,7 @@ export const chatApi = {
     contactId: string;
     page?: number;
     limit?: number;
-  }) => apiClient.get('/chat/messages', { params }).then(r => r.data),
+  }) => apiClient.get('/chat/messages', { params }),
 
   sendMessage: (data: SendMessageRequest) =>
     apiClient.post('/chat/messages', data).then(r => r.data ?? r),
