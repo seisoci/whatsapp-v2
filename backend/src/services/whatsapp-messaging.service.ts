@@ -626,7 +626,7 @@ export class WhatsAppMessagingService {
       direction: 'outgoing',
       messageType: params.messageType as any,
       status: params.status as any,
-      fromNumber: params.fromNumber,
+      fromNumber: params.fromNumber.replace(/\D/g, ''),
       toNumber: params.toNumber,
       textBody: params.textBody,
       templateName: params.templateName,
