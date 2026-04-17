@@ -1171,9 +1171,6 @@ export default function ChatPage() {
       return updated;
     });
 
-    // Load messages immediately with contact parameter to avoid race condition
-    loadMessages(contact);
-
     // Mark conversation as read in backend (persist to database)
     try {
       await chatApi.markConversationAsRead(contact.id);
