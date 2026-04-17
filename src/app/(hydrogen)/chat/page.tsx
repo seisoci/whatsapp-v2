@@ -343,6 +343,7 @@ export default function ChatPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const suggestionMenuRef = useRef<HTMLDivElement>(null);
   const refocusAfterSendRef = useRef(false); // signal to refocus textarea after send completes
   const isMobileRef = useRef(false);
 
@@ -1627,11 +1628,34 @@ export default function ChatPage() {
       const searchTerm = value.slice(1).toLowerCase();
 
       // Filter quick replies based on shortcut or text
-      const filtered = quickReplies.filter(
-        (qr) =>
-          qr.shortcut.toLowerCase().includes(searchTerm) ||
-          qr.text.toLowerCase().includes(searchTerm)
-      );
+      const filtered = quickReplies
+        .filter(
+          (qr) =>
+            qr.shortcut.toLowerCase().includes(searchTerm) ||
+            qr.text.toLowerCase().includes(searchTerm)
+        )
+        .sort((a, b) => {
+          const aShortcut = a.shortcut.toLowerCase();
+          const bShortcut = b.shortcut.toLowerCase();
+          
+          // 1. Exact shortcut match gets highest priority
+          if (aShortcut === searchTerm && bShortcut !== searchTerm) return -1;
+          if (aShortcut !== searchTerm && bShortcut === searchTerm) return 1;
+          
+          // 2. Starts with shortcut gets next priority
+          const aStarts = aShortcut.startsWith(searchTerm);
+          const bStarts = bShortcut.startsWith(searchTerm);
+          if (aStarts && !bStarts) return -1;
+          if (!aStarts && bStarts) return 1;
+          
+          // 3. Includes in shortcut gets next priority
+          const aIncludes = aShortcut.includes(searchTerm);
+          const bIncludes = bShortcut.includes(searchTerm);
+          if (aIncludes && !bIncludes) return -1;
+          if (!aIncludes && bIncludes) return 1;
+
+          return 0; // Fallback to original order
+        });
 
       setFilteredQuickReplies(filtered);
       setShowSuggestions(filtered.length > 0);
@@ -1640,6 +1664,16 @@ export default function ChatPage() {
       setShowSuggestions(false);
     }
   };
+
+  // Auto-scroll selected suggestion into view
+  useEffect(() => {
+    if (showSuggestions && suggestionMenuRef.current) {
+      const activeElement = suggestionMenuRef.current.children[selectedSuggestionIndex] as HTMLElement;
+      if (activeElement) {
+        activeElement.scrollIntoView({ block: 'nearest' });
+      }
+    }
+  }, [selectedSuggestionIndex, showSuggestions]);
 
   // Handle keyboard navigation for suggestions
   const handleInputKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -1655,7 +1689,7 @@ export default function ChatPage() {
         e.preventDefault();
         setSelectedSuggestionIndex((prev) => (prev > 0 ? prev - 1 : 0));
         return;
-      } else if (e.key === 'Enter' && !e.shiftKey) {
+      } else if ((e.key === 'Enter' && !e.shiftKey) || e.key === 'Tab') {
         e.preventDefault();
         const selected = filteredQuickReplies[selectedSuggestionIndex];
         if (selected) {
@@ -3688,7 +3722,10 @@ export default function ChatPage() {
                     <div className="relative flex-1">
                       {/* Suggestions Dropdown */}
                       {showSuggestions && filteredQuickReplies.length > 0 && (
-                        <div className="nb-suggestion-menu absolute bottom-full left-0 right-0 z-50 mb-2 max-h-64 min-w-[480px] overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800">
+                        <div
+                          ref={suggestionMenuRef}
+                          className="nb-suggestion-menu absolute bottom-full left-0 right-0 z-50 mb-2 max-h-64 min-w-[480px] overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800"
+                        >
                           {filteredQuickReplies.map((qr, index) => (
                             <button
                               key={qr.id}
