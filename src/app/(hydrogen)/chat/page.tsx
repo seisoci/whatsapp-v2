@@ -622,6 +622,9 @@ export default function ChatPage() {
           // User info (for outgoing messages)
           userId: rawMessage.userId || null,
           user: rawMessage.user || null,
+          // Reply context
+          contextMessageId: rawMessage.contextMessageId || null,
+          contextFrom: rawMessage.contextFrom || null,
         };
 
         // Update contact list locally without full reload
@@ -2633,6 +2636,7 @@ export default function ChatPage() {
                       return (
                         <div
                           key={msg.id}
+                          id={`msg-${msg.id}`}
                           className={`group flex items-start gap-1 ${isOwn ? 'flex-row-reverse' : ''} ${!messagesLoading ? 'animate-fade-in-up' : ''}`}
                         >
                           <div
@@ -2656,6 +2660,77 @@ export default function ChatPage() {
                                   {msg.user.username}
                                 </p>
                               )}
+                              {/* Reply context (quoted message) */}
+                              {msg.contextMessageId && (() => {
+                                const repliedMsg = messages.find(
+                                  (m) => m.wamid === msg.contextMessageId
+                                );
+                                const repliedSender = repliedMsg
+                                  ? repliedMsg.direction === 'outgoing'
+                                    ? repliedMsg.user?.username || 'You'
+                                    : selectedContact?.profileName || msg.contextFrom || repliedMsg.contactId
+                                  : msg.contextFrom || 'Unknown';
+                                const repliedPreview = repliedMsg
+                                  ? repliedMsg.textBody || repliedMsg.mediaCaption || `[${repliedMsg.messageType}]`
+                                  : null;
+                                const repliedIsOwn = repliedMsg?.direction === 'outgoing';
+
+                                return (
+                                  <div
+                                    className={`mb-1 cursor-pointer rounded-md overflow-hidden transition-colors ${
+                                      isNeoBrutalism
+                                        ? 'border border-[#1F1F1F]/20 bg-[#1F1F1F]/5 hover:bg-[#1F1F1F]/10'
+                                        : isHandDrawn
+                                        ? 'bg-[#e8e5d8] hover:bg-[#ddd9c8]'
+                                        : isPlayfulGeometric
+                                        ? 'bg-violet-50 hover:bg-violet-100 dark:bg-violet-900/20 dark:hover:bg-violet-900/30'
+                                        : isOwn
+                                        ? 'bg-[#c8edbe] hover:bg-[#bce6b0] dark:bg-[#004a3d] dark:hover:bg-[#005545]'
+                                        : 'bg-gray-100 hover:bg-gray-200 dark:bg-[#1a252c] dark:hover:bg-[#1e2c34]'
+                                    }`}
+                                    onClick={() => {
+                                      if (repliedMsg) {
+                                        const el = document.getElementById(`msg-${repliedMsg.id}`);
+                                        if (el) {
+                                          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                          el.classList.add('reply-highlight');
+                                          setTimeout(() => el.classList.remove('reply-highlight'), 2000);
+                                        }
+                                      }
+                                    }}
+                                  >
+                                    <div className="flex">
+                                      <div
+                                        className={`w-1 flex-shrink-0 rounded-l ${
+                                          isPlayfulGeometric
+                                            ? repliedIsOwn ? 'bg-violet-400' : 'bg-pink-400'
+                                            : repliedIsOwn
+                                            ? 'bg-emerald-500 dark:bg-emerald-400'
+                                            : 'bg-gray-400 dark:bg-gray-500'
+                                        }`}
+                                      />
+                                      <div className="min-w-0 flex-1 px-2 py-1">
+                                        <p
+                                          className={`text-[11px] font-semibold truncate ${
+                                            isPlayfulGeometric
+                                              ? repliedIsOwn ? 'text-violet-600 dark:text-violet-300' : 'text-pink-600 dark:text-pink-300'
+                                              : repliedIsOwn
+                                              ? 'text-emerald-700 dark:text-emerald-300'
+                                              : 'text-gray-600 dark:text-gray-300'
+                                          }`}
+                                        >
+                                          {repliedSender}
+                                        </p>
+                                        {repliedPreview && (
+                                          <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate leading-snug">
+                                            {repliedPreview}
+                                          </p>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })()}
                               {msg.messageType === 'reaction' ? (
                                 // Reaction message - just show the emoji
                                 <div className="flex items-center gap-2">

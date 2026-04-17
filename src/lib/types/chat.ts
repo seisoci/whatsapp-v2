@@ -69,6 +69,9 @@ export interface Message {
     emailVerified: boolean;
     roleId: string;
   } | null;
+  // Reply context
+  contextMessageId?: string | null;
+  contextFrom?: string | null;
 }
 
 export interface TemplateComponent {

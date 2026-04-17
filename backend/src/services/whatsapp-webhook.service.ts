@@ -438,6 +438,8 @@ export class WhatsAppWebhookService {
           direction: message.direction,
           timestamp: message.timestamp.toISOString(),
           status: message.status,
+          contextMessageId: message.contextMessageId || null,
+          contextFrom: message.contextFrom || null,
         },
       },
     });

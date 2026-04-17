@@ -408,6 +408,8 @@ export class MessageController {
                   : savedMessage.readAt,
               userId: savedMessage.userId,
               user: savedMessage.user,
+              contextMessageId: savedMessage.contextMessageId || null,
+              contextFrom: savedMessage.contextFrom || null,
             },
           },
         });

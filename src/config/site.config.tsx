@@ -10,8 +10,8 @@ enum MODE {
 }
 
 export const siteConfig = {
-  title: 'SmartITN',
-  description: `SmartITN - Smart IT Network Management System. Streamline your network infrastructure management with our feature-rich, responsive, and highly customizable solution.`,
+  title: 'Omnichat V2',
+  description: `Omnichat V2 - Advanced omnichannel chat platform. Streamline your customer communication with our feature-rich, responsive, and highly customizable solution.`,
   logo: logoImg,
   icon: logoIconImg,
   mode: MODE.LIGHT,
@@ -24,13 +24,13 @@ export const metaObject = (
   description: string = siteConfig.description
 ): Metadata => {
   return {
-    title: title ? `${title} - SmartITN` : siteConfig.title,
+    title: title ? `${title} - Omnichat V2` : siteConfig.title,
     description,
     openGraph: openGraph ?? {
-      title: title ? `${title} - SmartITN` : title,
+      title: title ? `${title} - Omnichat V2` : title,
       description,
-      url: 'https://smartitn.com',
-      siteName: 'SmartITN',
+      url: 'https://omnichat.com',
+      siteName: 'Omnichat V2',
       images: {
         url: '/logo-itn.svg',
         width: 1200,
