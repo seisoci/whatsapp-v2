@@ -50,6 +50,9 @@ services:
       - TURNSTILE_SECRET_KEY=${TURNSTILE_SECRET_KEY}
       # WhatsApp
       - WHATSAPP_API_VERSION=${WHATSAPP_API_VERSION:-v21.0}
+      # Meilisearch
+      - MEILISEARCH_HOST=${MEILISEARCH_HOST:-http://127.0.0.1:7700}
+      - MEILISEARCH_API_KEY=${MEILISEARCH_API_KEY:-}
     networks:
       omnichat-network:
         ipv4_address: 172.20.0.2
