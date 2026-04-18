@@ -202,6 +202,7 @@ export default function ChatPage() {
   const [lightboxSlides, setLightboxSlides] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [messagesLoading, setMessagesLoading] = useState(false);
+  const [shouldScrollToBottom, setShouldScrollToBottom] = useState(false);
   const [sending, setSending] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearchQuery = useDebounce(searchQuery, 500);
@@ -1079,6 +1080,18 @@ export default function ChatPage() {
     }, delay);
   };
 
+  // Scroll to bottom after messages load and container becomes visible
+  useEffect(() => {
+    if (!messagesLoading && shouldScrollToBottom) {
+      setShouldScrollToBottom(false);
+      requestAnimationFrame(() => {
+        if (chatContainerRef.current) {
+          chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+        }
+      });
+    }
+  }, [messagesLoading, shouldScrollToBottom]);
+
   const loadMessages = async (contact?: Contact) => {
     const targetContact = contact || selectedContact;
     if (!targetContact) return;
@@ -1160,26 +1173,14 @@ export default function ChatPage() {
         });
       });
 
-      // Wait for DOM render
-      await new Promise((resolve) => setTimeout(resolve, 50));
-
-      // Force scroll to bottom using direct property setting (most reliable)
-      if (chatContainerRef.current) {
-        chatContainerRef.current.scrollTop =
-          chatContainerRef.current.scrollHeight;
-      }
-
-      // Double check and retry after a small delay to handle layout shifts (images etc)
-      await new Promise((resolve) => setTimeout(resolve, 100));
-      if (chatContainerRef.current) {
-        chatContainerRef.current.scrollTop =
-          chatContainerRef.current.scrollHeight;
-      }
+      // Signal that scroll to bottom is needed — will fire in useEffect after
+      // setMessagesLoading(false) makes the container visible
+      setShouldScrollToBottom(true);
     } catch (error) {
       console.error('Failed to load messages:', error);
     } finally {
       setLoading(false);
-      setMessagesLoading(false); // Reveal messages
+      setMessagesLoading(false); // Reveal messages — useEffect will then scroll to bottom
     }
   };
 
