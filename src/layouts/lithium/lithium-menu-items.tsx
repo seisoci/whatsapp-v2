@@ -16,6 +16,7 @@ import {
   PiAddressBookDuotone,
   PiListChecksDuotone,
   PiChartBarDuotone,
+  PiMagnifyingGlassDuotone,
 } from 'react-icons/pi';
 
 export type SubMenuItemType = {
@@ -182,6 +183,11 @@ export const lithiumMenuItems: LithiumMenuItem = {
         href: routes.messageQueues,
         icon: PiListChecksDuotone,
       },
+      {
+        name: 'Meilisearch',
+        href: routes.meilisearch,
+        icon: PiMagnifyingGlassDuotone,
+      },
     ],
   },
   management: {
@@ -217,6 +223,11 @@ export const lithiumMenuItems: LithiumMenuItem = {
         name: 'Message Queue',
         href: routes.messageQueues,
         icon: PiListChecksDuotone,
+      },
+      {
+        name: 'Meilisearch',
+        href: routes.meilisearch,
+        icon: PiMagnifyingGlassDuotone,
       },
     ],
   },

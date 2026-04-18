@@ -14,6 +14,9 @@ const chat = new Hono();
 // Apply authentication to all routes
 chat.use('/*', authMiddleware);
 
+// Search endpoint (Meilisearch)
+chat.get('/search', ChatController.search);
+
 // Contact endpoints
 chat.get('/phone-numbers', ChatController.getPhoneNumbers);
 chat.get('/contacts', ChatController.getContacts);

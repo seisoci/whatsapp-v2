@@ -2,6 +2,7 @@ import type { Context } from 'hono';
 import { AppDataSource } from '../config/database';
 import { Contact } from '../models/Contact';
 import { PhoneNumber } from '../models/PhoneNumber';
+import { indexContact, deleteContactFromIndex } from '../services/meilisearch.service';
 
 export class ContactController {
   static async index(c: Context) {
@@ -101,6 +102,20 @@ export class ContactController {
 
       await contactRepository.save(contact);
 
+      // Sync to Meilisearch (fire-and-forget)
+      indexContact({
+        id: contact.id,
+        waId: contact.waId,
+        phoneNumber: contact.phoneNumber,
+        profileName: contact.profileName,
+        businessName: contact.businessName ?? null,
+        phoneNumberId: contact.phoneNumberId,
+        isArchived: false,
+        unreadCount: 0,
+        lastMessageAt: null,
+        createdAt: contact.createdAt.getTime(),
+      }).catch((err) => console.warn('[Meilisearch] Sync error:', err));
+
       return c.json({
         success: true,
         message: 'Contact created successfully',
@@ -169,6 +184,20 @@ export class ContactController {
 
       await contactRepository.save(contact);
 
+      // Sync to Meilisearch (fire-and-forget)
+      indexContact({
+        id: contact.id,
+        waId: contact.waId,
+        phoneNumber: contact.phoneNumber,
+        profileName: contact.profileName,
+        businessName: contact.businessName ?? null,
+        phoneNumberId: contact.phoneNumberId,
+        isArchived: contact.isArchived,
+        unreadCount: contact.unreadCount || 0,
+        lastMessageAt: contact.lastMessageAt ? contact.lastMessageAt.getTime() : null,
+        createdAt: contact.createdAt.getTime(),
+      }).catch((err) => console.warn('[Meilisearch] Sync error:', err));
+
       return c.json({
         success: true,
         message: 'Contact updated successfully',
@@ -196,6 +225,9 @@ export class ContactController {
       }
 
       await contactRepository.remove(contact);
+
+      // Remove from Meilisearch (fire-and-forget)
+      deleteContactFromIndex(id).catch((err) => console.warn('[Meilisearch] Delete error:', err));
 
       return c.json({
         success: true,

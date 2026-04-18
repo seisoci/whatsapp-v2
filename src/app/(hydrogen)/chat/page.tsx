@@ -512,7 +512,7 @@ export default function ChatPage() {
   useEffect(() => {
     if (selectedPhoneNumberId) {
       setContactPage(1);
-      loadContacts(1, false);
+      loadContacts(1, false, debouncedSearchQuery);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearchQuery]);
@@ -984,21 +984,32 @@ export default function ChatPage() {
     }
   };
 
-  const loadContacts = async (page: number = 1, append: boolean = false) => {
+  const loadContacts = async (page: number = 1, append: boolean = false, searchOverride?: string) => {
     if (!selectedPhoneNumberId) return;
     if (append && loadingMoreContactsRef.current) return; // prevent duplicate pagination requests
     if (append) loadingMoreContactsRef.current = true;
     else loadingMoreContactsRef.current = false; // reset on fresh load
 
     if (!append) setLoading(true);
+
+    // Use searchOverride when provided (avoids stale closure on debouncedSearchQuery)
+    const activeQuery = searchOverride !== undefined ? searchOverride : debouncedSearchQuery;
+
     try {
-      const response = await chatApi.getContacts({
-        phoneNumberId: selectedPhoneNumberId,
-        search: searchQuery || undefined,
-        filter: chatFilter,
-        page,
-        limit: 50,
-      });
+      // When there is a search query, use Meilisearch endpoint (searches name, phone, message body)
+      // Otherwise use regular contacts endpoint with PostgreSQL ordering
+      const response = activeQuery.trim()
+        ? await chatApi.searchContacts({
+            phoneNumberId: selectedPhoneNumberId,
+            q: activeQuery.trim(),
+            limit: 50,
+          })
+        : await chatApi.getContacts({
+            phoneNumberId: selectedPhoneNumberId,
+            filter: chatFilter,
+            page,
+            limit: 50,
+          });
 
       // API client already unwraps response.data, so response IS the array
       const newContacts = Array.isArray(response)
@@ -1031,8 +1042,8 @@ export default function ChatPage() {
         }
       }
 
-      // Check if there are more contacts
-      setHasMoreContacts(newContacts.length === 50);
+      // Disable pagination when searching (Meilisearch returns all results at once)
+      setHasMoreContacts(activeQuery.trim() ? false : newContacts.length === 50);
       setContactPage(page);
     } catch (error: any) {
       console.error('Failed to load contacts:', error);

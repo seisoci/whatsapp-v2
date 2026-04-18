@@ -13,6 +13,7 @@ import {
   PiAddressBookDuotone,
   PiListChecksDuotone,
   PiChartBarDuotone,
+  PiMagnifyingGlassDuotone,
 } from 'react-icons/pi';
 
 export const menuItems = [
@@ -83,6 +84,10 @@ export const menuItems = [
       {
         name: 'Message Queue',
         href: routes.messageQueues,
+      },
+      {
+        name: 'Meilisearch',
+        href: routes.meilisearch,
       },
     ],
   },

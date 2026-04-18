@@ -14,6 +14,7 @@ import {
   PiFileTextDuotone,
   PiAddressBookDuotone,
   PiChartBarDuotone,
+  PiMagnifyingGlassDuotone,
 } from 'react-icons/pi';
 
 export interface SubMenuItemType {
@@ -113,6 +114,10 @@ export const berylliumMenuItems: MenuItemsType[] = [
           {
             name: 'Message Queue',
             href: routes.messageQueues,
+          },
+          {
+            name: 'Meilisearch',
+            href: routes.meilisearch,
           },
         ],
       },

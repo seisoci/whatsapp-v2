@@ -15,6 +15,7 @@ import { chatWebSocketManager } from './chat-websocket.service';
 import { redisClient } from '../config/redis';
 import { storageService } from './storage.service';
 import { webhookForwardingQueue } from '../config/queue';
+import { indexContact, indexMessage } from './meilisearch.service';
 
 interface WhatsAppWebhookPayload {
   object: string;
@@ -364,6 +365,34 @@ export class WhatsAppWebhookService {
     }
 
     await messageRepo.save(message);
+
+    // 🔍 MEILISEARCH: Sync contact + message (fire-and-forget — never block webhook processing)
+    Promise.all([
+      indexContact({
+        id: contact.id,
+        waId: contact.waId,
+        phoneNumber: contact.phoneNumber,
+        profileName: contact.profileName,
+        businessName: contact.businessName,
+        phoneNumberId: contact.phoneNumberId,
+        isArchived: contact.isArchived,
+        unreadCount: contact.unreadCount || 0,
+        lastMessageAt: messageTimestamp.getTime(),
+        createdAt: contact.createdAt.getTime(),
+      }),
+      indexMessage({
+        id: message.id,
+        contactId: contact.id,
+        phoneNumberId: internalPhoneNumberId,
+        contactName: contact.profileName,
+        contactPhone: contact.phoneNumber,
+        direction: message.direction,
+        messageType: message.messageType,
+        textBody: message.textBody,
+        mediaCaption: message.mediaCaption,
+        timestamp: messageTimestamp.getTime(),
+      }),
+    ]).catch((err) => console.warn('[Meilisearch] Sync error (non-fatal):', err));
 
     // Update webhook log with message reference — raw UPDATE by PK, no SELECT needed
     await AppDataSource.query(

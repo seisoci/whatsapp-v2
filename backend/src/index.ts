@@ -5,6 +5,7 @@ import { AppDataSource } from './config/database';
 import { env } from './config/env';
 import { redisClient } from './config/redis';
 import { storageService } from './services';
+import { setupMeilisearchIndexes } from './services/meilisearch.service';
 import authRouter from './routes/auth.routes';
 import uploadRouter from './routes/upload.routes';
 import roleRouter from './routes/role.routes';
@@ -25,6 +26,7 @@ import apiEndpointRouter from './routes/api-endpoint.routes';
 import publicApiRouter from './routes/public-api.routes';
 import messageQueueRouter from './routes/message-queue.routes';
 import templateRoleRouter from './routes/template-role.routes';
+import meilisearchRouter from './routes/meilisearch.routes';
 import { handleWebSocketUpgrade } from './routes/websocket.routes';
 import { chatWebSocketManager } from './services/chat-websocket.service';
 import { QueueDispatcherService } from './services/queue-dispatcher.service';
@@ -79,6 +81,7 @@ app.route(`${env.API_PREFIX}/media`, mediaRouter);
 app.route(`${env.API_PREFIX}/api-endpoints`, apiEndpointRouter);
 app.route(`${env.API_PREFIX}/message-queues`, messageQueueRouter);
 app.route(`${env.API_PREFIX}/template-roles`, templateRoleRouter);
+app.route(`${env.API_PREFIX}/meilisearch`, meilisearchRouter);
 app.route(`${env.API_PREFIX}`, publicApiRouter);
 
 // 404 handler
@@ -133,6 +136,13 @@ const startServer = async () => {
           '⚠️  Storage service initialization failed (optional service):',
           error
         )
+      );
+
+    // Initialize Meilisearch indexes (non-blocking)
+    setupMeilisearchIndexes()
+      .then(() => console.log('✅ Meilisearch indexes configured'))
+      .catch((error) =>
+        console.warn('⚠️  Meilisearch initialization failed (optional service):', error)
       );
 
     // Start BullMQ queue dispatcher & workers

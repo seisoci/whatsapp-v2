@@ -45,4 +45,5 @@ export const routes = {
     edit: (id: string) => `/templates/${id}/edit`,
   },
   templateRoles: '/template-roles',
+  meilisearch: '/meilisearch',
 };

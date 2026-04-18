@@ -11,6 +11,7 @@ import { PhoneNumber } from '../models/PhoneNumber';
 import { WhatsAppService } from '../services/whatsapp.service';
 import { getContactsSchema, markAsReadSchema } from '../validators/chat.validator';
 import { withPermissions } from '../utils/controller.decorator';
+import { searchAll } from '../services/meilisearch.service';
 
 export class ChatController {
   /**
@@ -638,6 +639,133 @@ export class ChatController {
         message: 'Failed to unarchive contact',
         error: error.message,
       }, 500);
+    }
+  }
+
+  /**
+   * GET /api/v1/chat/search?phoneNumberId=xxx&q=keyword&limit=20
+   * Full-text search via Meilisearch, returns contacts in the same format as getContacts.
+   * Searches across: contact name, phone number, and message body/caption.
+   */
+  static async search(c: Context) {
+    try {
+      const phoneNumberId = c.req.query('phoneNumberId');
+      const q = c.req.query('q');
+      const limit = parseInt(c.req.query('limit') || '50');
+
+      if (!phoneNumberId) {
+        return c.json({ success: false, message: 'phoneNumberId is required' }, 400);
+      }
+
+      if (!q || q.trim().length === 0) {
+        return c.json({ success: false, message: 'q (search query) is required' }, 400);
+      }
+
+      const meiliResults = await searchAll({ phoneNumberId, query: q.trim(), limit });
+
+      // Collect unique contact IDs from both contact hits and message hits
+      const contactIdSet = new Set<string>();
+      for (const c of meiliResults.contacts) contactIdSet.add(c.id);
+      for (const m of meiliResults.messages) contactIdSet.add(m.contactId);
+
+      if (contactIdSet.size === 0) {
+        return c.json({
+          success: true,
+          data: [],
+          pagination: { page: 1, limit, total: 0, totalPages: 0 },
+        });
+      }
+
+      const contactIds = Array.from(contactIdSet);
+
+      // Fetch full contact rows from PostgreSQL (same shape as getContacts)
+      const placeholders = contactIds.map((_, i) => `$${i + 2}`).join(', ');
+      const rawContacts: any[] = await AppDataSource.query(
+        `SELECT
+           c.*,
+           (SELECT row_to_json(last_msg) FROM (
+             SELECT id, message_type, text_body, media_caption, direction, timestamp, status
+             FROM messages
+             WHERE contact_id = c.id
+             ORDER BY timestamp DESC
+             LIMIT 1
+           ) last_msg) AS last_message_data
+         FROM contacts c
+         WHERE c.phone_number_id = $1
+           AND c.id IN (${placeholders})
+         ORDER BY c.last_message_at DESC NULLS LAST`,
+        [phoneNumberId, ...contactIds],
+      );
+
+      // Fetch tags for those contacts
+      let tagsMap: Record<string, any[]> = {};
+      if (rawContacts.length > 0) {
+        const ids = rawContacts.map((r: any) => r.id);
+        const tagsResult: any[] = await AppDataSource.query(
+          `SELECT ct.contact_id, t.*
+           FROM contact_tags ct
+           JOIN tags t ON ct.tag_id = t.id
+           WHERE ct.contact_id = ANY($1)`,
+          [ids],
+        );
+        for (const row of tagsResult) {
+          if (!tagsMap[row.contact_id]) tagsMap[row.contact_id] = [];
+          tagsMap[row.contact_id].push({ id: row.id, name: row.name, color: row.color });
+        }
+      }
+
+      const now = new Date();
+      const enrichedContacts = rawContacts.map((contact: any) => {
+        const sessionExpiresAt = contact.session_expires_at;
+        const isSessionActive = sessionExpiresAt ? now < new Date(sessionExpiresAt) : false;
+        const sessionRemainingSeconds = sessionExpiresAt
+          ? Math.max(0, Math.floor((new Date(sessionExpiresAt).getTime() - now.getTime()) / 1000))
+          : 0;
+        const lastMessageData = contact.last_message_data;
+
+        return {
+          id: contact.id,
+          waId: contact.wa_id,
+          phoneNumber: contact.phone_number,
+          profileName: contact.profile_name,
+          profilePictureUrl: contact.profile_picture_url,
+          businessName: contact.business_name,
+          isBusinessAccount: contact.is_business_account,
+          isBlocked: contact.is_blocked,
+          tags: tagsMap[contact.id] || [],
+          notes: contact.notes,
+          sessionExpiresAt: contact.session_expires_at,
+          isSessionActive,
+          sessionRemainingSeconds,
+          lastMessage: lastMessageData ? {
+            id: lastMessageData.id,
+            messageType: lastMessageData.message_type,
+            textBody: lastMessageData.text_body,
+            mediaCaption: lastMessageData.media_caption,
+            direction: lastMessageData.direction,
+            timestamp: lastMessageData.timestamp,
+            status: lastMessageData.status,
+          } : null,
+          unreadCount: parseInt(contact.unread_count) || 0,
+          isArchived: contact.is_archived || false,
+          createdAt: contact.created_at,
+          updatedAt: contact.updated_at,
+        };
+      });
+
+      return c.json({
+        success: true,
+        data: enrichedContacts,
+        pagination: {
+          page: 1,
+          limit,
+          total: enrichedContacts.length,
+          totalPages: 1,
+        },
+      });
+    } catch (error: any) {
+      console.error('Error searching:', error);
+      return c.json({ success: false, message: 'Search failed', error: error.message }, 500);
     }
   }
 }
