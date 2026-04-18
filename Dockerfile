@@ -1,26 +1,24 @@
 # Next.js Frontend Dockerfile - Multi-stage build
+# syntax=docker/dockerfile:1
 FROM node:24-alpine AS base
+# Install corepack + pnpm ONCE in base — shared by all stages via cache
+RUN apk add --no-cache libc6-compat && \
+    corepack enable && corepack prepare pnpm@10.33.0 --activate
 
 # Install dependencies only when needed
 FROM base AS deps
-RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-# Install dependencies based on the preferred package manager
+# Copy lockfile + manifest first for better layer caching
 COPY package.json pnpm-lock.yaml* ./
 
-# Enable corepack and install pnpm version from package.json
-RUN corepack enable && corepack prepare pnpm@10.33.0 --activate
-
-# Install dependencies
-# Use --frozen-lockfile in CI/production for reproducibility
-# If lockfile is out of sync, build will fail - this is intentional
-# Run 'pnpm install' locally first to update lockfile before deploying
-RUN if [ -f pnpm-lock.yaml ]; then \
-        echo "📦 Installing from lockfile..." && \
+# Use BuildKit cache mount so pnpm store persists between builds
+RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store/v3 \
+    if [ -f pnpm-lock.yaml ]; then \
+        echo "Installing from lockfile..." && \
         pnpm i --frozen-lockfile; \
     else \
-        echo "⚠️  No lockfile found, generating new one..." && \
+        echo "No lockfile found, generating new one..." && \
         pnpm i; \
     fi
 
@@ -38,7 +36,7 @@ ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_TURNSTILE_SITE_KEY=$NEXT_PUBLIC_TURNSTILE_SITE_KEY
 ENV NEXT_TELEMETRY_DISABLED=1
 
-RUN corepack enable && corepack prepare pnpm@10.33.0 --activate && pnpm build
+RUN pnpm build
 
 # Production image, copy all the files and run next
 FROM base AS runner

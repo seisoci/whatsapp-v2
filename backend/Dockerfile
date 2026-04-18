@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 # Stage 1: Install dependencies
 FROM oven/bun:1 as deps
 WORKDIR /app
@@ -5,8 +6,9 @@ WORKDIR /app
 # Copy package files
 COPY package.json bun.lock ./
 
-# Install production dependencies
-RUN bun install --frozen-lockfile --production
+# Use BuildKit cache mount so bun cache persists between builds
+RUN --mount=type=cache,target=/root/.bun/install/cache \
+    bun install --frozen-lockfile --production
 
 # Stage 2: Runner
 FROM oven/bun:1 as runner
