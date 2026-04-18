@@ -47,36 +47,47 @@ export class WhatsAppWebhookController {
    */
   static async receive(c: Context) {
     try {
-      const payload = await c.req.json();
-      
+      // Read raw body first — required for HMAC signature verification.
+      // Re-serializing with JSON.stringify() after parsing can alter key order
+      // or whitespace and produce a different hash than Meta computed.
+      const rawBody = await c.req.text();
+
+      // SECURITY: Verify webhook signature using WHATSAPP_APP_SECRET
+      const appSecret = process.env.WHATSAPP_APP_SECRET;
+      const signature = c.req.header('x-hub-signature-256');
+      if (!appSecret) {
+        console.warn('⚠️ WHATSAPP_APP_SECRET is not set — webhook signature verification is disabled');
+      } else if (!signature) {
+        console.warn('⚠️ Missing x-hub-signature-256 header — rejecting request');
+        return c.json({ success: false, message: 'Missing signature' }, 403);
+      } else {
+        const isValid = WhatsAppWebhookService.verifyWebhookSignature(rawBody, signature, appSecret);
+        if (!isValid) {
+          console.warn('⚠️ Invalid webhook signature — rejecting request');
+          return c.json({ success: false, message: 'Invalid signature' }, 403);
+        }
+      }
+
+      let payload: unknown;
+      try {
+        payload = JSON.parse(rawBody);
+      } catch {
+        return c.json({ success: false, message: 'Invalid JSON body' }, 400);
+      }
+
       // SECURITY: Validate payload structure
       const validation = validateWebhookPayload(payload);
       if (!validation.success) {
         console.warn('⚠️ Invalid webhook payload:', validation.error);
-        return c.json({ 
-          success: false, 
+        return c.json({
+          success: false,
           message: 'Invalid payload structure',
-          error: validation.error 
+          error: validation.error
         }, 400);
       }
 
       const ip = c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || 'unknown';
       const userAgent = c.req.header('user-agent') || null;
-
-      // Optional: Verify webhook signature for security
-      // const signature = c.req.header('x-hub-signature-256');
-      // if (signature && process.env.WHATSAPP_APP_SECRET) {
-      //   const rawBody = JSON.stringify(payload);
-      //   const isValid = WhatsAppWebhookService.verifyWebhookSignature(
-      //     rawBody,
-      //     signature,
-      //     process.env.WHATSAPP_APP_SECRET
-      //   );
-      //   if (!isValid) {
-      //     console.warn('⚠️ Invalid webhook signature');
-      //     return c.json({ success: false, message: 'Invalid signature' }, 403);
-      //   }
-      // }
 
       const idempotencyKey = WhatsAppWebhookService.generateIdempotencyKey(validation.data!);
 

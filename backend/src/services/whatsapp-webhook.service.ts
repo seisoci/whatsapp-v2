@@ -3,6 +3,7 @@
  * Processes incoming webhooks from WhatsApp Cloud API
  */
 
+import crypto from 'crypto';
 import { AppDataSource } from '../config/database';
 import { Contact } from '../models/Contact';
 import { Message } from '../models/Message';
@@ -649,13 +650,15 @@ export class WhatsAppWebhookService {
   /**
    * Verify webhook signature (optional but recommended for production)
    */
-  static verifyWebhookSignature(payload: string, signature: string, appSecret: string): boolean {
-    const crypto = require('crypto');
+  static verifyWebhookSignature(rawBody: string, signature: string, appSecret: string): boolean {
     const expectedSignature = crypto
       .createHmac('sha256', appSecret)
-      .update(payload)
+      .update(rawBody, 'utf8')
       .digest('hex');
 
-    return signature === `sha256=${expectedSignature}`;
+    return crypto.timingSafeEqual(
+      Buffer.from(signature),
+      Buffer.from(`sha256=${expectedSignature}`),
+    );
   }
 }
