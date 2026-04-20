@@ -1257,6 +1257,10 @@ export default function ChatPage() {
   };
 
   const handleContactClick = async (contact: Contact) => {
+    // If this contact is already open, do nothing — useEffect won't re-fire
+    // and loadMessages would never be called, leaving the UI stuck in loading.
+    if (selectedContact?.id === contact.id) return;
+
     // Cancel all pending delayed sends silently before switching contacts
     if (cancelSendRefs.current.size > 0) {
       cancelSendRefs.current.forEach((entry, msgId) => {
