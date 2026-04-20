@@ -212,6 +212,7 @@ export default function ChatPage() {
   const [totalContacts, setTotalContacts] = useState(0);
   const [unreadCount, setUnreadCount] = useState(0);
   const [archivedCount, setArchivedCount] = useState(0);
+  const [selectedArchiveIds, setSelectedArchiveIds] = useState<Set<string>>(new Set());
   const [replyToMessage, setReplyToMessage] = useState<Message | null>(null);
 
   // Message pagination state
@@ -1080,14 +1081,18 @@ export default function ChatPage() {
     }, delay);
   };
 
-  // Scroll to bottom after messages load and container becomes visible
+  // Scroll to bottom after messages load and container becomes visible.
+  // Double-rAF ensures the browser has finished layout on the newly-visible container
+  // (single rAF fires before paint; second rAF fires after the first paint is committed).
   useEffect(() => {
     if (!messagesLoading && shouldScrollToBottom) {
       setShouldScrollToBottom(false);
       requestAnimationFrame(() => {
-        if (chatContainerRef.current) {
-          chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
-        }
+        requestAnimationFrame(() => {
+          if (chatContainerRef.current) {
+            chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+          }
+        });
       });
     }
   }, [messagesLoading, shouldScrollToBottom]);
@@ -1326,6 +1331,29 @@ export default function ChatPage() {
     } catch (error) {
       console.error('Failed to archive/unarchive contact:', error);
       // Reload contacts on error to restore correct state
+      loadContacts();
+      loadContactsStats();
+    }
+  };
+
+  const handleBulkUnarchive = async (ids: string[]) => {
+    if (ids.length === 0) return;
+    // Optimistic UI update
+    setContacts((prev) => prev.filter((c) => !ids.includes(c.id)));
+    setArchivedCount((prev) => Math.max(0, prev - ids.length));
+    setTotalContacts((prev) => prev + ids.length);
+    setSelectedArchiveIds(new Set());
+    // Clear chat panel if the open contact is among the unarchived ones
+    if (selectedContact && ids.includes(selectedContact.id)) {
+      setSelectedContact(null);
+      setShowChat(false);
+      setMessages([]);
+    }
+    try {
+      await Promise.all(ids.map((id) => chatApi.unarchiveContact(id)));
+      loadContactsStats();
+    } catch (error) {
+      console.error('Failed to bulk unarchive contacts:', error);
       loadContacts();
       loadContactsStats();
     }
@@ -2329,7 +2357,7 @@ export default function ChatPage() {
                       <button
                         key={filter}
                         type="button"
-                        onClick={() => setChatFilter(filter)}
+                        onClick={() => { setChatFilter(filter); setSelectedArchiveIds(new Set()); }}
                         style={
                           isNeoBrutalism
                             ? {
@@ -2420,10 +2448,47 @@ export default function ChatPage() {
                   })}
                 </div>
 
+                {/* Bulk selection toolbar — shown when in archived filter */}
+                {chatFilter === 'archived' && contacts.length > 0 && (
+                  <div className={`flex items-center gap-2 border-b border-gray-200 px-4 py-2 ${isPlayfulGeometric ? 'border-[#1E293B]/15!' : ''}`}>
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 cursor-pointer accent-green-600"
+                      checked={selectedArchiveIds.size === contacts.length && contacts.length > 0}
+                      ref={(el) => {
+                        if (el) el.indeterminate = selectedArchiveIds.size > 0 && selectedArchiveIds.size < contacts.length;
+                      }}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedArchiveIds(new Set(contacts.map((c) => c.id)));
+                        } else {
+                          setSelectedArchiveIds(new Set());
+                        }
+                      }}
+                      title="Select all"
+                    />
+                    <span className="flex-1 text-xs text-gray-500">
+                      {selectedArchiveIds.size > 0
+                        ? `${selectedArchiveIds.size} selected`
+                        : 'Select all'}
+                    </span>
+                    {selectedArchiveIds.size > 0 && (
+                      <button
+                        type="button"
+                        className="flex items-center gap-1 rounded px-2 py-1 text-xs font-medium text-white bg-green-600 hover:bg-green-700 transition-colors"
+                        onClick={() => handleBulkUnarchive(Array.from(selectedArchiveIds))}
+                      >
+                        <PiArrowCounterClockwise className="h-3 w-3" />
+                        Unarchive ({selectedArchiveIds.size})
+                      </button>
+                    )}
+                  </div>
+                )}
+
                 {/* Archived messages header - shown when not in archived filter and there are archived contacts */}
                 {chatFilter !== 'archived' && archivedCount > 0 && (
                   <button
-                    onClick={() => setChatFilter('archived')}
+                    onClick={() => { setChatFilter('archived'); setSelectedArchiveIds(new Set()); }}
                     className={`nb-archived-row flex w-full items-center gap-3 border-b border-gray-200 bg-gray-50 px-4 py-3 text-left transition-colors hover:bg-gray-100 ${
                       isPlayfulGeometric
                         ? 'border-[#1E293B]/15! bg-[linear-gradient(90deg,rgba(251,191,36,0.16),rgba(244,114,182,0.1),rgba(139,92,246,0.08))]! hover:bg-[linear-gradient(90deg,rgba(244,114,182,0.14),rgba(52,211,153,0.12))]!'
@@ -2471,13 +2536,32 @@ export default function ChatPage() {
                         }
                       }}
                       className={`nb-contact-row flex w-full cursor-pointer items-center gap-2 border-b border-gray-100 p-2 text-left transition-colors hover:bg-gray-50 ${
-                        selectedContact?.id === contact.id ? 'bg-gray-50' : ''
+                        chatFilter === 'archived' && selectedArchiveIds.has(contact.id)
+                          ? 'bg-green-50'
+                          : selectedContact?.id === contact.id ? 'bg-gray-50' : ''
                       } ${
                         isPlayfulGeometric
                           ? 'border-[#E2E8F0]! hover:bg-[rgba(251,191,36,0.12)]!'
                           : ''
                       } ${contactOptionsMenuId === contact.id ? 'relative z-20' : ''}`}
                     >
+                      {chatFilter === 'archived' && (
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4 flex-shrink-0 cursor-pointer accent-green-600"
+                          checked={selectedArchiveIds.has(contact.id)}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            setSelectedArchiveIds((prev) => {
+                              const next = new Set(prev);
+                              if (next.has(contact.id)) next.delete(contact.id);
+                              else next.add(contact.id);
+                              return next;
+                            });
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      )}
                       <Avatar
                         src={
                           contact.profilePictureUrl ||

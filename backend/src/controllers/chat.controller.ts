@@ -661,12 +661,24 @@ export class ChatController {
         return c.json({ success: false, message: 'q (search query) is required' }, 400);
       }
 
-      const meiliResults = await searchAll({ phoneNumberId, query: q.trim(), limit });
+      const trimmedQ = q.trim();
+      const meiliResults = await searchAll({ phoneNumberId, query: trimmedQ, limit });
 
       // Collect unique contact IDs from both contact hits and message hits
       const contactIdSet = new Set<string>();
       for (const c of meiliResults.contacts) contactIdSet.add(c.id);
       for (const m of meiliResults.messages) contactIdSet.add(m.contactId);
+
+      // Meilisearch only does prefix-token matching, so substring phone number searches
+      // (e.g. last 4 digits) won't match. Fall back to PostgreSQL ILIKE for phone/name.
+      const pgPhoneRows: any[] = await AppDataSource.query(
+        `SELECT id FROM contacts
+         WHERE phone_number_id = $1
+           AND (phone_number ILIKE $2 OR profile_name ILIKE $2 OR business_name ILIKE $2)
+         LIMIT $3`,
+        [phoneNumberId, `%${trimmedQ}%`, limit],
+      );
+      for (const row of pgPhoneRows) contactIdSet.add(row.id);
 
       if (contactIdSet.size === 0) {
         return c.json({
