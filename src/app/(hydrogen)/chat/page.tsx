@@ -751,6 +751,18 @@ export default function ChatPage() {
               }
             }
 
+            // Archived contact on a non-archived tab: remove from list, don't bubble
+            if (updatedContact.isArchived && currentFilter !== 'archived') {
+              loadContactsStats();
+              return prevContacts.filter((c) => c.id !== contactId);
+            }
+
+            // Non-archived contact on the archived tab: remove from list
+            if (!updatedContact.isArchived && currentFilter === 'archived') {
+              loadContactsStats();
+              return prevContacts.filter((c) => c.id !== contactId);
+            }
+
             // Remove from old position and add to top
             const newContacts = [...prevContacts];
             newContacts.splice(contactIndex, 1);

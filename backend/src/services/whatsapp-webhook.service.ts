@@ -447,6 +447,8 @@ export class WhatsAppWebhookService {
           sessionExpiresAt: contact.sessionExpiresAt,
           isSessionActive: contact.isSessionActive, // Using the getter on the entity
           sessionRemainingSeconds, // Add this for frontend timer
+          // Archive status
+          isArchived: contact.isArchived,
           // Tags (if loaded)
           tags: contact.tags || [],
           // Unread count from database (trigger keeps this updated)
