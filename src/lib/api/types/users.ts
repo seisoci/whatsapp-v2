@@ -4,6 +4,13 @@ export interface Role {
   slug: string;
 }
 
+export interface UserPhoneNumber {
+  id: string;
+  name?: string | null;
+  displayPhoneNumber?: string | null;
+  phoneNumberId?: string;
+}
+
 export interface User {
   id: string;
   email: string;
@@ -12,6 +19,7 @@ export interface User {
   emailVerified: boolean;
   roleId: number;
   role?: Role;
+  phoneNumbers?: UserPhoneNumber[];
   createdAt: string;
   updatedAt: string;
 }

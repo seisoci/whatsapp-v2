@@ -1,7 +1,9 @@
 import { Context } from 'hono';
 import { z } from 'zod';
+import { In } from 'typeorm';
 import { AppDataSource } from '../config/database';
 import { User } from '../models/User';
+import { PhoneNumber } from '../models/PhoneNumber';
 import { userPaginationSchema, emailSchema, usernameSchema, passwordSchema } from '../validators/common.validator';
 import { withPermissions } from '../utils/controller.decorator';
 
@@ -40,6 +42,7 @@ export class UserController {
     update: 'user-update',
     destroy: 'user-destroy',
     resetPassword: 'user-update',
+    assignPhoneNumbers: 'super-admin',
   };
 
   /**
@@ -64,6 +67,7 @@ export class UserController {
       const queryBuilder = userRepository
         .createQueryBuilder('user')
         .leftJoinAndSelect('user.role', 'role')
+        .leftJoinAndSelect('user.phoneNumbers', 'phoneNumbers')
         .select([
           'user.id',
           'user.email',
@@ -75,6 +79,10 @@ export class UserController {
           'role.id',
           'role.name',
           'role.slug',
+          'phoneNumbers.id',
+          'phoneNumbers.name',
+          'phoneNumbers.displayPhoneNumber',
+          'phoneNumbers.phoneNumberId',
         ]);
 
       // Apply search filter
@@ -135,7 +143,7 @@ export class UserController {
       const userRepository = AppDataSource.getRepository(User);
       const user = await userRepository.findOne({
         where: { id },
-        relations: ['role', 'role.permissions', 'role.menus'],
+        relations: ['role', 'role.permissions', 'role.menus', 'phoneNumbers'],
         select: {
           id: true,
           email: true,
@@ -427,6 +435,74 @@ export class UserController {
         },
         500
       );
+    }
+  }
+
+  /**
+   * PUT /api/v1/users/:id/phone-numbers
+   * Assign phone numbers a user can handle (super-admin only)
+   */
+  static async assignPhoneNumbers(c: Context) {
+    try {
+      const { id } = c.req.param();
+      const rawBody = await c.req.json();
+
+      const schema = z.object({
+        phoneNumberIds: z.array(z.string().uuid()).default([]),
+      });
+
+      const parsed = schema.safeParse(rawBody);
+      if (!parsed.success) {
+        return c.json(
+          { success: false, message: parsed.error.errors[0]?.message || 'Data tidak valid.' },
+          400
+        );
+      }
+
+      const userRepository = AppDataSource.getRepository(User);
+      const user = await userRepository.findOne({
+        where: { id },
+        relations: ['phoneNumbers'],
+      });
+
+      if (!user) {
+        return c.json({ success: false, message: 'User tidak ditemukan.' }, 404);
+      }
+
+      // Super-admin bypasses all — no point restricting them
+      if (user.isSuperAdmin()) {
+        return c.json(
+          { success: false, message: 'Super Admin tidak perlu dibatasi nomor telepon.' },
+          400
+        );
+      }
+
+      const { phoneNumberIds } = parsed.data;
+
+      // Validate all phoneNumberIds exist
+      const phoneNumberRepo = AppDataSource.getRepository(PhoneNumber);
+      const phones = phoneNumberIds.length > 0
+        ? await phoneNumberRepo.findBy({ id: In(phoneNumberIds) })
+        : [];
+
+      if (phones.length !== phoneNumberIds.length) {
+        return c.json(
+          { success: false, message: 'Satu atau lebih nomor telepon tidak ditemukan.' },
+          400
+        );
+      }
+
+      user.phoneNumbers = phones;
+      await userRepository.save(user);
+
+      return c.json({
+        success: true,
+        message: 'Nomor telepon berhasil diassign.',
+        data: phones.map((p) => ({ id: p.id, name: p.name, displayPhoneNumber: p.displayPhoneNumber })),
+      });
+    } catch (error: any) {
+      console.error('Assign phone numbers error:', error);
+      return c.json({ success: false, message: 'Terjadi kesalahan pada server.' }, 500);
     }
   }
 }

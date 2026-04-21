@@ -8,6 +8,8 @@ import { AppDataSource } from '../config/database';
 import { Message } from '../models/Message';
 import { Contact } from '../models/Contact';
 import { PhoneNumber } from '../models/PhoneNumber';
+import { User } from '../models/User';
+import { getUserAllowedPhoneNumberIds, isPhoneNumberAllowed } from '../utils/phone-access';
 import { WhatsAppMessagingService } from '../services/whatsapp-messaging.service';
 import { chatWebSocketManager } from '../services/chat-websocket.service';
 import {
@@ -51,6 +53,19 @@ export class MessageController {
 
       const { contactId, page, limit } = validation.data;
       const offset = (page - 1) * limit;
+
+      // Access check: verify user can access the phone number for this contact
+      const user = c.get('user') as User;
+      const contactCheckResult = await AppDataSource.query(
+        'SELECT phone_number_id FROM contacts WHERE id = $1',
+        [contactId]
+      );
+      if (contactCheckResult.length > 0) {
+        const allowedIds = await getUserAllowedPhoneNumberIds(user);
+        if (!isPhoneNumberAllowed(allowedIds, contactCheckResult[0].phone_number_id)) {
+          return c.json({ success: false, message: 'Akses ke nomor telepon ini tidak diizinkan.' }, 403);
+        }
+      }
 
       const messageRepo = AppDataSource.getRepository(Message);
 
@@ -215,28 +230,20 @@ export class MessageController {
       const { contactId, phoneNumberId, type, text, template, media, contacts, context } =
         validation.data;
 
-      // Get authenticated user ID from context
-      // If wrapped with permissions, user is User entity (has .id)
-      const user = c.get('user');
-      const userId = user?.id; // as requested by user
+      // Get authenticated user from context (set by withPermissions as full User entity)
+      const user = c.get('user') as User;
+      const userId = user?.id;
 
       // Get contact
       const contactRepo = AppDataSource.getRepository(Contact);
       const contact = await contactRepo.findOne({ where: { id: contactId } });
 
       if (!contact) {
-        return c.json(
-          {
-            success: false,
-            message: 'Contact not found',
-          },
-          404
-        );
+        return c.json({ success: false, message: 'Contact not found' }, 404);
       }
 
       // Get phone number credentials
       // The frontend may pass either the DB uuid (id) or the WA phone_number_id
-      // Only select columns that exist in DB (cached columns like displayPhoneNumber may not be migrated yet)
       const phoneNumberSelect = {
         id: true,
         phoneNumberId: true,
@@ -258,13 +265,13 @@ export class MessageController {
       }
 
       if (!phoneNumber) {
-        return c.json(
-          {
-            success: false,
-            message: 'Phone number not found',
-          },
-          404
-        );
+        return c.json({ success: false, message: 'Phone number not found' }, 404);
+      }
+
+      // Enforce phone number access — super-admin bypasses, others must be assigned
+      const allowedIds = await getUserAllowedPhoneNumberIds(user);
+      if (!isPhoneNumberAllowed(allowedIds, phoneNumber.id)) {
+        return c.json({ success: false, message: 'Akses ke nomor telepon ini tidak diizinkan.' }, 403);
       }
 
       let result: any;
@@ -451,13 +458,13 @@ export class MessageController {
       const message = await messageRepo.findOne({ where: { id: messageId } });
 
       if (!message) {
-        return c.json(
-          {
-            success: false,
-            message: 'Message not found',
-          },
-          404
-        );
+        return c.json({ success: false, message: 'Message not found' }, 404);
+      }
+
+      const user = c.get('user') as User;
+      const allowedIds = await getUserAllowedPhoneNumberIds(user);
+      if (!isPhoneNumberAllowed(allowedIds, message.phoneNumberId)) {
+        return c.json({ success: false, message: 'Akses ke nomor telepon ini tidak diizinkan.' }, 403);
       }
 
       if (message.direction !== 'incoming') {

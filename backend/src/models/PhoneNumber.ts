@@ -5,6 +5,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   ManyToOne,
+  ManyToMany,
   JoinColumn,
 } from 'typeorm';
 import { User } from './User';
@@ -62,6 +63,9 @@ export class PhoneNumber {
   @ManyToOne(() => User, { nullable: true })
   @JoinColumn({ name: 'created_by' })
   creator: User | null;
+
+  @ManyToMany(() => User, (user) => user.phoneNumbers)
+  users: User[];
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

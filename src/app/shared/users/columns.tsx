@@ -2,9 +2,9 @@
 
 import { createColumnHelper } from '@tanstack/react-table';
 import { User } from '@/lib/api/types/users';
-import { Text, ActionIcon, Tooltip, Avatar } from 'rizzui';
+import { Text, ActionIcon, Tooltip, Avatar, Badge } from 'rizzui';
 import PencilIcon from '@core/components/icons/pencil';
-import { PiLockKeyOpenDuotone } from 'react-icons/pi';
+import { PiLockKeyOpenDuotone, PiShieldCheckDuotone } from 'react-icons/pi';
 import DeletePopover from '@/components/delete-popover';
 
 const columnHelper = createColumnHelper<User>();
@@ -49,6 +49,40 @@ export const createUsersColumns = ({
     cell: ({ row }) => (
       <Text className="text-sm">{row.original.role?.name || '-'}</Text>
     ),
+  }),
+  columnHelper.display({
+    id: 'phoneNumbers',
+    size: 200,
+    header: 'Phone Numbers',
+    cell: ({ row }) => {
+      const isSuperAdmin = row.original.role?.slug === 'super-admin' || row.original.role?.id === 1;
+      if (isSuperAdmin) {
+        return (
+          <div className="flex items-center gap-1">
+            <PiShieldCheckDuotone className="h-4 w-4 text-blue-500" />
+            <Text className="text-xs text-blue-600">All (Super Admin)</Text>
+          </div>
+        );
+      }
+      const phones = row.original.phoneNumbers ?? [];
+      if (phones.length === 0) {
+        return <Text className="text-xs text-gray-400">No access</Text>;
+      }
+      return (
+        <div className="flex flex-wrap gap-1">
+          {phones.slice(0, 2).map((p) => (
+            <Badge key={p.id} variant="flat" color="info" className="text-xs">
+              {p.displayPhoneNumber || p.name || 'Phone'}
+            </Badge>
+          ))}
+          {phones.length > 2 && (
+            <Badge variant="flat" color="secondary" className="text-xs">
+              +{phones.length - 2}
+            </Badge>
+          )}
+        </div>
+      );
+    },
   }),
   columnHelper.accessor('createdAt', {
     id: 'createdAt',

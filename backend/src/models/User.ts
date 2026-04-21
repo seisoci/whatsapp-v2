@@ -9,11 +9,14 @@ import {
   Index,
   OneToMany,
   ManyToOne,
+  ManyToMany,
+  JoinTable,
   JoinColumn,
 } from 'typeorm';
 import bcrypt from 'bcryptjs';
 import type { RefreshToken } from './RefreshToken';
 import type { Role } from './Role';
+import type { PhoneNumber } from './PhoneNumber';
 
 @Entity('users')
 export class User {
@@ -60,6 +63,14 @@ export class User {
 
   @OneToMany('RefreshToken', 'user')
   refreshTokens: RefreshToken[];
+
+  @ManyToMany('PhoneNumber', 'users')
+  @JoinTable({
+    name: 'user_phone_numbers',
+    joinColumn: { name: 'user_id', referencedColumnName: 'id' },
+    inverseJoinColumn: { name: 'phone_number_id', referencedColumnName: 'id' },
+  })
+  phoneNumbers: PhoneNumber[];
 
   @ManyToOne('Role', 'users', {
     onDelete: 'SET NULL',

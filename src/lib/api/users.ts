@@ -18,4 +18,7 @@ export const usersApi = {
 
   resetPassword: (id: string, newPassword: string) =>
     apiClient.post<ApiResponse>(`/users/${id}/reset-password`, { newPassword }),
+
+  assignPhoneNumbers: (id: string, phoneNumberIds: string[]) =>
+    apiClient.put<ApiResponse>(`/users/${id}/phone-numbers`, { phoneNumberIds }),
 };

@@ -4,14 +4,17 @@
  */
 
 import { Context } from 'hono';
+import { In } from 'typeorm';
 import { AppDataSource } from '../config/database';
 import { Contact } from '../models/Contact';
 import { Message } from '../models/Message';
 import { PhoneNumber } from '../models/PhoneNumber';
+import { User } from '../models/User';
 import { WhatsAppService } from '../services/whatsapp.service';
 import { getContactsSchema, markAsReadSchema } from '../validators/chat.validator';
 import { withPermissions } from '../utils/controller.decorator';
 import { searchAll } from '../services/meilisearch.service';
+import { getUserAllowedPhoneNumberIds, isPhoneNumberAllowed } from '../utils/phone-access';
 
 export class ChatController {
   /**
@@ -34,9 +37,18 @@ export class ChatController {
    */
   static async getPhoneNumbers(c: Context) {
     try {
+      const user = c.get('user') as User;
+      const allowedIds = await getUserAllowedPhoneNumberIds(user);
+
+      // Non-super-admin with no phone numbers assigned → return empty list
+      if (allowedIds !== null && allowedIds.size === 0) {
+        return c.json({ success: true, data: [] }, 200);
+      }
+
       const phoneNumberRepository = AppDataSource.getRepository(PhoneNumber);
 
       const phoneNumbers = await phoneNumberRepository.find({
+        where: allowedIds !== null ? { id: In([...allowedIds]) } : {},
         relations: ['creator'],
         select: {
           id: true,
@@ -132,7 +144,7 @@ export class ChatController {
     try {
       const query = c.req.query();
       const validation = getContactsSchema.safeParse(query);
-      
+
       if (!validation.success) {
         return c.json({
           success: false,
@@ -142,6 +154,12 @@ export class ChatController {
       }
 
       const { phoneNumberId, search, filter, page, limit } = validation.data;
+
+      const user = c.get('user') as User;
+      const allowedIds = await getUserAllowedPhoneNumberIds(user);
+      if (!isPhoneNumberAllowed(allowedIds, phoneNumberId)) {
+        return c.json({ success: false, message: 'Akses ke nomor telepon ini tidak diizinkan.' }, 403);
+      }
       const offset = (page - 1) * limit;
 
       // OPTIMIZED: Using denormalized unread_count column (auto-updated via PostgreSQL trigger)
@@ -313,10 +331,13 @@ export class ChatController {
       const phoneNumberId = c.req.query('phoneNumberId');
 
       if (!phoneNumberId) {
-        return c.json({
-          success: false,
-          message: 'phoneNumberId is required',
-        }, 400);
+        return c.json({ success: false, message: 'phoneNumberId is required' }, 400);
+      }
+
+      const user = c.get('user') as User;
+      const allowedIds = await getUserAllowedPhoneNumberIds(user);
+      if (!isPhoneNumberAllowed(allowedIds, phoneNumberId)) {
+        return c.json({ success: false, message: 'Akses ke nomor telepon ini tidak diizinkan.' }, 403);
       }
 
       // Get total contacts count (non-archived only)
@@ -379,10 +400,13 @@ export class ChatController {
       });
 
       if (!contact) {
-        return c.json({
-          success: false,
-          message: 'Contact not found',
-        }, 404);
+        return c.json({ success: false, message: 'Contact not found' }, 404);
+      }
+
+      const user = c.get('user') as User;
+      const allowedIds = await getUserAllowedPhoneNumberIds(user);
+      if (!isPhoneNumberAllowed(allowedIds, contact.phoneNumberId)) {
+        return c.json({ success: false, message: 'Akses ke nomor telepon ini tidak diizinkan.' }, 403);
       }
 
       // Fetch last message for this contact
@@ -456,16 +480,16 @@ export class ChatController {
       const messageRepo = AppDataSource.getRepository(Message);
       const contactRepo = AppDataSource.getRepository(Contact);
 
-      // Get contact to find phoneNumberId for WebSocket broadcast
-      const contact = await contactRepo.findOne({
-        where: { id: contactId }
-      });
+      const contact = await contactRepo.findOne({ where: { id: contactId } });
 
       if (!contact) {
-        return c.json({
-          success: false,
-          message: 'Contact not found',
-        }, 404);
+        return c.json({ success: false, message: 'Contact not found' }, 404);
+      }
+
+      const user = c.get('user') as User;
+      const allowedIds = await getUserAllowedPhoneNumberIds(user);
+      if (!isPhoneNumberAllowed(allowedIds, contact.phoneNumberId)) {
+        return c.json({ success: false, message: 'Akses ke nomor telepon ini tidak diizinkan.' }, 403);
       }
 
       // Update all unread incoming messages
@@ -519,13 +543,21 @@ export class ChatController {
       const contactId = c.req.param('id');
       const contactRepo = AppDataSource.getRepository(Contact);
 
+      const contact = await contactRepo.findOne({ where: { id: contactId } });
+      if (!contact) {
+        return c.json({ success: false, message: 'Contact not found' }, 404);
+      }
+
+      const user = c.get('user') as User;
+      const allowedIds = await getUserAllowedPhoneNumberIds(user);
+      if (!isPhoneNumberAllowed(allowedIds, contact.phoneNumberId)) {
+        return c.json({ success: false, message: 'Akses ke nomor telepon ini tidak diizinkan.' }, 403);
+      }
+
       const result = await contactRepo.delete(contactId);
 
       if (result.affected === 0) {
-        return c.json({
-          success: false,
-          message: 'Contact not found',
-        }, 404);
+        return c.json({ success: false, message: 'Contact not found' }, 404);
       }
 
       return c.json({
@@ -551,15 +583,16 @@ export class ChatController {
       const contactId = c.req.param('id');
       const contactRepo = AppDataSource.getRepository(Contact);
 
-      const contact = await contactRepo.findOne({
-        where: { id: contactId }
-      });
+      const contact = await contactRepo.findOne({ where: { id: contactId } });
 
       if (!contact) {
-        return c.json({
-          success: false,
-          message: 'Contact not found',
-        }, 404);
+        return c.json({ success: false, message: 'Contact not found' }, 404);
+      }
+
+      const user = c.get('user') as User;
+      const allowedIds = await getUserAllowedPhoneNumberIds(user);
+      if (!isPhoneNumberAllowed(allowedIds, contact.phoneNumberId)) {
+        return c.json({ success: false, message: 'Akses ke nomor telepon ini tidak diizinkan.' }, 403);
       }
 
       // Update archive status
@@ -601,15 +634,16 @@ export class ChatController {
       const contactId = c.req.param('id');
       const contactRepo = AppDataSource.getRepository(Contact);
 
-      const contact = await contactRepo.findOne({
-        where: { id: contactId }
-      });
+      const contact = await contactRepo.findOne({ where: { id: contactId } });
 
       if (!contact) {
-        return c.json({
-          success: false,
-          message: 'Contact not found',
-        }, 404);
+        return c.json({ success: false, message: 'Contact not found' }, 404);
+      }
+
+      const user = c.get('user') as User;
+      const allowedIds = await getUserAllowedPhoneNumberIds(user);
+      if (!isPhoneNumberAllowed(allowedIds, contact.phoneNumberId)) {
+        return c.json({ success: false, message: 'Akses ke nomor telepon ini tidak diizinkan.' }, 403);
       }
 
       // Update archive status
@@ -655,6 +689,12 @@ export class ChatController {
 
       if (!phoneNumberId) {
         return c.json({ success: false, message: 'phoneNumberId is required' }, 400);
+      }
+
+      const user = c.get('user') as User;
+      const allowedIds = await getUserAllowedPhoneNumberIds(user);
+      if (!isPhoneNumberAllowed(allowedIds, phoneNumberId)) {
+        return c.json({ success: false, message: 'Akses ke nomor telepon ini tidak diizinkan.' }, 403);
       }
 
       if (!q || q.trim().length === 0) {

@@ -22,6 +22,9 @@ userRouter.put('/:id', UserController.update);
 // Reset user password (permission check in controller)
 userRouter.post('/:id/reset-password', UserController.resetPassword);
 
+// Assign phone numbers to user (super-admin only)
+userRouter.put('/:id/phone-numbers', UserController.assignPhoneNumbers);
+
 // Delete user (permission check in controller)
 userRouter.delete('/:id', UserController.destroy);
 

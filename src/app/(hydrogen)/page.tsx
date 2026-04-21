@@ -22,7 +22,7 @@ import {
   Legend,
 } from 'recharts';
 import { dashboardApi, type DashboardStats } from '@/lib/api/dashboard';
-import { phoneNumbersApi } from '@/lib/api/phone-numbers';
+import { chatApi } from '@/lib/api/chat';
 import Link from 'next/link';
 import { format } from 'date-fns';
 
@@ -76,7 +76,7 @@ export default function DashboardPage() {
   useEffect(() => {
     const fetchPhoneNumbers = async () => {
       try {
-        const res: any = await phoneNumbersApi.getAll();
+        const res: any = await chatApi.getPhoneNumbers();
         const list = Array.isArray(res) ? res : res?.data || [];
         setPhoneNumbers(list);
       } catch (error) {

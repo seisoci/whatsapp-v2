@@ -7,7 +7,9 @@ import { Context } from 'hono';
 import { AppDataSource } from '../config/database';
 import { Contact } from '../models/Contact';
 import { Tag } from '../models/Tag';
+import { User } from '../models/User';
 import { withPermissions } from '../utils/controller.decorator';
+import { getUserAllowedPhoneNumberIds, isPhoneNumberAllowed } from '../utils/phone-access';
 
 export class ContactTagController {
   /**
@@ -43,6 +45,12 @@ export class ContactTagController {
 
       if (!contact) {
         return c.json({ success: false, message: 'Contact not found' }, 404);
+      }
+
+      const user = c.get('user') as User;
+      const allowedIds = await getUserAllowedPhoneNumberIds(user);
+      if (!isPhoneNumberAllowed(allowedIds, contact.phoneNumberId)) {
+        return c.json({ success: false, message: 'Akses ke nomor telepon ini tidak diizinkan.' }, 403);
       }
 
       const tag = await tagRepo.findOne({ where: { id: tagId } });
@@ -115,6 +123,12 @@ export class ContactTagController {
 
       if (!contact) {
         return c.json({ success: false, message: 'Contact not found' }, 404);
+      }
+
+      const user = c.get('user') as User;
+      const allowedIds = await getUserAllowedPhoneNumberIds(user);
+      if (!isPhoneNumberAllowed(allowedIds, contact.phoneNumberId)) {
+        return c.json({ success: false, message: 'Akses ke nomor telepon ini tidak diizinkan.' }, 403);
       }
 
       // Filter out the tag to remove
