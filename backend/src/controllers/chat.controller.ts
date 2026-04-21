@@ -25,6 +25,7 @@ export class ChatController {
     getPhoneNumbers: 'chat-index',
     getContact: 'chat-index',
     getContactsStats: 'chat-index',
+    search: 'chat-index',
     markConversationAsRead: 'chat-update',
     archiveContact: 'chat-update',
     unarchiveContact: 'chat-update',
