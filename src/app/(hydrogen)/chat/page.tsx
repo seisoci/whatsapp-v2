@@ -642,6 +642,8 @@ export default function ChatPage() {
         };
 
         // Update contact list locally without full reload
+        // Preserve contact list scroll position before reordering
+        const wsContactScrollTop = contactListRef.current?.scrollTop ?? 0;
         setContacts((prevContacts) => {
           const contactId = event.data.contactId;
           const contactIndex = prevContacts.findIndex(
@@ -788,6 +790,11 @@ export default function ChatPage() {
 
           // Otherwise keep current state, will reload outside
           return prevContacts;
+        });
+        requestAnimationFrame(() => {
+          if (contactListRef.current) {
+            contactListRef.current.scrollTop = wsContactScrollTop;
+          }
         });
 
         // If contact doesn't exist in full list (not just filtered), reload all contacts
@@ -1444,6 +1451,8 @@ export default function ChatPage() {
     }
 
     // Update contact list order: Move active contact to top and update last message
+    // Preserve contact list scroll position so it doesn't jump to top
+    const savedContactScrollTop = contactListRef.current?.scrollTop ?? 0;
     setContacts((prev) => {
       const contactIndex = prev.findIndex((c) => c.id === selectedContact.id);
       if (contactIndex === -1) return prev;
@@ -1468,6 +1477,11 @@ export default function ChatPage() {
       newContacts.splice(contactIndex, 1);
       newContacts.unshift(updatedContact);
       return newContacts;
+    });
+    requestAnimationFrame(() => {
+      if (contactListRef.current) {
+        contactListRef.current.scrollTop = savedContactScrollTop;
+      }
     });
 
     if (textareaRef.current) {
