@@ -224,12 +224,12 @@ export default function ChatPage() {
 
   // Draft messages per contact (persisted to localStorage)
   const [drafts, setDrafts] = useState<Record<string, string>>(() => {
-    if (typeof window === 'undefined') return {};
+    if (typeof window === 'undefined') return {} as Record<string, string>;
     try {
       const saved = localStorage.getItem('chat:drafts');
-      return saved ? JSON.parse(saved) : {};
-    } catch {
-      return {};
+      return saved ? (JSON.parse(saved) as Record<string, string>) : {} as Record<string, string>;
+    } catch (_e) {
+      return {} as Record<string, string>;
     }
   });
 
