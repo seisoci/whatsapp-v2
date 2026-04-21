@@ -77,7 +77,7 @@ export default function EditUser({ user, onSuccess }: EditUserProps) {
     try {
       const response = await phoneNumbersApi.getAll();
       if (response.success && response.data) {
-        setAllPhoneNumbers(response.data as any[]);
+        setAllPhoneNumbers(response.data as unknown as any[]);
       }
     } catch {
       toast.error('Failed to load phone numbers');
