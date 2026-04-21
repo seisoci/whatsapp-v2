@@ -222,6 +222,17 @@ export default function ChatPage() {
   const loadingOlderRef = useRef(false); // prevent concurrent loads
   const loadingMoreContactsRef = useRef(false); // prevent concurrent contact pagination loads
 
+  // Draft messages per contact (persisted to localStorage)
+  const [drafts, setDrafts] = useState<Record<string, string>>(() => {
+    if (typeof window === 'undefined') return {};
+    try {
+      const saved = localStorage.getItem('chat:drafts');
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+
   // Pinned chats (local storage)
   const [pinnedContacts, setPinnedContacts] = useState<string[]>([]);
   const [showThemeMenu, setShowThemeMenu] = useState(false);
@@ -301,6 +312,22 @@ export default function ChatPage() {
   const savePinnedContacts = (ids: string[]) => {
     setPinnedContacts(ids);
     localStorage.setItem('pinnedContacts', JSON.stringify(ids));
+  };
+
+  const saveDraft = (contactId: string, text: string) => {
+    setDrafts((prev) => {
+      const next = text.trim() ? { ...prev, [contactId]: text } : (() => { const { [contactId]: _, ...rest } = prev; return rest; })();
+      localStorage.setItem('chat:drafts', JSON.stringify(next));
+      return next;
+    });
+  };
+
+  const clearDraft = (contactId: string) => {
+    setDrafts((prev) => {
+      const { [contactId]: _, ...rest } = prev;
+      localStorage.setItem('chat:drafts', JSON.stringify(rest));
+      return rest;
+    });
   };
 
   const handlePinContact = (contactId: string) => {
@@ -1277,9 +1304,14 @@ export default function ChatPage() {
       });
     }
 
+    // Save current input as draft for the previous contact before switching
+    if (selectedContact) {
+      saveDraft(selectedContact.id, messageInput);
+    }
+
     // Immediate reset to prevent flashing old content
     setMessages([]);
-    setMessageInput('');
+    setMessageInput(drafts[contact.id] ?? '');
     setMessagesLoading(true);
     setLoading(true);
 
@@ -1416,6 +1448,7 @@ export default function ChatPage() {
     const replyContext = replyToMessage; // Capture before clearing
 
     setMessageInput(''); // Clear input immediately
+    clearDraft(selectedContact.id); // Clear draft for this contact
     setPendingAttachment(null); // Clear attachment
     setReplyToMessage(null); // Clear reply context
     setMessages((prev) => [...prev, optimisticMessage]); // Add to UI optimistically
@@ -1692,6 +1725,11 @@ export default function ChatPage() {
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
     setMessageInput(value);
+
+    // Save draft for current contact as user types
+    if (selectedContact) {
+      saveDraft(selectedContact.id, value);
+    }
 
     // Check if user typed "/" to trigger suggestions
     if (value.startsWith('/')) {
@@ -2115,7 +2153,7 @@ export default function ChatPage() {
     window.history.back();
   };
 
-  // Server-side filtering is now used, sort with pinned contacts first (by pin order)
+  // Server-side filtering is now used, sort: pinned first → draft second → rest
   const filteredContacts = [...contacts].sort((a, b) => {
     const aPinIdx = pinnedContacts.indexOf(a.id);
     const bPinIdx = pinnedContacts.indexOf(b.id);
@@ -2124,6 +2162,11 @@ export default function ChatPage() {
     if (aIsPinned && !bIsPinned) return -1;
     if (!aIsPinned && bIsPinned) return 1;
     if (aIsPinned && bIsPinned) return aPinIdx - bPinIdx;
+    // Among non-pinned: contacts with a draft float to top
+    const aHasDraft = !!drafts[a.id];
+    const bHasDraft = !!drafts[b.id];
+    if (aHasDraft && !bHasDraft) return -1;
+    if (!aHasDraft && bHasDraft) return 1;
     return 0;
   });
 
@@ -2595,12 +2638,19 @@ export default function ChatPage() {
                         <p className="truncate text-[10px] text-gray-500">
                           {contact.phoneNumber}
                         </p>
-                        <p className="truncate text-[10px] text-gray-600">
-                          {contact.lastMessage?.textBody ||
-                            (contact.lastMessage?.messageType
-                              ? `[${contact.lastMessage.messageType}]`
-                              : 'No messages')}
-                        </p>
+                        {drafts[contact.id] ? (
+                          <p className="flex truncate text-[10px]">
+                            <span className="mr-1 shrink-0 font-semibold text-red-500">Draft:</span>
+                            <span className="truncate text-red-400">{drafts[contact.id]}</span>
+                          </p>
+                        ) : (
+                          <p className="truncate text-[10px] text-gray-600">
+                            {contact.lastMessage?.textBody ||
+                              (contact.lastMessage?.messageType
+                                ? `[${contact.lastMessage.messageType}]`
+                                : 'No messages')}
+                          </p>
+                        )}
                       </div>
                       {/* Right side - timestamp, badges, and options */}
                       <div className="flex flex-shrink-0 flex-col items-end gap-1">
