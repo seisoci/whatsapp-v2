@@ -35,7 +35,7 @@ import {
   PiArrowBendUpLeft,
 } from 'react-icons/pi';
 import Link from 'next/link';
-import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect, useMemo } from 'react';
 import Lightbox from 'yet-another-react-lightbox';
 import 'yet-another-react-lightbox/styles.css';
 import Video from 'yet-another-react-lightbox/plugins/video';
@@ -315,21 +315,61 @@ export default function ChatPage() {
     localStorage.setItem('pinnedContacts', JSON.stringify(ids));
   };
 
+  // Drafts ref mirrors `drafts` state but updates synchronously without re-render.
+  // Used so per-keystroke draft updates don't re-render the contact list.
+  const draftsRef = useRef<Record<string, string>>(drafts);
+  const draftsStorageTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const flushDraftsToStorage = () => {
+    if (draftsStorageTimerRef.current) {
+      clearTimeout(draftsStorageTimerRef.current);
+      draftsStorageTimerRef.current = null;
+    }
+    try {
+      localStorage.setItem('chat:drafts', JSON.stringify(draftsRef.current));
+    } catch {}
+  };
+
+  // Per-keystroke: update ref + debounced localStorage write only.
+  // Does NOT update React state, so the contact list does not re-render while typing.
+  const updateDraftLocally = (contactId: string, text: string) => {
+    if (text.trim()) {
+      draftsRef.current = { ...draftsRef.current, [contactId]: text };
+    } else {
+      const { [contactId]: _omit, ...rest } = draftsRef.current;
+      draftsRef.current = rest;
+    }
+    if (draftsStorageTimerRef.current) clearTimeout(draftsStorageTimerRef.current);
+    draftsStorageTimerRef.current = setTimeout(flushDraftsToStorage, 500);
+  };
+
+  // Commits ref → state. Use on contact switch / send / clear so the list reflects
+  // updated draft indicators. Triggers a re-render of the contact list.
   const saveDraft = (contactId: string, text: string) => {
-    setDrafts((prev) => {
-      const next = text.trim() ? { ...prev, [contactId]: text } : (() => { const { [contactId]: _, ...rest } = prev; return rest; })();
-      localStorage.setItem('chat:drafts', JSON.stringify(next));
-      return next;
-    });
+    updateDraftLocally(contactId, text);
+    flushDraftsToStorage();
+    setDrafts(draftsRef.current);
   };
 
   const clearDraft = (contactId: string) => {
-    setDrafts((prev) => {
-      const { [contactId]: _, ...rest } = prev;
-      localStorage.setItem('chat:drafts', JSON.stringify(rest));
-      return rest;
-    });
+    const { [contactId]: _omit, ...rest } = draftsRef.current;
+    draftsRef.current = rest;
+    flushDraftsToStorage();
+    setDrafts(rest);
   };
+
+  // Persist any pending draft writes when the tab is hidden / closed.
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === 'hidden') flushDraftsToStorage();
+    };
+    window.addEventListener('beforeunload', flushDraftsToStorage);
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => {
+      window.removeEventListener('beforeunload', flushDraftsToStorage);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, []);
 
   const handlePinContact = (contactId: string) => {
     const isPinned = pinnedContacts.includes(contactId);
@@ -1801,9 +1841,12 @@ export default function ChatPage() {
     const value = e.target.value;
     setMessageInput(value);
 
-    // Save draft for current contact as user types
+    // Save draft for current contact as user types.
+    // Uses ref + debounced localStorage write so the contact list does NOT
+    // re-render on every keystroke. The drafts state is committed when the
+    // user switches contacts (via saveDraft) or sends/clears.
     if (selectedContact) {
-      saveDraft(selectedContact.id, value);
+      updateDraftLocally(selectedContact.id, value);
     }
 
     // Check if user typed "/" to trigger suggestions
@@ -2223,22 +2266,27 @@ export default function ChatPage() {
     window.history.back();
   };
 
-  // Server-side filtering is now used, sort: pinned first → draft second → rest
-  const filteredContacts = [...contacts].sort((a, b) => {
-    const aPinIdx = pinnedContacts.indexOf(a.id);
-    const bPinIdx = pinnedContacts.indexOf(b.id);
-    const aIsPinned = aPinIdx !== -1;
-    const bIsPinned = bPinIdx !== -1;
-    if (aIsPinned && !bIsPinned) return -1;
-    if (!aIsPinned && bIsPinned) return 1;
-    if (aIsPinned && bIsPinned) return aPinIdx - bPinIdx;
-    // Among non-pinned: contacts with a draft float to top
-    const aHasDraft = !!drafts[a.id];
-    const bHasDraft = !!drafts[b.id];
-    if (aHasDraft && !bHasDraft) return -1;
-    if (!aHasDraft && bHasDraft) return 1;
-    return 0;
-  });
+  // Server-side filtering is used. Sort: pinned first → draft second → rest.
+  // Memoized so a re-render unrelated to contacts/pins/drafts (e.g. typing in the
+  // textarea) does not re-sort the entire list — important when there are many contacts.
+  const filteredContacts = useMemo(() => {
+    const pinIndex = new Map<string, number>();
+    pinnedContacts.forEach((id, idx) => pinIndex.set(id, idx));
+    return [...contacts].sort((a, b) => {
+      const aPinIdx = pinIndex.get(a.id) ?? -1;
+      const bPinIdx = pinIndex.get(b.id) ?? -1;
+      const aIsPinned = aPinIdx !== -1;
+      const bIsPinned = bPinIdx !== -1;
+      if (aIsPinned && !bIsPinned) return -1;
+      if (!aIsPinned && bIsPinned) return 1;
+      if (aIsPinned && bIsPinned) return aPinIdx - bPinIdx;
+      const aHasDraft = !!drafts[a.id];
+      const bHasDraft = !!drafts[b.id];
+      if (aHasDraft && !bHasDraft) return -1;
+      if (!aHasDraft && bHasDraft) return 1;
+      return 0;
+    });
+  }, [contacts, pinnedContacts, drafts]);
 
   // Close theme menu when clicking outside
   useEffect(() => {
