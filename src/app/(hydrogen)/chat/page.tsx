@@ -35,7 +35,13 @@ import {
   PiArrowBendUpLeft,
 } from 'react-icons/pi';
 import Link from 'next/link';
-import React, { useState, useRef, useEffect, useLayoutEffect, useMemo } from 'react';
+import React, {
+  useState,
+  useRef,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+} from 'react';
 import Lightbox from 'yet-another-react-lightbox';
 import 'yet-another-react-lightbox/styles.css';
 import Video from 'yet-another-react-lightbox/plugins/video';
@@ -179,7 +185,10 @@ export default function ChatPage() {
   // State
   const [phoneNumbers, setPhoneNumbers] = useState<any[]>([]);
   const [selectedPhoneNumberId, setSelectedPhoneNumberId] = useState<string>(
-    () => (typeof window !== 'undefined' ? localStorage.getItem('chat:selectedPhoneNumberId') ?? '' : '')
+    () =>
+      typeof window !== 'undefined'
+        ? (localStorage.getItem('chat:selectedPhoneNumberId') ?? '')
+        : ''
   );
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
@@ -212,7 +221,9 @@ export default function ChatPage() {
   const [totalContacts, setTotalContacts] = useState(0);
   const [unreadCount, setUnreadCount] = useState(0);
   const [archivedCount, setArchivedCount] = useState(0);
-  const [selectedArchiveIds, setSelectedArchiveIds] = useState<Set<string>>(new Set());
+  const [selectedArchiveIds, setSelectedArchiveIds] = useState<Set<string>>(
+    new Set()
+  );
   const [replyToMessage, setReplyToMessage] = useState<Message | null>(null);
 
   // Message pagination state
@@ -227,7 +238,9 @@ export default function ChatPage() {
     if (typeof window === 'undefined') return {} as Record<string, string>;
     try {
       const saved = localStorage.getItem('chat:drafts');
-      return saved ? (JSON.parse(saved) as Record<string, string>) : {} as Record<string, string>;
+      return saved
+        ? (JSON.parse(saved) as Record<string, string>)
+        : ({} as Record<string, string>);
     } catch (_e) {
       return {} as Record<string, string>;
     }
@@ -244,10 +257,17 @@ export default function ChatPage() {
   const contactListRef = useRef<HTMLDivElement>(null);
   const pendingScrollRestoreRef = useRef<number | null>(null);
   const closingViaUI = useRef(false);
-  const [chatTheme, setChatTheme] = useState<'default' | 'neo-brutalism' | 'hand-drawn' | 'playful-geometric'>(() => {
+  const [chatTheme, setChatTheme] = useState<
+    'default' | 'neo-brutalism' | 'hand-drawn' | 'playful-geometric'
+  >(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('chat-theme');
-      if (saved === 'neo-brutalism' || saved === 'hand-drawn' || saved === 'playful-geometric') return saved;
+      if (
+        saved === 'neo-brutalism' ||
+        saved === 'hand-drawn' ||
+        saved === 'playful-geometric'
+      )
+        return saved;
     }
     return 'default';
   });
@@ -255,7 +275,7 @@ export default function ChatPage() {
   const isHandDrawn = chatTheme === 'hand-drawn';
   const isPlayfulGeometric = chatTheme === 'playful-geometric';
 
-  // Send delay (seconds) — 0 means send immediately
+  // Send delay (seconds) — 0 means send immediatedtely
   const [sendDelay, setSendDelay] = useState<number>(() => {
     if (typeof window === 'undefined') return 0;
     const saved = parseInt(localStorage.getItem('chat:sendDelay') ?? '0', 10);
@@ -264,8 +284,12 @@ export default function ChatPage() {
   const [showDelayPopup, setShowDelayPopup] = useState(false);
   const [delayInput, setDelayInput] = useState(String(sendDelay));
   const delayPopupRef = useRef<HTMLDivElement>(null);
-  const [cancelableSendIds, setCancelableSendIds] = useState<Set<string>>(new Set());
-  const cancelSendRefs = useRef<Map<string, { timeout: NodeJS.Timeout; cancel: () => void }>>(new Map());
+  const [cancelableSendIds, setCancelableSendIds] = useState<Set<string>>(
+    new Set()
+  );
+  const cancelSendRefs = useRef<
+    Map<string, { timeout: NodeJS.Timeout; cancel: () => void }>
+  >(new Map());
   const cancelSendSilentIds = useRef<Set<string>>(new Set()); // IDs to cancel without restoring input
 
   // Notification sound for incoming messages (Web Audio API — zero latency)
@@ -277,9 +301,13 @@ export default function ChatPage() {
     fetch('/whatsapp.mp3')
       .then((res) => res.arrayBuffer())
       .then((buf) => ctx.decodeAudioData(buf))
-      .then((decoded) => { audioBufferRef.current = decoded; })
+      .then((decoded) => {
+        audioBufferRef.current = decoded;
+      })
       .catch(() => {});
-    return () => { ctx.close(); };
+    return () => {
+      ctx.close();
+    };
   }, []);
 
   const playNotificationSound = () => {
@@ -339,7 +367,8 @@ export default function ChatPage() {
       const { [contactId]: _omit, ...rest } = draftsRef.current;
       draftsRef.current = rest;
     }
-    if (draftsStorageTimerRef.current) clearTimeout(draftsStorageTimerRef.current);
+    if (draftsStorageTimerRef.current)
+      clearTimeout(draftsStorageTimerRef.current);
     draftsStorageTimerRef.current = setTimeout(flushDraftsToStorage, 500);
   };
 
@@ -395,11 +424,13 @@ export default function ChatPage() {
 
   // Attachment state
   const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
-  const [pendingAttachments, setPendingAttachments] = useState<Array<{
-    file: File;
-    preview?: string;
-    type: 'image' | 'video' | 'document' | 'audio';
-  }>>([]);
+  const [pendingAttachments, setPendingAttachments] = useState<
+    Array<{
+      file: File;
+      preview?: string;
+      type: 'image' | 'video' | 'document' | 'audio';
+    }>
+  >([]);
   const [selectedAttachmentIdx, setSelectedAttachmentIdx] = useState(0);
   const [uploadingAttachment, setUploadingAttachment] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -435,13 +466,22 @@ export default function ChatPage() {
   const selectedPhoneNumberIdRef = useRef(selectedPhoneNumberId);
   const chatFilterRef = useRef(chatFilter);
   useEffect(() => {
-    isMobileRef.current = /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    isMobileRef.current =
+      /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(
+        navigator.userAgent
+      );
   }, []);
 
   // Keep refs in sync so WebSocket handlers always read the latest values
-  useLayoutEffect(() => { selectedContactRef.current = selectedContact; }, [selectedContact]);
-  useLayoutEffect(() => { selectedPhoneNumberIdRef.current = selectedPhoneNumberId; }, [selectedPhoneNumberId]);
-  useLayoutEffect(() => { chatFilterRef.current = chatFilter; }, [chatFilter]);
+  useLayoutEffect(() => {
+    selectedContactRef.current = selectedContact;
+  }, [selectedContact]);
+  useLayoutEffect(() => {
+    selectedPhoneNumberIdRef.current = selectedPhoneNumberId;
+  }, [selectedPhoneNumberId]);
+  useLayoutEffect(() => {
+    chatFilterRef.current = chatFilter;
+  }, [chatFilter]);
 
   // Restore contact list scroll position after WS-triggered contact reordering
   useLayoutEffect(() => {
@@ -461,10 +501,18 @@ export default function ChatPage() {
   useEffect(() => {
     if (!showContactModal) return;
     setContactPickerLoading(true);
-    contactsApi.getAll({ limit: 50 }).then((res: any) => {
-      const list = Array.isArray(res.data?.data) ? res.data.data : Array.isArray(res.data) ? res.data : [];
-      setContactPickerList(list);
-    }).catch(() => {}).finally(() => setContactPickerLoading(false));
+    contactsApi
+      .getAll({ limit: 50 })
+      .then((res: any) => {
+        const list = Array.isArray(res.data?.data)
+          ? res.data.data
+          : Array.isArray(res.data)
+            ? res.data
+            : [];
+        setContactPickerList(list);
+      })
+      .catch(() => {})
+      .finally(() => setContactPickerLoading(false));
   }, [showContactModal]);
 
   // Auto-resize textarea whenever messageInput changes (covers typing, quick replies, emoji inserts)
@@ -508,8 +556,11 @@ export default function ChatPage() {
         e.key === 'Enter' ||
         e.key.startsWith('Arrow') ||
         e.key.startsWith('F') ||
-        e.ctrlKey || e.metaKey || e.altKey
-      ) return;
+        e.ctrlKey ||
+        e.metaKey ||
+        e.altKey
+      )
+        return;
 
       if (isInputFocused()) return;
       const ta = textareaRef.current;
@@ -650,7 +701,6 @@ export default function ChatPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedContact?.id]);
 
-
   // Load quick replies on mount
   useEffect(() => {
     const fetchQuickReplies = async () => {
@@ -695,7 +745,8 @@ export default function ChatPage() {
         playNotificationSound();
       }
 
-      if (true) { // kept block structure for minimal diff
+      if (true) {
+        // kept block structure for minimal diff
         const rawMessage = event.data.message;
 
         // Format message to match Message interface from lib/api/chat.ts
@@ -771,8 +822,12 @@ export default function ChatPage() {
               // Update session info if available in event (after lastMessage so session fields override)
               ...eventContact,
               // Preserve existing name fields if event sends null (don't overwrite good data with null)
-              profileName: eventContact.profileName ?? prevContacts[contactIndex].profileName,
-              businessName: eventContact.businessName ?? prevContacts[contactIndex].businessName,
+              profileName:
+                eventContact.profileName ??
+                prevContacts[contactIndex].profileName,
+              businessName:
+                eventContact.businessName ??
+                prevContacts[contactIndex].businessName,
               // Override unread count with our calculated value
               unreadCount: newUnreadCount,
             };
@@ -1085,10 +1140,16 @@ export default function ChatPage() {
       setPhoneNumbers(numbers);
 
       // Restore previously selected number, or fall back to first
-      const saved = typeof window !== 'undefined' ? localStorage.getItem('chat:selectedPhoneNumberId') : null;
+      const saved =
+        typeof window !== 'undefined'
+          ? localStorage.getItem('chat:selectedPhoneNumberId')
+          : null;
       const validSaved = saved && numbers.some((n: any) => n.id === saved);
-      if (!selectedPhoneNumberId || !numbers.some((n: any) => n.id === selectedPhoneNumberId)) {
-        const id = validSaved ? saved! : numbers[0]?.id ?? '';
+      if (
+        !selectedPhoneNumberId ||
+        !numbers.some((n: any) => n.id === selectedPhoneNumberId)
+      ) {
+        const id = validSaved ? saved! : (numbers[0]?.id ?? '');
         setSelectedPhoneNumberId(id);
         if (id) localStorage.setItem('chat:selectedPhoneNumberId', id);
       }
@@ -1097,7 +1158,11 @@ export default function ChatPage() {
     }
   };
 
-  const loadContacts = async (page: number = 1, append: boolean = false, searchOverride?: string) => {
+  const loadContacts = async (
+    page: number = 1,
+    append: boolean = false,
+    searchOverride?: string
+  ) => {
     if (!selectedPhoneNumberId) return;
     if (append && loadingMoreContactsRef.current) return; // prevent duplicate pagination requests
     if (append) loadingMoreContactsRef.current = true;
@@ -1106,7 +1171,8 @@ export default function ChatPage() {
     if (!append) setLoading(true);
 
     // Use searchOverride when provided (avoids stale closure on debouncedSearchQuery)
-    const activeQuery = searchOverride !== undefined ? searchOverride : debouncedSearchQuery;
+    const activeQuery =
+      searchOverride !== undefined ? searchOverride : debouncedSearchQuery;
 
     try {
       // When there is a search query, use Meilisearch endpoint (searches name, phone, message body)
@@ -1134,7 +1200,9 @@ export default function ChatPage() {
       } else {
         // Fetch any pinned contacts not in the loaded list and prepend them
         const saved = localStorage.getItem('pinnedContacts');
-        const pinnedIds: string[] = saved ? (JSON.parse(saved) as string[]) : [];
+        const pinnedIds: string[] = saved
+          ? (JSON.parse(saved) as string[])
+          : [];
         const missingPinnedIds = pinnedIds.filter(
           (id) => !newContacts.find((c: Contact) => c.id === id)
         );
@@ -1143,7 +1211,10 @@ export default function ChatPage() {
             missingPinnedIds.map((id) => chatApi.getContact(id))
           );
           const fetchedContacts = fetched
-            .filter((r): r is PromiseFulfilledResult<Contact> => r.status === 'fulfilled')
+            .filter(
+              (r): r is PromiseFulfilledResult<Contact> =>
+                r.status === 'fulfilled'
+            )
             .map((r) => r.value);
           // Prepend fetched pinned contacts (preserving pin order) before the rest
           const orderedPinned = pinnedIds
@@ -1156,7 +1227,9 @@ export default function ChatPage() {
       }
 
       // Disable pagination when searching (Meilisearch returns all results at once)
-      setHasMoreContacts(activeQuery.trim() ? false : newContacts.length === 50);
+      setHasMoreContacts(
+        activeQuery.trim() ? false : newContacts.length === 50
+      );
       setContactPage(page);
     } catch (error: any) {
       console.error('Failed to load contacts:', error);
@@ -1201,7 +1274,8 @@ export default function ChatPage() {
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           if (chatContainerRef.current) {
-            chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+            chatContainerRef.current.scrollTop =
+              chatContainerRef.current.scrollHeight;
           }
         });
       });
@@ -1317,7 +1391,9 @@ export default function ChatPage() {
         limit: 50,
       });
 
-      const olderMsgs = Array.isArray(response) ? response : response.data || [];
+      const olderMsgs = Array.isArray(response)
+        ? response
+        : response.data || [];
       const pagination = (response as any).pagination;
 
       if (olderMsgs.length > 0) {
@@ -1362,7 +1438,11 @@ export default function ChatPage() {
    */
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const container = e.currentTarget;
-    if (container.scrollTop < 100 && hasMoreMessages && !loadingOlderRef.current) {
+    if (
+      container.scrollTop < 100 &&
+      hasMoreMessages &&
+      !loadingOlderRef.current
+    ) {
       loadOlderMessages();
     }
   };
@@ -1505,7 +1585,7 @@ export default function ChatPage() {
     // The rest follow in their original paste order.
     const capturedSelectedIdx = Math.min(
       selectedAttachmentIdx,
-      pendingAttachments.length - 1,
+      pendingAttachments.length - 1
     );
     const orderedAttachments =
       pendingAttachments.length > 0
@@ -1518,9 +1598,11 @@ export default function ChatPage() {
 
     type SendEntry = {
       id: string;
-      attachment:
-        | { file: File; preview?: string; type: 'image' | 'video' | 'document' | 'audio' }
-        | null;
+      attachment: {
+        file: File;
+        preview?: string;
+        type: 'image' | 'video' | 'document' | 'audio';
+      } | null;
       caption: string;
       isFirst: boolean;
     };
@@ -1576,7 +1658,10 @@ export default function ChatPage() {
 
       const cancelled = await new Promise<boolean>((resolve) => {
         const timeout = setTimeout(() => resolve(false), sendDelay * 1000);
-        cancelSendRefs.current.set(msgId, { timeout, cancel: () => resolve(true) });
+        cancelSendRefs.current.set(msgId, {
+          timeout,
+          cancel: () => resolve(true),
+        });
       });
 
       cancelSendRefs.current.delete(msgId);
@@ -1593,7 +1678,8 @@ export default function ChatPage() {
         setMessages((prev) => prev.filter((m) => !idsToRemove.has(m.id)));
         if (!isSilent) {
           setMessageInput(messageText);
-          if (orderedAttachments.length > 0) setPendingAttachments(orderedAttachments);
+          if (orderedAttachments.length > 0)
+            setPendingAttachments(orderedAttachments);
         }
         return;
       }
@@ -1654,7 +1740,7 @@ export default function ChatPage() {
             setUploadingAttachment(true);
             const uploadResult = await uploadApi.uploadFile(
               entry.attachment.file,
-              'internal',
+              'internal'
             );
             if (!uploadResult.success || !uploadResult.data) {
               throw new Error('Upload failed');
@@ -1675,7 +1761,9 @@ export default function ChatPage() {
                 mediaUrl,
                 caption: entry.caption || undefined,
                 filename:
-                  entry.attachment.type === 'document' ? mediaFilename : undefined,
+                  entry.attachment.type === 'document'
+                    ? mediaFilename
+                    : undefined,
               },
               ...(entry.isFirst && replyContext?.wamid
                 ? { context: { message_id: replyContext.wamid } }
@@ -1701,19 +1789,21 @@ export default function ChatPage() {
                 return {
                   ...msg,
                   ...(result.message || {}),
-                  ...(mediaUrl && !result.message?.mediaUrl ? { mediaUrl } : {}),
+                  ...(mediaUrl && !result.message?.mediaUrl
+                    ? { mediaUrl }
+                    : {}),
                 };
               }
               return msg;
-            }),
+            })
           );
           scrollToBottom();
         } catch (err: any) {
           console.error('Failed to send message:', err);
           setMessages((prev) =>
             prev.map((msg) =>
-              msg.id === entry.id ? { ...msg, status: 'failed' } : msg,
-            ),
+              msg.id === entry.id ? { ...msg, status: 'failed' } : msg
+            )
           );
           if (!firstFailureAlert) {
             firstFailureAlert =
@@ -1738,7 +1828,10 @@ export default function ChatPage() {
   const handleSendContact = async (pickedContact: Contact) => {
     if (!selectedContact || !selectedPhoneNumberId) return;
 
-    const displayName = pickedContact.profileName || pickedContact.businessName || pickedContact.phoneNumber;
+    const displayName =
+      pickedContact.profileName ||
+      pickedContact.businessName ||
+      pickedContact.phoneNumber;
     const rawPhone = pickedContact.phoneNumber || pickedContact.waId || '';
     const normalizedWaId = rawPhone.replace(/\D/g, '');
     const formattedPhone = rawPhone.startsWith('+')
@@ -1746,20 +1839,28 @@ export default function ChatPage() {
       : normalizedWaId
         ? `+${normalizedWaId}`
         : rawPhone;
-    const contactPayload = [{
-      name: {
-        formatted_name: displayName,
-        first_name:
-          (pickedContact.profileName || pickedContact.businessName || rawPhone)
-            .trim()
-            .split(/\s+/)[0] || displayName,
+    const contactPayload = [
+      {
+        name: {
+          formatted_name: displayName,
+          first_name:
+            (
+              pickedContact.profileName ||
+              pickedContact.businessName ||
+              rawPhone
+            )
+              .trim()
+              .split(/\s+/)[0] || displayName,
+        },
+        phones: [
+          {
+            phone: formattedPhone,
+            type: 'HOME' as 'HOME' | 'WORK',
+            wa_id: normalizedWaId || undefined,
+          },
+        ],
       },
-      phones: [{
-        phone: formattedPhone,
-        type: 'HOME' as 'HOME' | 'WORK',
-        wa_id: normalizedWaId || undefined,
-      }],
-    }];
+    ];
 
     const optimisticMessage = {
       id: `temp-${Date.now()}`,
@@ -1795,7 +1896,11 @@ export default function ChatPage() {
       setMessages((prev) =>
         prev.map((msg) =>
           msg.id === optimisticMessage.id
-            ? { ...msg, ...(result.message || {}), contactsPayload: contactPayload }
+            ? {
+                ...msg,
+                ...(result.message || {}),
+                contactsPayload: contactPayload,
+              }
             : msg
         )
       );
@@ -1805,7 +1910,11 @@ export default function ChatPage() {
           msg.id === optimisticMessage.id ? { ...msg, status: 'failed' } : msg
         )
       );
-      alert(error?.response?.data?.message || error.message || 'Failed to send contact');
+      alert(
+        error?.response?.data?.message ||
+          error.message ||
+          'Failed to send contact'
+      );
     } finally {
       setSendingContact(false);
     }
@@ -1863,17 +1972,17 @@ export default function ChatPage() {
         .sort((a, b) => {
           const aShortcut = a.shortcut.toLowerCase();
           const bShortcut = b.shortcut.toLowerCase();
-          
+
           // 1. Exact shortcut match gets highest priority
           if (aShortcut === searchTerm && bShortcut !== searchTerm) return -1;
           if (aShortcut !== searchTerm && bShortcut === searchTerm) return 1;
-          
+
           // 2. Starts with shortcut gets next priority
           const aStarts = aShortcut.startsWith(searchTerm);
           const bStarts = bShortcut.startsWith(searchTerm);
           if (aStarts && !bStarts) return -1;
           if (!aStarts && bStarts) return 1;
-          
+
           // 3. Includes in shortcut gets next priority
           const aIncludes = aShortcut.includes(searchTerm);
           const bIncludes = bShortcut.includes(searchTerm);
@@ -1894,7 +2003,9 @@ export default function ChatPage() {
   // Auto-scroll selected suggestion into view
   useEffect(() => {
     if (showSuggestions && suggestionMenuRef.current) {
-      const activeElement = suggestionMenuRef.current.children[selectedSuggestionIndex] as HTMLElement;
+      const activeElement = suggestionMenuRef.current.children[
+        selectedSuggestionIndex
+      ] as HTMLElement;
       if (activeElement) {
         activeElement.scrollIntoView({ block: 'nearest' });
       }
@@ -1942,7 +2053,8 @@ export default function ChatPage() {
     if (!url) return '#';
     try {
       const parsed = new URL(url);
-      if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return '#';
+      if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:')
+        return '#';
       return url;
     } catch {
       return '#';
@@ -1968,7 +2080,7 @@ export default function ChatPage() {
           href={url}
           target="_blank"
           rel="noopener noreferrer"
-          className="underline break-all hover:opacity-80"
+          className="break-all underline hover:opacity-80"
           onClick={(e) => e.stopPropagation()}
         >
           {url}
@@ -2057,11 +2169,17 @@ export default function ChatPage() {
     if (type === 'image' && file.type.startsWith('image/')) {
       const reader = new FileReader();
       reader.onload = (ev) => {
-        setPendingAttachments((prev) => [...prev, { file, preview: ev.target?.result as string, type }]);
+        setPendingAttachments((prev) => [
+          ...prev,
+          { file, preview: ev.target?.result as string, type },
+        ]);
       };
       reader.readAsDataURL(file);
     } else {
-      setPendingAttachments((prev) => [...prev, { file, preview: undefined, type }]);
+      setPendingAttachments((prev) => [
+        ...prev,
+        { file, preview: undefined, type },
+      ]);
     }
   };
 
@@ -2088,18 +2206,30 @@ export default function ChatPage() {
         found = true;
         const reader = new FileReader();
         reader.onload = (ev) => {
-          setPendingAttachments((prev) => [...prev, { file, preview: ev.target?.result as string, type: 'image' }]);
+          setPendingAttachments((prev) => [
+            ...prev,
+            { file, preview: ev.target?.result as string, type: 'image' },
+          ]);
         };
         reader.readAsDataURL(file);
       } else if (item.type.startsWith('video/')) {
         found = true;
-        setPendingAttachments((prev) => [...prev, { file, preview: undefined, type: 'video' }]);
+        setPendingAttachments((prev) => [
+          ...prev,
+          { file, preview: undefined, type: 'video' },
+        ]);
       } else if (item.type.startsWith('audio/')) {
         found = true;
-        setPendingAttachments((prev) => [...prev, { file, preview: undefined, type: 'audio' }]);
+        setPendingAttachments((prev) => [
+          ...prev,
+          { file, preview: undefined, type: 'audio' },
+        ]);
       } else if (DOCUMENT_MIME_TYPES.has(item.type)) {
         found = true;
-        setPendingAttachments((prev) => [...prev, { file, preview: undefined, type: 'document' }]);
+        setPendingAttachments((prev) => [
+          ...prev,
+          { file, preview: undefined, type: 'document' },
+        ]);
       }
     }
     return found;
@@ -2173,11 +2303,17 @@ export default function ChatPage() {
     if (type === 'image') {
       const reader = new FileReader();
       reader.onload = (ev) => {
-        setPendingAttachments((prev) => [...prev, { file, preview: ev.target?.result as string, type }]);
+        setPendingAttachments((prev) => [
+          ...prev,
+          { file, preview: ev.target?.result as string, type },
+        ]);
       };
       reader.readAsDataURL(file);
     } else {
-      setPendingAttachments((prev) => [...prev, { file, preview: undefined, type }]);
+      setPendingAttachments((prev) => [
+        ...prev,
+        { file, preview: undefined, type },
+      ]);
     }
   };
 
@@ -2242,15 +2378,22 @@ export default function ChatPage() {
   // Sync theme class on <body> so modal portal (outside theme div) also gets styled.
   // When lightbox is open, remove theme classes so the lightbox uses its default styles.
   useEffect(() => {
-    document.body.classList.remove('neo-brutalism', 'hand-drawn', 'playful-geometric');
+    document.body.classList.remove(
+      'neo-brutalism',
+      'hand-drawn',
+      'playful-geometric'
+    );
     if (chatTheme !== 'default' && !lightboxOpen) {
       document.body.classList.add(chatTheme);
     }
     return () => {
-      document.body.classList.remove('neo-brutalism', 'hand-drawn', 'playful-geometric');
+      document.body.classList.remove(
+        'neo-brutalism',
+        'hand-drawn',
+        'playful-geometric'
+      );
     };
   }, [chatTheme, lightboxOpen]);
-
 
   // Close lightbox via UI (X button / swipe) — syncs history
   const closeLightboxViaUI = () => {
@@ -2292,7 +2435,10 @@ export default function ChatPage() {
   useEffect(() => {
     if (!showThemeMenu) return;
     const handleClickOutside = (event: MouseEvent) => {
-      if (themeMenuRef.current && !themeMenuRef.current.contains(event.target as Node)) {
+      if (
+        themeMenuRef.current &&
+        !themeMenuRef.current.contains(event.target as Node)
+      ) {
         setShowThemeMenu(false);
       }
     };
@@ -2304,7 +2450,10 @@ export default function ChatPage() {
   useEffect(() => {
     if (!showDelayPopup) return;
     const handleClickOutside = (event: MouseEvent) => {
-      if (delayPopupRef.current && !delayPopupRef.current.contains(event.target as Node)) {
+      if (
+        delayPopupRef.current &&
+        !delayPopupRef.current.contains(event.target as Node)
+      ) {
         setShowDelayPopup(false);
       }
     };
@@ -2369,22 +2518,42 @@ export default function ChatPage() {
                         isNeoBrutalism
                           ? 'rounded-none border-[#1F1F1F] bg-[#B0BEC520] shadow-[3px_3px_0_#1F1F1F] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none'
                           : isHandDrawn
-                          ? 'rounded-md border-[#2d2d2d] bg-[#e9efe6] shadow-[3px_3px_0_#2d2d2d] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none'
-                          : isPlayfulGeometric
-                          ? 'rounded-full border-[#1E293B] bg-[linear-gradient(135deg,#8B5CF6,#F472B6,#FBBF24)] shadow-[3px_3px_0_#1E293B] active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#1E293B]'
-                          : 'rounded-lg border-gray-300 bg-white text-gray-600 hover:border-gray-400 hover:bg-gray-50'
+                            ? 'rounded-md border-[#2d2d2d] bg-[#e9efe6] shadow-[3px_3px_0_#2d2d2d] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none'
+                            : isPlayfulGeometric
+                              ? 'rounded-full border-[#1E293B] bg-[linear-gradient(135deg,#8B5CF6,#F472B6,#FBBF24)] shadow-[3px_3px_0_#1E293B] active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#1E293B]'
+                              : 'rounded-lg border-gray-300 bg-white text-gray-600 hover:border-gray-400 hover:bg-gray-50'
                       }`}
                     >
-                      <PiPalette className={`h-5 w-5 ${isPlayfulGeometric ? 'text-[#1E293B]' : chatTheme !== 'default' ? 'text-[#2d2d2d]' : 'text-gray-600'}`} />
+                      <PiPalette
+                        className={`h-5 w-5 ${isPlayfulGeometric ? 'text-[#1E293B]' : chatTheme !== 'default' ? 'text-[#2d2d2d]' : 'text-gray-600'}`}
+                      />
                     </button>
                     {showThemeMenu && (
-                      <div className="nb-theme-menu absolute left-0 top-full z-50 mt-1 w-52 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-600 dark:bg-gray-800">
-                        {([
-                          { value: 'default', label: 'Default', dotClass: 'bg-slate-400' },
-                          { value: 'neo-brutalism', label: 'Neo Brutalism', dotClass: 'bg-neutral-900' },
-                          { value: 'hand-drawn', label: 'Hand-Drawn', dotClass: 'bg-[#6B8E6E]' },
-                          { value: 'playful-geometric', label: 'Playful Geometric', dotClass: 'bg-[#F472B6]' },
-                        ] as const).map((theme) => (
+                      <div className="nb-theme-menu absolute top-full left-0 z-50 mt-1 w-52 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-600 dark:bg-gray-800">
+                        {(
+                          [
+                            {
+                              value: 'default',
+                              label: 'Default',
+                              dotClass: 'bg-slate-400',
+                            },
+                            {
+                              value: 'neo-brutalism',
+                              label: 'Neo Brutalism',
+                              dotClass: 'bg-neutral-900',
+                            },
+                            {
+                              value: 'hand-drawn',
+                              label: 'Hand-Drawn',
+                              dotClass: 'bg-[#6B8E6E]',
+                            },
+                            {
+                              value: 'playful-geometric',
+                              label: 'Playful Geometric',
+                              dotClass: 'bg-[#F472B6]',
+                            },
+                          ] as const
+                        ).map((theme) => (
                           <button
                             key={theme.value}
                             onClick={() => {
@@ -2393,7 +2562,9 @@ export default function ChatPage() {
                               setShowThemeMenu(false);
                             }}
                             className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-gray-50 dark:hover:bg-gray-700 ${
-                              chatTheme === theme.value ? 'bg-blue-50 font-medium text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'
+                              chatTheme === theme.value
+                                ? 'bg-blue-50 font-medium text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
+                                : 'text-gray-700 dark:text-gray-300'
                             }`}
                           >
                             <span
@@ -2401,7 +2572,9 @@ export default function ChatPage() {
                               aria-hidden="true"
                             />
                             <span>{theme.label}</span>
-                            {chatTheme === theme.value && <span className="ml-auto text-blue-500">✓</span>}
+                            {chatTheme === theme.value && (
+                              <span className="ml-auto text-blue-500">✓</span>
+                            )}
                           </button>
                         ))}
                       </div>
@@ -2411,7 +2584,7 @@ export default function ChatPage() {
                     <label
                       className={`mb-1 block text-xs font-medium ${
                         isPlayfulGeometric
-                          ? 'font-[var(--font-outfit)] uppercase tracking-[0.12em] text-[#1E293B]'
+                          ? 'font-[var(--font-outfit)] tracking-[0.12em] text-[#1E293B] uppercase'
                           : 'text-gray-700'
                       }`}
                     >
@@ -2426,7 +2599,11 @@ export default function ChatPage() {
                             : selected?.value;
                         const id = value || '';
                         setSelectedPhoneNumberId(id);
-                        if (id) localStorage.setItem('chat:selectedPhoneNumberId', id);
+                        if (id)
+                          localStorage.setItem(
+                            'chat:selectedPhoneNumberId',
+                            id
+                          );
                       }}
                       options={phoneNumbers.map((phone) => ({
                         label: phone.verifiedName || phone.displayPhoneNumber,
@@ -2498,7 +2675,7 @@ export default function ChatPage() {
                     disabled={!selectedPhoneNumberId}
                     className={`nb-send-template-btn shrink-0 ${
                       isPlayfulGeometric
-                        ? 'border-[#1E293B]! bg-[#34D399]! text-white! shadow-[4px_4px_0_#1E293B]! hover:bg-[#10B981]! hover:shadow-[6px_6px_0_#1E293B]! hover:translate-x-[-2px] hover:translate-y-[-2px] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[2px_2px_0_#1E293B]! rounded-full'
+                        ? 'rounded-full border-[#1E293B]! bg-[#34D399]! text-white! shadow-[4px_4px_0_#1E293B]! hover:translate-x-[-2px] hover:translate-y-[-2px] hover:bg-[#10B981]! hover:shadow-[6px_6px_0_#1E293B]! active:translate-x-[2px] active:translate-y-[2px] active:shadow-[2px_2px_0_#1E293B]!'
                         : ''
                     }`}
                     title="Send Template"
@@ -2515,7 +2692,8 @@ export default function ChatPage() {
                 onScroll={(e) => {
                   const target = e.currentTarget;
                   const scrollable = target.scrollHeight - target.clientHeight;
-                  const scrollPercent = scrollable > 0 ? target.scrollTop / scrollable : 0;
+                  const scrollPercent =
+                    scrollable > 0 ? target.scrollTop / scrollable : 0;
                   if (scrollPercent >= 0.8 && hasMoreContacts && !loading) {
                     loadContacts(contactPage + 1, true);
                   }
@@ -2530,19 +2708,34 @@ export default function ChatPage() {
                 >
                   {(['all', 'unread', 'archived'] as const).map((filter) => {
                     const isActive = chatFilter === filter;
-                    const count = filter === 'all' ? totalContacts : filter === 'unread' ? unreadCount : archivedCount;
-                    const label = filter === 'all' ? 'All' : filter === 'unread' ? 'Unread' : 'Archived';
+                    const count =
+                      filter === 'all'
+                        ? totalContacts
+                        : filter === 'unread'
+                          ? unreadCount
+                          : archivedCount;
+                    const label =
+                      filter === 'all'
+                        ? 'All'
+                        : filter === 'unread'
+                          ? 'Unread'
+                          : 'Archived';
                     return (
                       <button
                         key={filter}
                         type="button"
-                        onClick={() => { setChatFilter(filter); setSelectedArchiveIds(new Set()); }}
+                        onClick={() => {
+                          setChatFilter(filter);
+                          setSelectedArchiveIds(new Set());
+                        }}
                         style={
                           isNeoBrutalism
                             ? {
                                 background: isActive ? '#016B61' : '#fff',
                                 color: isActive ? '#fff' : '#1F1F1F',
-                                border: isActive ? '1.5px solid #016B61' : '1px solid #1F1F1F30',
+                                border: isActive
+                                  ? '1.5px solid #016B61'
+                                  : '1px solid #1F1F1F30',
                                 fontWeight: isActive ? 700 : 500,
                                 padding: '4px 10px',
                                 fontSize: '12px',
@@ -2556,41 +2749,42 @@ export default function ChatPage() {
                                 borderRadius: 0,
                               }
                             : isPlayfulGeometric
-                            ? {
-                                background:
-                                  isActive
+                              ? {
+                                  background: isActive
                                     ? filter === 'all'
                                       ? '#8B5CF6'
                                       : filter === 'unread'
-                                      ? '#34D399'
-                                      : '#F472B6'
+                                        ? '#34D399'
+                                        : '#F472B6'
                                     : '#FFFFFF',
-                                color: isActive ? '#FFFFFF' : '#1E293B',
-                                border: '2px solid #1E293B',
-                                boxShadow: isActive ? '4px 4px 0 0 #1E293B' : 'none',
-                                fontWeight: 700,
-                                padding: '4px 10px',
-                                fontSize: '12px',
-                                height: '32px',
-                                flex: 1,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                gap: '6px',
-                                cursor: 'pointer',
-                                borderRadius: 9999,
-                              }
-                            : undefined
+                                  color: isActive ? '#FFFFFF' : '#1E293B',
+                                  border: '2px solid #1E293B',
+                                  boxShadow: isActive
+                                    ? '4px 4px 0 0 #1E293B'
+                                    : 'none',
+                                  fontWeight: 700,
+                                  padding: '4px 10px',
+                                  fontSize: '12px',
+                                  height: '32px',
+                                  flex: 1,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  gap: '6px',
+                                  cursor: 'pointer',
+                                  borderRadius: 9999,
+                                }
+                              : undefined
                         }
                         className={
                           isNeoBrutalism
                             ? isActive
                               ? 'nb-filter-active'
                               : 'nb-filter-btn'
-                            : `font-medium cursor-pointer focus:outline-none transition-colors duration-200 rounded-(--border-radius) px-2.5 py-1 text-xs h-8 flex flex-1 items-center justify-center gap-2 ${
+                            : `flex h-8 flex-1 cursor-pointer items-center justify-center gap-2 rounded-(--border-radius) px-2.5 py-1 text-xs font-medium transition-colors duration-200 focus:outline-none ${
                                 isActive
                                   ? 'bg-primary text-primary-foreground border-(length:--border-width) border-transparent'
-                                  : 'bg-transparent border-(length:--border-width) border-border hover:border-primary hover:text-primary'
+                                  : 'border-border hover:border-primary hover:text-primary border-(length:--border-width) bg-transparent'
                               } ${isPlayfulGeometric ? 'font-[var(--font-outfit)]' : ''}`
                         }
                       >
@@ -2599,26 +2793,41 @@ export default function ChatPage() {
                           <span
                             style={
                               isNeoBrutalism
-                                ? { background: isActive ? 'rgba(255,255,255,0.2)' : '#1F1F1F15', color: isActive ? '#fff' : '#1F1F1F', borderRadius: 0, padding: '0 5px', fontSize: '11px', fontWeight: 600 }
-                                : isPlayfulGeometric
                                 ? {
-                                    background: isActive ? '#FFFFFF' : 'rgba(30,41,59,0.08)',
-                                    color:
-                                      isActive
+                                    background: isActive
+                                      ? 'rgba(255,255,255,0.2)'
+                                      : '#1F1F1F15',
+                                    color: isActive ? '#fff' : '#1F1F1F',
+                                    borderRadius: 0,
+                                    padding: '0 5px',
+                                    fontSize: '11px',
+                                    fontWeight: 600,
+                                  }
+                                : isPlayfulGeometric
+                                  ? {
+                                      background: isActive
+                                        ? '#FFFFFF'
+                                        : 'rgba(30,41,59,0.08)',
+                                      color: isActive
                                         ? filter === 'all'
                                           ? '#8B5CF6'
                                           : filter === 'unread'
-                                          ? '#34D399'
-                                          : '#F472B6'
+                                            ? '#34D399'
+                                            : '#F472B6'
                                         : '#1E293B',
-                                    borderRadius: 9999,
-                                    padding: '0 6px',
-                                    fontSize: '11px',
-                                    fontWeight: 700,
-                                  }
-                                : undefined
+                                      borderRadius: 9999,
+                                      padding: '0 6px',
+                                      fontSize: '11px',
+                                      fontWeight: 700,
+                                    }
+                                  : undefined
                             }
-                            className={isNeoBrutalism ? 'inline-flex h-5 min-w-[20px] items-center justify-center' : `inline-flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-xs font-medium ${isActive ? 'bg-white/20 text-white' : 'bg-[rgb(var(--primary-default))] text-white'}`}>
+                            className={
+                              isNeoBrutalism
+                                ? 'inline-flex h-5 min-w-[20px] items-center justify-center'
+                                : `inline-flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-xs font-medium ${isActive ? 'bg-white/20 text-white' : 'bg-[rgb(var(--primary-default))] text-white'}`
+                            }
+                          >
                             {count}
                           </span>
                         )}
@@ -2629,17 +2838,27 @@ export default function ChatPage() {
 
                 {/* Bulk selection toolbar — shown when in archived filter */}
                 {chatFilter === 'archived' && contacts.length > 0 && (
-                  <div className={`flex items-center gap-2 border-b border-gray-200 px-4 py-2 ${isPlayfulGeometric ? 'border-[#1E293B]/15!' : ''}`}>
+                  <div
+                    className={`flex items-center gap-2 border-b border-gray-200 px-4 py-2 ${isPlayfulGeometric ? 'border-[#1E293B]/15!' : ''}`}
+                  >
                     <input
                       type="checkbox"
                       className="h-4 w-4 cursor-pointer accent-green-600"
-                      checked={selectedArchiveIds.size === contacts.length && contacts.length > 0}
+                      checked={
+                        selectedArchiveIds.size === contacts.length &&
+                        contacts.length > 0
+                      }
                       ref={(el) => {
-                        if (el) el.indeterminate = selectedArchiveIds.size > 0 && selectedArchiveIds.size < contacts.length;
+                        if (el)
+                          el.indeterminate =
+                            selectedArchiveIds.size > 0 &&
+                            selectedArchiveIds.size < contacts.length;
                       }}
                       onChange={(e) => {
                         if (e.target.checked) {
-                          setSelectedArchiveIds(new Set(contacts.map((c) => c.id)));
+                          setSelectedArchiveIds(
+                            new Set(contacts.map((c) => c.id))
+                          );
                         } else {
                           setSelectedArchiveIds(new Set());
                         }
@@ -2654,8 +2873,10 @@ export default function ChatPage() {
                     {selectedArchiveIds.size > 0 && (
                       <button
                         type="button"
-                        className="flex items-center gap-1 rounded px-2 py-1 text-xs font-medium text-white bg-green-600 hover:bg-green-700 transition-colors"
-                        onClick={() => handleBulkUnarchive(Array.from(selectedArchiveIds))}
+                        className="flex items-center gap-1 rounded bg-green-600 px-2 py-1 text-xs font-medium text-white transition-colors hover:bg-green-700"
+                        onClick={() =>
+                          handleBulkUnarchive(Array.from(selectedArchiveIds))
+                        }
                       >
                         <PiArrowCounterClockwise className="h-3 w-3" />
                         Unarchive ({selectedArchiveIds.size})
@@ -2667,7 +2888,10 @@ export default function ChatPage() {
                 {/* Archived messages header - shown when not in archived filter and there are archived contacts */}
                 {chatFilter !== 'archived' && archivedCount > 0 && (
                   <button
-                    onClick={() => { setChatFilter('archived'); setSelectedArchiveIds(new Set()); }}
+                    onClick={() => {
+                      setChatFilter('archived');
+                      setSelectedArchiveIds(new Set());
+                    }}
                     className={`nb-archived-row flex w-full items-center gap-3 border-b border-gray-200 bg-gray-50 px-4 py-3 text-left transition-colors hover:bg-gray-100 ${
                       isPlayfulGeometric
                         ? 'border-[#1E293B]/15! bg-[linear-gradient(90deg,rgba(251,191,36,0.16),rgba(244,114,182,0.1),rgba(139,92,246,0.08))]! hover:bg-[linear-gradient(90deg,rgba(244,114,182,0.14),rgba(52,211,153,0.12))]!'
@@ -2715,9 +2939,12 @@ export default function ChatPage() {
                         }
                       }}
                       className={`nb-contact-row flex w-full cursor-pointer items-center gap-2 border-b border-gray-100 p-2 text-left transition-colors hover:bg-gray-50 ${
-                        chatFilter === 'archived' && selectedArchiveIds.has(contact.id)
+                        chatFilter === 'archived' &&
+                        selectedArchiveIds.has(contact.id)
                           ? 'bg-green-50'
-                          : selectedContact?.id === contact.id ? 'bg-gray-50' : ''
+                          : selectedContact?.id === contact.id
+                            ? 'bg-gray-50'
+                            : ''
                       } ${
                         isPlayfulGeometric
                           ? 'border-[#E2E8F0]! hover:bg-[rgba(251,191,36,0.12)]!'
@@ -2746,20 +2973,32 @@ export default function ChatPage() {
                           contact.profilePictureUrl ||
                           `https://ui-avatars.com/api/?name=${encodeURIComponent(contact.businessName || contact.profileName || contact.phoneNumber)}`
                         }
-                        name={contact.businessName || contact.profileName || contact.phoneNumber}
+                        name={
+                          contact.businessName ||
+                          contact.profileName ||
+                          contact.phoneNumber
+                        }
                         className="h-10 w-10"
                       />
                       <div className="min-w-0 flex-1">
-                        <h6 className={`truncate text-xs font-semibold ${isPlayfulGeometric ? 'font-[var(--font-outfit)] text-[#1E293B]' : ''}`}>
-                          {contact.businessName || contact.profileName || contact.phoneNumber}
+                        <h6
+                          className={`truncate text-xs font-semibold ${isPlayfulGeometric ? 'font-[var(--font-outfit)] text-[#1E293B]' : ''}`}
+                        >
+                          {contact.businessName ||
+                            contact.profileName ||
+                            contact.phoneNumber}
                         </h6>
                         <p className="truncate text-[10px] text-gray-500">
                           {contact.phoneNumber}
                         </p>
                         {drafts[contact.id] ? (
                           <p className="flex truncate text-[10px]">
-                            <span className="mr-1 shrink-0 font-semibold text-red-500">Draft:</span>
-                            <span className="truncate text-red-400">{drafts[contact.id]}</span>
+                            <span className="mr-1 shrink-0 font-semibold text-red-500">
+                              Draft:
+                            </span>
+                            <span className="truncate text-red-400">
+                              {drafts[contact.id]}
+                            </span>
                           </p>
                         ) : (
                           <p className="truncate text-[10px] text-gray-600">
@@ -2802,13 +3041,15 @@ export default function ChatPage() {
                             </span>
                           )}
                           {/* Options menu button */}
-                          <div className={`relative ${contactOptionsMenuId === contact.id ? 'z-30' : ''}`}>
+                          <div
+                            className={`relative ${contactOptionsMenuId === contact.id ? 'z-30' : ''}`}
+                          >
                             <ActionIcon
                               size="sm"
                               variant="text"
                               className={`nb-options-btn text-gray-400 hover:text-gray-600 ${
                                 isPlayfulGeometric
-                                  ? 'border-[#1E293B]! bg-white! text-[#1E293B]! shadow-[4px_4px_0_#1E293B]! hover:bg-[#FBBF24]! hover:shadow-[6px_6px_0_#1E293B]! hover:translate-x-[-2px] hover:translate-y-[-2px] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[2px_2px_0_#1E293B]! rounded-full'
+                                  ? 'rounded-full border-[#1E293B]! bg-white! text-[#1E293B]! shadow-[4px_4px_0_#1E293B]! hover:translate-x-[-2px] hover:translate-y-[-2px] hover:bg-[#FBBF24]! hover:shadow-[6px_6px_0_#1E293B]! active:translate-x-[2px] active:translate-y-[2px] active:shadow-[2px_2px_0_#1E293B]!'
                                   : ''
                               }`}
                               onClick={(e) => {
@@ -2984,8 +3225,8 @@ export default function ChatPage() {
                             copiedPhone
                               ? 'border-green-200 bg-green-50 text-green-600'
                               : isPlayfulGeometric
-                              ? 'border-[#1E293B] bg-white text-[#1E293B] shadow-[2px_2px_0_#1E293B] hover:bg-[#FBBF24] hover:text-[#1E293B]'
-                              : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300 hover:bg-gray-50 hover:text-gray-700'
+                                ? 'border-[#1E293B] bg-white text-[#1E293B] shadow-[2px_2px_0_#1E293B] hover:bg-[#FBBF24] hover:text-[#1E293B]'
+                                : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300 hover:bg-gray-50 hover:text-gray-700'
                           }`}
                           title={copiedPhone ? 'Copied!' : 'Copy phone number'}
                         >
@@ -3032,7 +3273,7 @@ export default function ChatPage() {
                 {/* Messages loading spinner overlay */}
                 {messagesLoading && (
                   <div className="flex min-h-0 flex-1 items-center justify-center">
-                    <div className="h-8 w-8 animate-spin rounded-full border-2 border-gray-200 border-t-primary" />
+                    <div className="border-t-primary h-8 w-8 animate-spin rounded-full border-2 border-gray-200" />
                   </div>
                 )}
 
@@ -3043,756 +3284,868 @@ export default function ChatPage() {
                   className={`custom-scrollbar-message relative min-h-0 flex-1 overflow-y-auto p-4 ${messagesLoading ? 'hidden' : 'block'}`}
                   style={
                     isNeoBrutalism
-                      ? { scrollBehavior: 'auto', background: '#FFFFFF', borderBottom: '2px solid #1F1F1F' }
-                      : isHandDrawn
-                      ? { scrollBehavior: 'auto', background: '#f7f8f4', backgroundImage: 'radial-gradient(circle, rgba(45,45,45,0.06) 1px, transparent 1px)', backgroundSize: '24px 24px' }
-                      : isPlayfulGeometric
                       ? {
                           scrollBehavior: 'auto',
-                          backgroundColor: '#FFFDF5',
-                          backgroundImage:
-                            'radial-gradient(circle at 24px 24px, rgba(139,92,246,0.14) 0 2px, transparent 2.5px), radial-gradient(circle at 72px 56px, rgba(244,114,182,0.16) 0 3px, transparent 3.5px), radial-gradient(circle at 48px 80px, rgba(52,211,153,0.14) 0 3px, transparent 3.5px), linear-gradient(90deg, rgba(226,232,240,0.5) 1px, transparent 1px), linear-gradient(rgba(226,232,240,0.5) 1px, transparent 1px)',
-                          backgroundSize: '96px 96px, 120px 120px, 32px 32px, 32px 32px',
-                          backgroundPosition: '0 0, 0 0, 0 0, 0 0',
+                          background: '#FFFFFF',
+                          borderBottom: '2px solid #1F1F1F',
                         }
-                      : { scrollBehavior: 'auto', backgroundImage: 'url(/background.png)', backgroundRepeat: 'repeat', backgroundSize: 'auto' }
+                      : isHandDrawn
+                        ? {
+                            scrollBehavior: 'auto',
+                            background: '#f7f8f4',
+                            backgroundImage:
+                              'radial-gradient(circle, rgba(45,45,45,0.06) 1px, transparent 1px)',
+                            backgroundSize: '24px 24px',
+                          }
+                        : isPlayfulGeometric
+                          ? {
+                              scrollBehavior: 'auto',
+                              backgroundColor: '#FFFDF5',
+                              backgroundImage:
+                                'radial-gradient(circle at 24px 24px, rgba(139,92,246,0.14) 0 2px, transparent 2.5px), radial-gradient(circle at 72px 56px, rgba(244,114,182,0.16) 0 3px, transparent 3.5px), radial-gradient(circle at 48px 80px, rgba(52,211,153,0.14) 0 3px, transparent 3.5px), linear-gradient(90deg, rgba(226,232,240,0.5) 1px, transparent 1px), linear-gradient(rgba(226,232,240,0.5) 1px, transparent 1px)',
+                              backgroundSize:
+                                '96px 96px, 120px 120px, 32px 32px, 32px 32px',
+                              backgroundPosition: '0 0, 0 0, 0 0, 0 0',
+                            }
+                          : {
+                              scrollBehavior: 'auto',
+                              backgroundImage: 'url(/background.png)',
+                              backgroundRepeat: 'repeat',
+                              backgroundSize: 'auto',
+                            }
                   }
                 >
                   <div className="space-y-3">
-                  {loadingOlderMessages && (
-                    <div className="flex justify-center py-2">
-                      <div className="h-6 w-6 animate-spin rounded-full border-2 border-gray-300 border-t-primary" />
-                    </div>
-                  )}
-                  {messages.filter((msg, idx, arr) => arr.findIndex(m => m.id === msg.id) === idx).map((msg) => {
-                      const isOwn = msg.direction === 'outgoing';
-                      return (
-                        <div
-                          key={msg.id}
-                          id={`msg-${msg.id}`}
-                          className={`group flex items-start gap-1 ${isOwn ? 'flex-row-reverse' : ''} ${!messagesLoading ? 'animate-fade-in-up' : ''}`}
-                        >
-                          {/* Reply button (appears on hover) */}
-                          {msg.messageType !== 'reaction' && selectedContact?.isSessionActive && (
-                            <button
-                              onClick={() => {
-                                setReplyToMessage(msg);
-                                textareaRef.current?.focus();
-                              }}
-                              className={`mt-2 flex-shrink-0 rounded-full p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-gray-200 dark:hover:bg-gray-700 ${
-                                isOwn ? 'order-first' : ''
-                              }`}
-                              title="Reply"
-                            >
-                              <PiArrowBendUpLeft className="h-3.5 w-3.5 text-gray-400" />
-                            </button>
-                          )}
+                    {loadingOlderMessages && (
+                      <div className="flex justify-center py-2">
+                        <div className="border-t-primary h-6 w-6 animate-spin rounded-full border-2 border-gray-300" />
+                      </div>
+                    )}
+                    {messages
+                      .filter(
+                        (msg, idx, arr) =>
+                          arr.findIndex((m) => m.id === msg.id) === idx
+                      )
+                      .map((msg) => {
+                        const isOwn = msg.direction === 'outgoing';
+                        return (
                           <div
-                            className={`max-w-[85%] sm:max-w-[65%] min-w-0 ${isOwn ? 'items-end' : 'items-start'} flex flex-col`}
+                            key={msg.id}
+                            id={`msg-${msg.id}`}
+                            className={`group flex items-start gap-1 ${isOwn ? 'flex-row-reverse' : ''} ${!messagesLoading ? 'animate-fade-in-up' : ''}`}
                           >
-                            {/* Message Content */}
-                            <div
-                              className={`w-full min-w-0 px-2.5 py-1 relative transition-all ${
-                                isNeoBrutalism
-                                  ? `border border-[#1F1F1F]/30 text-[#1F1F1F] ${isOwn ? 'bg-[#B0BEC520] shadow-[2px_2px_0_#1F1F1F]/20' : 'bg-white shadow-[2px_2px_0_#1F1F1F]/20'}`
-                                  : isHandDrawn
-                                  ? isOwn ? 'hd-bubble-own' : 'hd-bubble-other'
-                                  : isPlayfulGeometric
-                                  ? isOwn ? 'pg-bubble-own' : 'pg-bubble-other'
-                                  : `rounded-lg ${isOwn ? 'bg-[#d9fdd3] text-gray-900 shadow-sm dark:bg-[#005c4b] dark:text-gray-100' : 'bg-white text-gray-900 shadow-sm dark:bg-[#202c33] dark:text-gray-100'}`
-                              }`}
-                            >
-                              {/* Username inside bubble */}
-                              {isOwn && msg.user && (
-                                <p className="text-[10px] font-semibold text-green-700 dark:text-green-300">
-                                  {msg.user.username}
-                                </p>
+                            {/* Reply button (appears on hover) */}
+                            {msg.messageType !== 'reaction' &&
+                              selectedContact?.isSessionActive && (
+                                <button
+                                  onClick={() => {
+                                    setReplyToMessage(msg);
+                                    textareaRef.current?.focus();
+                                  }}
+                                  className={`mt-2 flex-shrink-0 rounded-full p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-gray-200 dark:hover:bg-gray-700 ${
+                                    isOwn ? 'order-first' : ''
+                                  }`}
+                                  title="Reply"
+                                >
+                                  <PiArrowBendUpLeft className="h-3.5 w-3.5 text-gray-400" />
+                                </button>
                               )}
-                              {/* Reply context (quoted message) */}
-                              {msg.contextMessageId && (() => {
-                                const repliedMsg = messages.find(
-                                  (m) => m.wamid === msg.contextMessageId
-                                );
-                                const repliedSender = repliedMsg
-                                  ? repliedMsg.direction === 'outgoing'
-                                    ? repliedMsg.user?.username || 'You'
-                                    : selectedContact?.profileName || msg.contextFrom || repliedMsg.contactId
-                                  : msg.contextFrom || 'Unknown';
-                                const repliedPreview = repliedMsg
-                                  ? repliedMsg.textBody || repliedMsg.mediaCaption || `[${repliedMsg.messageType}]`
-                                  : null;
-                                const repliedIsOwn = repliedMsg?.direction === 'outgoing';
+                            <div
+                              className={`max-w-[85%] min-w-0 sm:max-w-[65%] ${isOwn ? 'items-end' : 'items-start'} flex flex-col`}
+                            >
+                              {/* Message Content */}
+                              <div
+                                className={`relative w-full min-w-0 px-2.5 py-1 transition-all ${
+                                  isNeoBrutalism
+                                    ? `border border-[#1F1F1F]/30 text-[#1F1F1F] ${isOwn ? 'bg-[#B0BEC520] shadow-[2px_2px_0_#1F1F1F]/20' : 'bg-white shadow-[2px_2px_0_#1F1F1F]/20'}`
+                                    : isHandDrawn
+                                      ? isOwn
+                                        ? 'hd-bubble-own'
+                                        : 'hd-bubble-other'
+                                      : isPlayfulGeometric
+                                        ? isOwn
+                                          ? 'pg-bubble-own'
+                                          : 'pg-bubble-other'
+                                        : `rounded-lg ${isOwn ? 'bg-[#d9fdd3] text-gray-900 shadow-sm dark:bg-[#005c4b] dark:text-gray-100' : 'bg-white text-gray-900 shadow-sm dark:bg-[#202c33] dark:text-gray-100'}`
+                                }`}
+                              >
+                                {/* Username inside bubble */}
+                                {isOwn && msg.user && (
+                                  <p className="text-[10px] font-semibold text-green-700 dark:text-green-300">
+                                    {msg.user.username}
+                                  </p>
+                                )}
+                                {/* Reply context (quoted message) */}
+                                {msg.contextMessageId &&
+                                  (() => {
+                                    const repliedMsg = messages.find(
+                                      (m) => m.wamid === msg.contextMessageId
+                                    );
+                                    const repliedSender = repliedMsg
+                                      ? repliedMsg.direction === 'outgoing'
+                                        ? repliedMsg.user?.username || 'You'
+                                        : selectedContact?.profileName ||
+                                          msg.contextFrom ||
+                                          repliedMsg.contactId
+                                      : msg.contextFrom || 'Unknown';
+                                    const repliedPreview = repliedMsg
+                                      ? repliedMsg.textBody ||
+                                        repliedMsg.mediaCaption ||
+                                        `[${repliedMsg.messageType}]`
+                                      : null;
+                                    const repliedIsOwn =
+                                      repliedMsg?.direction === 'outgoing';
 
-                                return (
-                                  <div
-                                    className={`mb-1 cursor-pointer rounded-md overflow-hidden transition-colors ${
-                                      isNeoBrutalism
-                                        ? 'border border-[#1F1F1F]/20 bg-[#1F1F1F]/5 hover:bg-[#1F1F1F]/10'
-                                        : isHandDrawn
-                                        ? 'bg-[#e8e5d8] hover:bg-[#ddd9c8]'
-                                        : isPlayfulGeometric
-                                        ? 'bg-violet-50 hover:bg-violet-100 dark:bg-violet-900/20 dark:hover:bg-violet-900/30'
-                                        : isOwn
-                                        ? 'bg-[#c8edbe] hover:bg-[#bce6b0] dark:bg-[#004a3d] dark:hover:bg-[#005545]'
-                                        : 'bg-gray-100 hover:bg-gray-200 dark:bg-[#1a252c] dark:hover:bg-[#1e2c34]'
-                                    }`}
-                                    onClick={() => {
-                                      if (repliedMsg) {
-                                        const el = document.getElementById(`msg-${repliedMsg.id}`);
-                                        if (el) {
-                                          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                          el.classList.add('reply-highlight');
-                                          setTimeout(() => el.classList.remove('reply-highlight'), 2000);
-                                        }
-                                      }
-                                    }}
-                                  >
-                                    <div className="flex">
+                                    return (
                                       <div
-                                        className={`w-1 flex-shrink-0 rounded-l ${
-                                          isPlayfulGeometric
-                                            ? repliedIsOwn ? 'bg-violet-400' : 'bg-pink-400'
-                                            : repliedIsOwn
-                                            ? 'bg-emerald-500 dark:bg-emerald-400'
-                                            : 'bg-gray-400 dark:bg-gray-500'
+                                        className={`mb-1 cursor-pointer overflow-hidden rounded-md transition-colors ${
+                                          isNeoBrutalism
+                                            ? 'border border-[#1F1F1F]/20 bg-[#1F1F1F]/5 hover:bg-[#1F1F1F]/10'
+                                            : isHandDrawn
+                                              ? 'bg-[#e8e5d8] hover:bg-[#ddd9c8]'
+                                              : isPlayfulGeometric
+                                                ? 'bg-violet-50 hover:bg-violet-100 dark:bg-violet-900/20 dark:hover:bg-violet-900/30'
+                                                : isOwn
+                                                  ? 'bg-[#c8edbe] hover:bg-[#bce6b0] dark:bg-[#004a3d] dark:hover:bg-[#005545]'
+                                                  : 'bg-gray-100 hover:bg-gray-200 dark:bg-[#1a252c] dark:hover:bg-[#1e2c34]'
                                         }`}
-                                      />
-                                      <div className="min-w-0 flex-1 px-2 py-1">
-                                        <p
-                                          className={`text-[11px] font-semibold truncate ${
-                                            isPlayfulGeometric
-                                              ? repliedIsOwn ? 'text-violet-600 dark:text-violet-300' : 'text-pink-600 dark:text-pink-300'
-                                              : repliedIsOwn
-                                              ? 'text-emerald-700 dark:text-emerald-300'
-                                              : 'text-gray-600 dark:text-gray-300'
-                                          }`}
-                                        >
-                                          {repliedSender}
-                                        </p>
-                                        {repliedPreview && (
-                                          <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate leading-snug">
-                                            {repliedPreview}
-                                          </p>
-                                        )}
+                                        onClick={() => {
+                                          if (repliedMsg) {
+                                            const el = document.getElementById(
+                                              `msg-${repliedMsg.id}`
+                                            );
+                                            if (el) {
+                                              el.scrollIntoView({
+                                                behavior: 'smooth',
+                                                block: 'center',
+                                              });
+                                              el.classList.add(
+                                                'reply-highlight'
+                                              );
+                                              setTimeout(
+                                                () =>
+                                                  el.classList.remove(
+                                                    'reply-highlight'
+                                                  ),
+                                                2000
+                                              );
+                                            }
+                                          }
+                                        }}
+                                      >
+                                        <div className="flex">
+                                          <div
+                                            className={`w-1 flex-shrink-0 rounded-l ${
+                                              isPlayfulGeometric
+                                                ? repliedIsOwn
+                                                  ? 'bg-violet-400'
+                                                  : 'bg-pink-400'
+                                                : repliedIsOwn
+                                                  ? 'bg-emerald-500 dark:bg-emerald-400'
+                                                  : 'bg-gray-400 dark:bg-gray-500'
+                                            }`}
+                                          />
+                                          <div className="min-w-0 flex-1 px-2 py-1">
+                                            <p
+                                              className={`truncate text-[11px] font-semibold ${
+                                                isPlayfulGeometric
+                                                  ? repliedIsOwn
+                                                    ? 'text-violet-600 dark:text-violet-300'
+                                                    : 'text-pink-600 dark:text-pink-300'
+                                                  : repliedIsOwn
+                                                    ? 'text-emerald-700 dark:text-emerald-300'
+                                                    : 'text-gray-600 dark:text-gray-300'
+                                              }`}
+                                            >
+                                              {repliedSender}
+                                            </p>
+                                            {repliedPreview && (
+                                              <p className="truncate text-[11px] leading-snug text-gray-500 dark:text-gray-400">
+                                                {repliedPreview}
+                                              </p>
+                                            )}
+                                          </div>
+                                        </div>
                                       </div>
+                                    );
+                                  })()}
+                                {msg.messageType === 'reaction' ? (
+                                  // Reaction message - just show the emoji
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-3xl">
+                                      {msg.reactionEmoji || '👍'}
+                                    </span>
+                                    <div className="flex items-center gap-1">
+                                      <span
+                                        className={`text-[10px] ${isOwn ? 'text-gray-500 dark:text-gray-400' : 'text-gray-500'}`}
+                                      >
+                                        {(() => {
+                                          const date = new Date(msg.timestamp);
+                                          const now = new Date();
+                                          const diff = differenceInCalendarDays(
+                                            now,
+                                            date
+                                          );
+
+                                          if (diff >= 1) {
+                                            return format(
+                                              date,
+                                              'dd/MM/yyyy HH:mm'
+                                            );
+                                          }
+
+                                          return format(date, 'HH:mm');
+                                        })()}
+                                      </span>
                                     </div>
                                   </div>
-                                );
-                              })()}
-                              {msg.messageType === 'reaction' ? (
-                                // Reaction message - just show the emoji
-                                <div className="flex items-center gap-2">
-                                  <span className="text-3xl">
-                                    {msg.reactionEmoji || '👍'}
-                                  </span>
-                                  <div className="flex items-center gap-1">
-                                    <span
-                                      className={`text-[10px] ${isOwn ? 'text-gray-500 dark:text-gray-400' : 'text-gray-500'}`}
-                                    >
-                                      {(() => {
-                                        const date = new Date(msg.timestamp);
-                                        const now = new Date();
-                                        const diff = differenceInCalendarDays(
-                                          now,
-                                          date
-                                        );
+                                ) : msg.messageType === 'template' ? (
+                                  // Template message - render from templateComponents
+                                  (() => {
+                                    const components =
+                                      msg.templateComponents || [];
+                                    const headerComp = components.find(
+                                      (c: any) =>
+                                        c.type?.toUpperCase() === 'HEADER'
+                                    );
+                                    const bodyComp = components.find(
+                                      (c: any) =>
+                                        c.type?.toUpperCase() === 'BODY'
+                                    );
+                                    const footerComp = components.find(
+                                      (c: any) =>
+                                        c.type?.toUpperCase() === 'FOOTER'
+                                    );
+                                    const buttonsComp = components.find(
+                                      (c: any) =>
+                                        c.type?.toUpperCase() === 'BUTTONS'
+                                    );
 
-                                        if (diff >= 1) {
-                                          return format(
-                                            date,
-                                            'dd/MM/yyyy HH:mm'
-                                          );
+                                    // Get header media from parameters
+                                    const headerParam =
+                                      headerComp?.parameters?.[0];
+                                    const headerMediaUrl =
+                                      headerParam?.image?.link ||
+                                      headerParam?.video?.link ||
+                                      headerParam?.document?.link ||
+                                      msg.mediaUrl;
+                                    const headerMediaType =
+                                      headerParam?.type ||
+                                      (msg.mediaMimeType?.startsWith('image/')
+                                        ? 'image'
+                                        : msg.mediaMimeType?.startsWith(
+                                              'video/'
+                                            )
+                                          ? 'video'
+                                          : 'document');
+
+                                    // Get body text - from component text, textBody, or fallback to parameter values
+                                    const bodyParamsFallback =
+                                      bodyComp?.parameters
+                                        ?.map((p: any) => p.text)
+                                        .filter(Boolean)
+                                        .join(' | ') || null;
+                                    const rawBodyText =
+                                      msg.textBody ||
+                                      bodyComp?.text ||
+                                      bodyParamsFallback;
+                                    // Substitute {{n}} placeholders with actual parameter values from templateComponents
+                                    const bodyText = (() => {
+                                      if (!rawBodyText) return rawBodyText;
+                                      const params: any[] =
+                                        bodyComp?.parameters || [];
+                                      if (params.length === 0)
+                                        return rawBodyText;
+                                      let result = rawBodyText;
+                                      params.forEach(
+                                        (param: any, index: number) => {
+                                          const value = param.text || '';
+                                          result = result
+                                            .split(`{{${index + 1}}}`)
+                                            .join(value);
                                         }
+                                      );
+                                      return result;
+                                    })();
 
-                                        return format(date, 'HH:mm');
-                                      })()}
-                                    </span>
-                                  </div>
-                                </div>
-                              ) : msg.messageType === 'template' ? (
-                                // Template message - render from templateComponents
-                                (() => {
-                                  const components =
-                                    msg.templateComponents || [];
-                                  const headerComp = components.find(
-                                    (c: any) =>
-                                      c.type?.toUpperCase() === 'HEADER'
-                                  );
-                                  const bodyComp = components.find(
-                                    (c: any) => c.type?.toUpperCase() === 'BODY'
-                                  );
-                                  const footerComp = components.find(
-                                    (c: any) =>
-                                      c.type?.toUpperCase() === 'FOOTER'
-                                  );
-                                  const buttonsComp = components.find(
-                                    (c: any) =>
-                                      c.type?.toUpperCase() === 'BUTTONS'
-                                  );
+                                    // Get footer text
+                                    const footerText = footerComp?.text;
 
-                                  // Get header media from parameters
-                                  const headerParam =
-                                    headerComp?.parameters?.[0];
-                                  const headerMediaUrl =
-                                    headerParam?.image?.link ||
-                                    headerParam?.video?.link ||
-                                    headerParam?.document?.link ||
-                                    msg.mediaUrl;
-                                  const headerMediaType =
-                                    headerParam?.type ||
-                                    (msg.mediaMimeType?.startsWith('image/')
-                                      ? 'image'
-                                      : msg.mediaMimeType?.startsWith('video/')
-                                        ? 'video'
-                                        : 'document');
-
-                                  // Get body text - from component text, textBody, or fallback to parameter values
-                                  const bodyParamsFallback =
-                                    bodyComp?.parameters
-                                      ?.map((p: any) => p.text)
-                                      .filter(Boolean)
-                                      .join(' | ') || null;
-                                  const rawBodyText =
-                                    msg.textBody || bodyComp?.text || bodyParamsFallback;
-                                  // Substitute {{n}} placeholders with actual parameter values from templateComponents
-                                  const bodyText = (() => {
-                                    if (!rawBodyText) return rawBodyText;
-                                    const params: any[] = bodyComp?.parameters || [];
-                                    if (params.length === 0) return rawBodyText;
-                                    let result = rawBodyText;
-                                    params.forEach((param: any, index: number) => {
-                                      const value = param.text || '';
-                                      result = result.split(`{{${index + 1}}}`).join(value);
-                                    });
-                                    return result;
-                                  })();
-
-                                  // Get footer text
-                                  const footerText = footerComp?.text;
-
-                                  return (
-                                    <div className="flex flex-col">
-                                      {/* Template Header - Media or Text */}
-                                      {headerMediaUrl && (
-                                        <div className="mb-2">
-                                          {headerMediaType === 'image' ? (
-                                            <img
-                                              src={headerMediaUrl}
-                                              alt="Template header"
-                                              className="max-h-[200px] max-w-[180px] cursor-pointer rounded object-cover transition-opacity hover:opacity-90"
-                                              onClick={() => {
-                                                setLightboxSlides([
-                                                  {
-                                                    src: headerMediaUrl,
-                                                    alt: 'Template header',
-                                                  },
-                                                ]);
-                                                setLightboxOpen(true);
-                                              }}
-                                            />
-                                          ) : headerMediaType === 'video' ? (
-                                            <div
-                                              className="relative cursor-pointer overflow-hidden rounded"
-                                              style={{ width: 260, maxWidth: '100%' }}
-                                              onClick={() => {
-                                                setLightboxSlides([
-                                                  {
-                                                    type: 'video',
-                                                    sources: [
-                                                      {
-                                                        src: headerMediaUrl,
-                                                        type: 'video/mp4',
-                                                      },
-                                                    ],
-                                                  },
-                                                ]);
-                                                setLightboxOpen(true);
-                                              }}
-                                            >
-                                              <video
-                                                src={`${headerMediaUrl}#t=0.001`}
-                                                preload="metadata"
-                                                className="w-full rounded"
-                                                style={{ maxHeight: 200, display: 'block' }}
+                                    return (
+                                      <div className="flex flex-col">
+                                        {/* Template Header - Media or Text */}
+                                        {headerMediaUrl && (
+                                          <div className="mb-2">
+                                            {headerMediaType === 'image' ? (
+                                              <img
+                                                src={headerMediaUrl}
+                                                alt="Template header"
+                                                className="max-h-[200px] max-w-[180px] cursor-pointer rounded object-cover transition-opacity hover:opacity-90"
+                                                onClick={() => {
+                                                  setLightboxSlides([
+                                                    {
+                                                      src: headerMediaUrl,
+                                                      alt: 'Template header',
+                                                    },
+                                                  ]);
+                                                  setLightboxOpen(true);
+                                                }}
                                               />
-                                              <div className="absolute inset-0 flex items-center justify-center bg-black/25 transition-colors hover:bg-black/35">
-                                                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/90 shadow-md">
-                                                  <PiPlay className="ml-1 h-7 w-7 text-gray-800" />
+                                            ) : headerMediaType === 'video' ? (
+                                              <div
+                                                className="relative cursor-pointer overflow-hidden rounded"
+                                                style={{
+                                                  width: 260,
+                                                  maxWidth: '100%',
+                                                }}
+                                                onClick={() => {
+                                                  setLightboxSlides([
+                                                    {
+                                                      type: 'video',
+                                                      sources: [
+                                                        {
+                                                          src: headerMediaUrl,
+                                                          type: 'video/mp4',
+                                                        },
+                                                      ],
+                                                    },
+                                                  ]);
+                                                  setLightboxOpen(true);
+                                                }}
+                                              >
+                                                <video
+                                                  src={`${headerMediaUrl}#t=0.001`}
+                                                  preload="metadata"
+                                                  className="w-full rounded"
+                                                  style={{
+                                                    maxHeight: 200,
+                                                    display: 'block',
+                                                  }}
+                                                />
+                                                <div className="absolute inset-0 flex items-center justify-center bg-black/25 transition-colors hover:bg-black/35">
+                                                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/90 shadow-md">
+                                                    <PiPlay className="ml-1 h-7 w-7 text-gray-800" />
+                                                  </div>
                                                 </div>
                                               </div>
-                                            </div>
-                                          ) : (
-                                            <a
-                                              href={sanitizeHref(headerMediaUrl)}
-                                              target="_blank"
-                                              rel="noopener noreferrer"
-                                              className={`flex items-center gap-3 rounded-lg p-3 transition-colors ${isOwn ? 'bg-[#c6f0bf] hover:bg-[#b8e8b0] dark:bg-[#025144] dark:hover:bg-[#036b58]' : 'bg-gray-200/80 hover:bg-gray-300/80'}`}
+                                            ) : (
+                                              <a
+                                                href={sanitizeHref(
+                                                  headerMediaUrl
+                                                )}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className={`flex items-center gap-3 rounded-lg p-3 transition-colors ${isOwn ? 'bg-[#c6f0bf] hover:bg-[#b8e8b0] dark:bg-[#025144] dark:hover:bg-[#036b58]' : 'bg-gray-200/80 hover:bg-gray-300/80'}`}
+                                              >
+                                                <div
+                                                  className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg ${isOwn ? 'bg-blue-300/50' : 'bg-gray-300'}`}
+                                                >
+                                                  <PiFileText className="h-5 w-5 text-gray-700" />
+                                                </div>
+                                                <div className="min-w-0 flex-1">
+                                                  <p
+                                                    className={`truncate text-sm font-medium ${isOwn ? 'text-gray-800 dark:text-gray-100' : 'text-gray-800'}`}
+                                                  >
+                                                    {headerParam?.document
+                                                      ?.filename ||
+                                                      msg.mediaFilename ||
+                                                      'Document'}
+                                                  </p>
+                                                </div>
+                                                <div
+                                                  className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full ${isOwn ? 'bg-blue-300/50' : 'bg-gray-300'}`}
+                                                >
+                                                  <PiDownload className="h-4 w-4 text-gray-700" />
+                                                </div>
+                                              </a>
+                                            )}
+                                          </div>
+                                        )}
+                                        {/* Text Header */}
+                                        {headerComp?.text &&
+                                          !headerMediaUrl && (
+                                            <p
+                                              className={`mb-1 text-sm font-semibold ${isOwn ? 'text-gray-900 dark:text-gray-100' : 'text-gray-900'}`}
                                             >
-                                              <div
-                                                className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg ${isOwn ? 'bg-blue-300/50' : 'bg-gray-300'}`}
-                                              >
-                                                <PiFileText className="h-5 w-5 text-gray-700" />
-                                              </div>
-                                              <div className="min-w-0 flex-1">
-                                                <p
-                                                  className={`truncate text-sm font-medium ${isOwn ? 'text-gray-800 dark:text-gray-100' : 'text-gray-800'}`}
-                                                >
-                                                  {headerParam?.document
-                                                    ?.filename ||
-                                                    msg.mediaFilename ||
-                                                    'Document'}
-                                                </p>
-                                              </div>
-                                              <div
-                                                className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full ${isOwn ? 'bg-blue-300/50' : 'bg-gray-300'}`}
-                                              >
-                                                <PiDownload className="h-4 w-4 text-gray-700" />
-                                              </div>
-                                            </a>
+                                              {headerComp.text}
+                                            </p>
                                           )}
-                                        </div>
-                                      )}
-                                      {/* Text Header */}
-                                      {headerComp?.text && !headerMediaUrl && (
-                                        <p
-                                          className={`mb-1 text-sm font-semibold ${isOwn ? 'text-gray-900 dark:text-gray-100' : 'text-gray-900'}`}
-                                        >
-                                          {headerComp.text}
-                                        </p>
-                                      )}
 
-                                      {/* Template Body */}
-                                      {bodyText && (
-                                        <p className="mb-1 text-[13px] leading-normal whitespace-pre-wrap">
-                                          {bodyText}
-                                        </p>
-                                      )}
+                                        {/* Template Body */}
+                                        {bodyText && (
+                                          <p className="mb-1 text-[13px] leading-normal whitespace-pre-wrap">
+                                            {bodyText}
+                                          </p>
+                                        )}
 
-                                      {/* Template Footer */}
-                                      {footerText && (
-                                        <p
-                                          className={`mt-1 text-xs ${isOwn ? 'text-blue-200' : 'text-gray-500'}`}
-                                        >
-                                          {footerText}
-                                        </p>
-                                      )}
+                                        {/* Template Footer */}
+                                        {footerText && (
+                                          <p
+                                            className={`mt-1 text-xs ${isOwn ? 'text-blue-200' : 'text-gray-500'}`}
+                                          >
+                                            {footerText}
+                                          </p>
+                                        )}
 
-                                      {/* Template Buttons */}
-                                      {buttonsComp?.parameters &&
-                                        buttonsComp.parameters.length > 0 && (
-                                          <div className="mt-2 flex flex-wrap gap-1">
-                                            {buttonsComp.parameters.map(
-                                              (btn: any, idx: number) => (
+                                        {/* Template Buttons */}
+                                        {buttonsComp?.parameters &&
+                                          buttonsComp.parameters.length > 0 && (
+                                            <div className="mt-2 flex flex-wrap gap-1">
+                                              {buttonsComp.parameters.map(
+                                                (btn: any, idx: number) => (
+                                                  <span
+                                                    key={idx}
+                                                    className={`rounded px-2 py-1 text-xs ${isOwn ? 'bg-[#c6f0bf] text-green-800 dark:bg-[#025144] dark:text-green-200' : 'bg-gray-200 text-gray-700'}`}
+                                                  >
+                                                    {btn.text ||
+                                                      btn.payload ||
+                                                      `Button ${idx + 1}`}
+                                                  </span>
+                                                )
+                                              )}
+                                            </div>
+                                          )}
+
+                                        {/* Template indicator and timestamp */}
+                                        <div className="mt-1 flex items-center justify-between gap-2">
+                                          <span
+                                            className={`rounded px-1.5 py-0.5 text-[10px] ${isOwn ? 'bg-[#c6f0bf] text-green-800 dark:bg-[#025144] dark:text-green-200' : 'bg-gray-200 text-gray-600'}`}
+                                          >
+                                            {msg.templateName || 'Template'}
+                                          </span>
+                                          <div className="flex items-center gap-1.5">
+                                            <span
+                                              className={`text-[10px] ${isOwn ? 'text-gray-500 dark:text-gray-400' : 'text-gray-500'}`}
+                                            >
+                                              {(() => {
+                                                const date = new Date(
+                                                  msg.timestamp
+                                                );
+                                                const now = new Date();
+                                                const diff =
+                                                  differenceInCalendarDays(
+                                                    now,
+                                                    date
+                                                  );
+                                                if (diff >= 1)
+                                                  return format(
+                                                    date,
+                                                    'dd/MM/yyyy HH:mm'
+                                                  );
+                                                return format(date, 'HH:mm');
+                                              })()}
+                                            </span>
+                                            {isOwn &&
+                                            cancelableSendIds.has(msg.id) ? (
+                                              <button
+                                                onClick={() =>
+                                                  handleCancelSend(msg.id)
+                                                }
+                                                className="ml-1 flex items-center gap-0.5 rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-medium text-red-600 hover:bg-red-200"
+                                                title="Batalkan pengiriman"
+                                              >
+                                                <PiX className="h-3 w-3" />
+                                                Batal
+                                              </button>
+                                            ) : (
+                                              isOwn && (
                                                 <span
-                                                  key={idx}
-                                                  className={`rounded px-2 py-1 text-xs ${isOwn ? 'bg-[#c6f0bf] text-green-800 dark:bg-[#025144] dark:text-green-200' : 'bg-gray-200 text-gray-700'}`}
+                                                  className={
+                                                    isOwn
+                                                      ? 'text-gray-600 dark:text-gray-300'
+                                                      : ''
+                                                  }
                                                 >
-                                                  {btn.text ||
-                                                    btn.payload ||
-                                                    `Button ${idx + 1}`}
+                                                  {getStatusIcon(msg.status)}
                                                 </span>
                                               )
                                             )}
                                           </div>
-                                        )}
-
-                                      {/* Template indicator and timestamp */}
-                                      <div className="mt-1 flex items-center justify-between gap-2">
-                                        <span
-                                          className={`rounded px-1.5 py-0.5 text-[10px] ${isOwn ? 'bg-[#c6f0bf] text-green-800 dark:bg-[#025144] dark:text-green-200' : 'bg-gray-200 text-gray-600'}`}
-                                        >
-                                          {msg.templateName || 'Template'}
-                                        </span>
-                                        <div className="flex items-center gap-1.5">
-                                          <span
-                                            className={`text-[10px] ${isOwn ? 'text-gray-500 dark:text-gray-400' : 'text-gray-500'}`}
-                                          >
-                                            {(() => {
-                                              const date = new Date(
-                                                msg.timestamp
-                                              );
-                                              const now = new Date();
-                                              const diff =
-                                                differenceInCalendarDays(
-                                                  now,
-                                                  date
-                                                );
-                                              if (diff >= 1)
-                                                return format(
-                                                  date,
-                                                  'dd/MM/yyyy HH:mm'
-                                                );
-                                              return format(date, 'HH:mm');
-                                            })()}
-                                          </span>
-                                          {isOwn && cancelableSendIds.has(msg.id) ? (
-                                            <button
-                                              onClick={() => handleCancelSend(msg.id)}
-                                              className="ml-1 flex items-center gap-0.5 rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-medium text-red-600 hover:bg-red-200"
-                                              title="Batalkan pengiriman"
-                                            >
-                                              <PiX className="h-3 w-3" />
-                                              Batal
-                                            </button>
-                                          ) : isOwn && (
-                                            <span
-                                              className={
-                                                isOwn ? 'text-gray-600 dark:text-gray-300' : ''
-                                              }
-                                            >
-                                              {getStatusIcon(msg.status)}
-                                            </span>
-                                          )}
                                         </div>
                                       </div>
-                                    </div>
-                                  );
-                                })()
-                              ) : msg.messageType === 'contacts' &&
-                                msg.contactsPayload?.length ? (
-                                // Contact card(s) shared via WhatsApp
-                                <div className="flex min-w-[200px] flex-col gap-2">
-                                  {(msg.contactsPayload as any[]).map(
-                                    (contact: any, idx: number) => {
-                                      const name =
-                                        contact.name?.formatted_name ||
-                                        contact.name?.first_name ||
-                                        'Kontak';
-                                      const phones: string[] = (
-                                        contact.phones || []
-                                      )
-                                        .map((p: any) => p.phone || p.wa_id)
-                                        .filter(Boolean);
-                                      const emails: string[] = (
-                                        contact.emails || []
-                                      )
-                                        .map((e: any) => e.email)
-                                        .filter(Boolean);
-                                      return (
-                                        <div
-                                          key={idx}
-                                          className={`flex items-center gap-3 rounded-xl px-3 py-2.5 ${
-                                            isOwn
-                                              ? 'bg-blue-400/25'
-                                              : 'bg-gray-100 dark:bg-gray-700'
-                                          }`}
-                                        >
-                                          {/* Avatar placeholder */}
+                                    );
+                                  })()
+                                ) : msg.messageType === 'contacts' &&
+                                  msg.contactsPayload?.length ? (
+                                  // Contact card(s) shared via WhatsApp
+                                  <div className="flex min-w-[200px] flex-col gap-2">
+                                    {(msg.contactsPayload as any[]).map(
+                                      (contact: any, idx: number) => {
+                                        const name =
+                                          contact.name?.formatted_name ||
+                                          contact.name?.first_name ||
+                                          'Kontak';
+                                        const phones: string[] = (
+                                          contact.phones || []
+                                        )
+                                          .map((p: any) => p.phone || p.wa_id)
+                                          .filter(Boolean);
+                                        const emails: string[] = (
+                                          contact.emails || []
+                                        )
+                                          .map((e: any) => e.email)
+                                          .filter(Boolean);
+                                        return (
                                           <div
-                                            className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-base font-semibold ${
+                                            key={idx}
+                                            className={`flex items-center gap-3 rounded-xl px-3 py-2.5 ${
                                               isOwn
-                                                ? 'bg-green-200 text-green-800 dark:bg-[#025144] dark:text-green-200'
-                                                : 'bg-gray-300 text-gray-700 dark:bg-gray-600 dark:text-gray-200'
+                                                ? 'bg-blue-400/25'
+                                                : 'bg-gray-100 dark:bg-gray-700'
                                             }`}
                                           >
-                                            {name.charAt(0).toUpperCase()}
-                                          </div>
-                                          <div className="min-w-0 flex-1">
-                                            <p
-                                              className={`truncate text-sm font-semibold ${isOwn ? 'text-gray-900 dark:text-gray-100' : 'text-gray-900 dark:text-gray-100'}`}
+                                            {/* Avatar placeholder */}
+                                            <div
+                                              className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-base font-semibold ${
+                                                isOwn
+                                                  ? 'bg-green-200 text-green-800 dark:bg-[#025144] dark:text-green-200'
+                                                  : 'bg-gray-300 text-gray-700 dark:bg-gray-600 dark:text-gray-200'
+                                              }`}
                                             >
-                                              {name}
-                                            </p>
-                                            {phones[0] && (
+                                              {name.charAt(0).toUpperCase()}
+                                            </div>
+                                            <div className="min-w-0 flex-1">
                                               <p
-                                                className={`truncate text-xs ${isOwn ? 'text-gray-500 dark:text-gray-400' : 'text-gray-500 dark:text-gray-400'}`}
+                                                className={`truncate text-sm font-semibold ${isOwn ? 'text-gray-900 dark:text-gray-100' : 'text-gray-900 dark:text-gray-100'}`}
                                               >
-                                                {phones[0]}
+                                                {name}
                                               </p>
-                                            )}
-                                            {!phones[0] && emails[0] && (
-                                              <p
-                                                className={`truncate text-xs ${isOwn ? 'text-gray-500 dark:text-gray-400' : 'text-gray-500 dark:text-gray-400'}`}
-                                              >
-                                                {emails[0]}
-                                              </p>
-                                            )}
+                                              {phones[0] && (
+                                                <p
+                                                  className={`truncate text-xs ${isOwn ? 'text-gray-500 dark:text-gray-400' : 'text-gray-500 dark:text-gray-400'}`}
+                                                >
+                                                  {phones[0]}
+                                                </p>
+                                              )}
+                                              {!phones[0] && emails[0] && (
+                                                <p
+                                                  className={`truncate text-xs ${isOwn ? 'text-gray-500 dark:text-gray-400' : 'text-gray-500 dark:text-gray-400'}`}
+                                                >
+                                                  {emails[0]}
+                                                </p>
+                                              )}
+                                            </div>
                                           </div>
-                                        </div>
-                                      );
-                                    }
-                                  )}
-                                  {/* Timestamp */}
-                                  <div className="flex items-center justify-end gap-1">
-                                    <span
-                                      className={`text-[10px] ${isOwn ? 'text-gray-500 dark:text-gray-400' : 'text-gray-500'}`}
-                                    >
-                                      {(() => {
-                                        const date = new Date(msg.timestamp);
-                                        const now = new Date();
-                                        const diff = differenceInCalendarDays(
-                                          now,
-                                          date
                                         );
-                                        if (diff >= 1)
-                                          return format(
-                                            date,
-                                            'dd/MM/yyyy HH:mm'
-                                          );
-                                        return format(date, 'HH:mm');
-                                      })()}
-                                    </span>
-                                    {isOwn && (
+                                      }
+                                    )}
+                                    {/* Timestamp */}
+                                    <div className="flex items-center justify-end gap-1">
                                       <span
-                                        className={isOwn ? 'text-gray-600 dark:text-gray-300' : ''}
+                                        className={`text-[10px] ${isOwn ? 'text-gray-500 dark:text-gray-400' : 'text-gray-500'}`}
                                       >
-                                        {getStatusIcon(msg.status)}
+                                        {(() => {
+                                          const date = new Date(msg.timestamp);
+                                          const now = new Date();
+                                          const diff = differenceInCalendarDays(
+                                            now,
+                                            date
+                                          );
+                                          if (diff >= 1)
+                                            return format(
+                                              date,
+                                              'dd/MM/yyyy HH:mm'
+                                            );
+                                          return format(date, 'HH:mm');
+                                        })()}
                                       </span>
-                                    )}
-                                  </div>
-                                </div>
-                              ) : msg.messageType === 'location' &&
-                                msg.locationLatitude != null &&
-                                msg.locationLongitude != null ? (
-                                // Location message — static map not used (blocked by CSP img-src).
-                                // Show a coordinate card that links to Google Maps.
-                                <div className="flex min-w-[220px] flex-col gap-1">
-                                  <a
-                                    href={`https://www.google.com/maps?q=${msg.locationLatitude},${msg.locationLongitude}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                                      isOwn
-                                        ? 'bg-blue-400/20 text-blue-800 hover:bg-blue-400/30 dark:text-blue-200'
-                                        : 'bg-gray-100 text-gray-800 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-100'
-                                    }`}
-                                  >
-                                    <span className="text-base">📍</span>
-                                    <div className="min-w-0">
-                                      {msg.locationName && (
-                                        <p className="truncate font-semibold">{msg.locationName}</p>
-                                      )}
-                                      {msg.locationAddress && (
-                                        <p className="truncate text-xs opacity-75">{msg.locationAddress}</p>
-                                      )}
-                                      {!msg.locationName && !msg.locationAddress && (
-                                        <p className="truncate">
-                                          {msg.locationLatitude}, {msg.locationLongitude}
-                                        </p>
+                                      {isOwn && (
+                                        <span
+                                          className={
+                                            isOwn
+                                              ? 'text-gray-600 dark:text-gray-300'
+                                              : ''
+                                          }
+                                        >
+                                          {getStatusIcon(msg.status)}
+                                        </span>
                                       )}
                                     </div>
-                                  </a>
-                                  <div className="flex items-center justify-end gap-1">
-                                    <span className={`text-[10px] ${isOwn ? 'text-gray-500 dark:text-gray-400' : 'text-gray-500'}`}>
-                                      {(() => {
-                                        const date = new Date(msg.timestamp);
-                                        const now = new Date();
-                                        const diff = differenceInCalendarDays(now, date);
-                                        if (diff >= 1) return format(date, 'dd/MM/yyyy HH:mm');
-                                        return format(date, 'HH:mm');
-                                      })()}
-                                    </span>
-                                    {isOwn && (
-                                      <span className={isOwn ? 'text-gray-600 dark:text-gray-300' : ''}>
-                                        {getStatusIcon(msg.status)}
-                                      </span>
-                                    )}
                                   </div>
-                                </div>
-                              ) : msg.mediaUrl ? (
-                                <div className="flex flex-col">
-                                  {msg.messageType === 'image' && (
-                                    <img
-                                      src={msg.mediaUrl}
-                                      alt="Image"
-                                      className="mb-2 max-h-[200px] max-w-[180px] cursor-pointer rounded object-cover transition-opacity hover:opacity-90"
-                                      onClick={() => {
-                                        setLightboxSlides([
-                                          {
-                                            src: msg.mediaUrl,
-                                            alt: 'Image',
-                                          },
-                                        ]);
-                                        setLightboxOpen(true);
-                                      }}
-                                    />
-                                  )}
-                                  {msg.messageType === 'sticker' && (
-                                    <img
-                                      src={msg.mediaUrl}
-                                      alt="Sticker"
-                                      className="mb-2 w-full max-w-[150px] sm:max-w-[200px]"
-                                    />
-                                  )}
-                                  {msg.messageType === 'video' && (
-                                    <div
-                                      className="relative mb-2 cursor-pointer overflow-hidden rounded"
-                                      style={{ width: 260, maxWidth: '100%' }}
-                                      onClick={() => {
-                                        setLightboxSlides([
-                                          {
-                                            type: 'video',
-                                            sources: [
-                                              {
-                                                src: msg.mediaUrl,
-                                                type: 'video/mp4',
-                                              },
-                                            ],
-                                          },
-                                        ]);
-                                        setLightboxOpen(true);
-                                      }}
-                                    >
-                                      <video
-                                        src={`${msg.mediaUrl}#t=0.001`}
-                                        preload="metadata"
-                                        className="w-full rounded"
-                                        style={{ maxHeight: 200, display: 'block' }}
-                                      />
-                                      <div className="absolute inset-0 flex items-center justify-center bg-black/25 transition-colors hover:bg-black/35">
-                                        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/90 shadow-md">
-                                          <PiPlay className="ml-1 h-7 w-7 text-gray-800" />
-                                        </div>
-                                      </div>
-                                    </div>
-                                  )}
-                                  {msg.messageType === 'audio' && (
-                                    <audio
-                                      src={msg.mediaUrl}
-                                      controls
-                                      className="mb-2 w-full max-w-[280px] sm:max-w-sm"
-                                    />
-                                  )}
-                                  {msg.messageType === 'document' && (
+                                ) : msg.messageType === 'location' &&
+                                  msg.locationLatitude != null &&
+                                  msg.locationLongitude != null ? (
+                                  // Location message — static map not used (blocked by CSP img-src).
+                                  // Show a coordinate card that links to Google Maps.
+                                  <div className="flex min-w-[220px] flex-col gap-1">
                                     <a
-                                      href={sanitizeHref(msg.mediaUrl)}
+                                      href={`https://www.google.com/maps?q=${msg.locationLatitude},${msg.locationLongitude}`}
                                       target="_blank"
                                       rel="noopener noreferrer"
-                                      className={`mb-2 flex w-full items-start gap-3 rounded-lg p-3 transition-colors ${
+                                      className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                                         isOwn
-                                          ? 'bg-blue-400/30 hover:bg-blue-400/40'
-                                          : 'bg-gray-200/80 hover:bg-gray-300/80'
+                                          ? 'bg-blue-400/20 text-blue-800 hover:bg-blue-400/30 dark:text-blue-200'
+                                          : 'bg-gray-100 text-gray-800 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-100'
                                       }`}
                                     >
-                                      <div
-                                        className={`mt-0.5 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg ${
-                                          isOwn
-                                            ? 'bg-blue-300/50'
-                                            : 'bg-gray-300'
-                                        }`}
-                                      >
-                                        <PiFileText className="h-5 w-5 text-gray-700" />
-                                      </div>
-                                      <div className="min-w-0 flex-1">
-                                        <p
-                                          className={`break-words text-sm font-medium ${
-                                            isOwn
-                                              ? 'text-gray-800 dark:text-gray-100'
-                                              : 'text-gray-800'
-                                          }`}
-                                        >
-                                          {msg.mediaFilename || 'Document'}
-                                        </p>
-                                        <p
-                                          className={`text-xs ${isOwn ? 'text-gray-500 dark:text-gray-400' : 'text-gray-500'}`}
-                                        >
-                                          PDF • Tap to open
-                                        </p>
-                                      </div>
-                                      <div
-                                        className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full ${
-                                          isOwn
-                                            ? 'bg-blue-300/50'
-                                            : 'bg-gray-300'
-                                        }`}
-                                      >
-                                        <PiDownload className="h-4 w-4 text-gray-700" />
+                                      <span className="text-base">📍</span>
+                                      <div className="min-w-0">
+                                        {msg.locationName && (
+                                          <p className="truncate font-semibold">
+                                            {msg.locationName}
+                                          </p>
+                                        )}
+                                        {msg.locationAddress && (
+                                          <p className="truncate text-xs opacity-75">
+                                            {msg.locationAddress}
+                                          </p>
+                                        )}
+                                        {!msg.locationName &&
+                                          !msg.locationAddress && (
+                                            <p className="truncate">
+                                              {msg.locationLatitude},{' '}
+                                              {msg.locationLongitude}
+                                            </p>
+                                          )}
                                       </div>
                                     </a>
-                                  )}
-                                  {(msg.mediaCaption || msg.textBody) && (
-                                    <p className="mb-1 text-sm whitespace-pre-wrap">
-                                      {renderTextWithLinks(msg.mediaCaption || msg.textBody || '')}
-                                    </p>
-                                  )}
-
-                                  {/* Timestamp & Status for Media */}
-                                  <div className="mt-1 flex items-center justify-end gap-1">
-                                    <span
-                                      className={`text-[10px] ${isOwn ? 'text-gray-500 dark:text-gray-400' : 'text-gray-500'}`}
-                                    >
-                                      {(() => {
-                                        const date = new Date(msg.timestamp);
-                                        const now = new Date();
-                                        const diff = differenceInCalendarDays(
-                                          now,
-                                          date
-                                        );
-
-                                        if (diff >= 1) {
-                                          return format(
-                                            date,
-                                            'dd/MM/yyyy HH:mm'
-                                          );
-                                        }
-
-                                        return format(date, 'HH:mm');
-                                      })()}
-                                    </span>
-                                    {isOwn && (
+                                    <div className="flex items-center justify-end gap-1">
                                       <span
-                                        className={isOwn ? 'text-gray-600 dark:text-gray-300' : ''}
+                                        className={`text-[10px] ${isOwn ? 'text-gray-500 dark:text-gray-400' : 'text-gray-500'}`}
                                       >
-                                        {getStatusIcon(msg.status)}
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-                              ) : (
-                                <div className="flex flex-wrap items-end gap-2">
-                                  <p className="text-[13px] leading-normal whitespace-pre-wrap">
-                                    {msg.textBody ? renderTextWithLinks(msg.textBody) : null}
-                                  </p>
-                                  <div className="min-w-[60px] flex-1" />
-                                  <div className="flex flex-shrink-0 items-center gap-1.5 select-none">
-                                    <span
-                                      className={`text-[10px] leading-none font-medium ${
-                                        isOwn
-                                          ? 'text-gray-500 dark:text-gray-400'
-                                          : 'text-gray-500 dark:text-gray-400'
-                                      }`}
-                                    >
-                                      {(() => {
-                                        const date = new Date(msg.timestamp);
-                                        const now = new Date();
-                                        const diff = differenceInCalendarDays(
-                                          now,
-                                          date
-                                        );
-
-                                        if (diff >= 1) {
-                                          return format(
-                                            date,
-                                            'dd/MM/yyyy HH:mm'
+                                        {(() => {
+                                          const date = new Date(msg.timestamp);
+                                          const now = new Date();
+                                          const diff = differenceInCalendarDays(
+                                            now,
+                                            date
                                           );
-                                        }
-
-                                        return format(date, 'HH:mm');
-                                      })()}
-                                    </span>
-                                    {isOwn && (
-                                      <span className="flex-shrink-0 leading-none opacity-90">
-                                        {getStatusIcon(msg.status)}
+                                          if (diff >= 1)
+                                            return format(
+                                              date,
+                                              'dd/MM/yyyy HH:mm'
+                                            );
+                                          return format(date, 'HH:mm');
+                                        })()}
                                       </span>
-                                    )}
+                                      {isOwn && (
+                                        <span
+                                          className={
+                                            isOwn
+                                              ? 'text-gray-600 dark:text-gray-300'
+                                              : ''
+                                          }
+                                        >
+                                          {getStatusIcon(msg.status)}
+                                        </span>
+                                      )}
+                                    </div>
                                   </div>
-                                </div>
-                              )}
+                                ) : msg.mediaUrl ? (
+                                  <div className="flex flex-col">
+                                    {msg.messageType === 'image' && (
+                                      <img
+                                        src={msg.mediaUrl}
+                                        alt="Image"
+                                        className="mb-2 max-h-[200px] max-w-[180px] cursor-pointer rounded object-cover transition-opacity hover:opacity-90"
+                                        onClick={() => {
+                                          setLightboxSlides([
+                                            {
+                                              src: msg.mediaUrl,
+                                              alt: 'Image',
+                                            },
+                                          ]);
+                                          setLightboxOpen(true);
+                                        }}
+                                      />
+                                    )}
+                                    {msg.messageType === 'sticker' && (
+                                      <img
+                                        src={msg.mediaUrl}
+                                        alt="Sticker"
+                                        className="mb-2 w-full max-w-[150px] sm:max-w-[200px]"
+                                      />
+                                    )}
+                                    {msg.messageType === 'video' && (
+                                      <div
+                                        className="relative mb-2 cursor-pointer overflow-hidden rounded"
+                                        style={{ width: 260, maxWidth: '100%' }}
+                                        onClick={() => {
+                                          setLightboxSlides([
+                                            {
+                                              type: 'video',
+                                              sources: [
+                                                {
+                                                  src: msg.mediaUrl,
+                                                  type: 'video/mp4',
+                                                },
+                                              ],
+                                            },
+                                          ]);
+                                          setLightboxOpen(true);
+                                        }}
+                                      >
+                                        <video
+                                          src={`${msg.mediaUrl}#t=0.001`}
+                                          preload="metadata"
+                                          className="w-full rounded"
+                                          style={{
+                                            maxHeight: 200,
+                                            display: 'block',
+                                          }}
+                                        />
+                                        <div className="absolute inset-0 flex items-center justify-center bg-black/25 transition-colors hover:bg-black/35">
+                                          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/90 shadow-md">
+                                            <PiPlay className="ml-1 h-7 w-7 text-gray-800" />
+                                          </div>
+                                        </div>
+                                      </div>
+                                    )}
+                                    {msg.messageType === 'audio' && (
+                                      <audio
+                                        src={msg.mediaUrl}
+                                        controls
+                                        className="mb-2 w-full max-w-[280px] sm:max-w-sm"
+                                      />
+                                    )}
+                                    {msg.messageType === 'document' && (
+                                      <a
+                                        href={sanitizeHref(msg.mediaUrl)}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className={`mb-2 flex w-full items-start gap-3 rounded-lg p-3 transition-colors ${
+                                          isOwn
+                                            ? 'bg-blue-400/30 hover:bg-blue-400/40'
+                                            : 'bg-gray-200/80 hover:bg-gray-300/80'
+                                        }`}
+                                      >
+                                        <div
+                                          className={`mt-0.5 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg ${
+                                            isOwn
+                                              ? 'bg-blue-300/50'
+                                              : 'bg-gray-300'
+                                          }`}
+                                        >
+                                          <PiFileText className="h-5 w-5 text-gray-700" />
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                          <p
+                                            className={`text-sm font-medium break-words ${
+                                              isOwn
+                                                ? 'text-gray-800 dark:text-gray-100'
+                                                : 'text-gray-800'
+                                            }`}
+                                          >
+                                            {msg.mediaFilename || 'Document'}
+                                          </p>
+                                          <p
+                                            className={`text-xs ${isOwn ? 'text-gray-500 dark:text-gray-400' : 'text-gray-500'}`}
+                                          >
+                                            PDF • Tap to open
+                                          </p>
+                                        </div>
+                                        <div
+                                          className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full ${
+                                            isOwn
+                                              ? 'bg-blue-300/50'
+                                              : 'bg-gray-300'
+                                          }`}
+                                        >
+                                          <PiDownload className="h-4 w-4 text-gray-700" />
+                                        </div>
+                                      </a>
+                                    )}
+                                    {(msg.mediaCaption || msg.textBody) && (
+                                      <p className="mb-1 text-sm whitespace-pre-wrap">
+                                        {renderTextWithLinks(
+                                          msg.mediaCaption || msg.textBody || ''
+                                        )}
+                                      </p>
+                                    )}
+
+                                    {/* Timestamp & Status for Media */}
+                                    <div className="mt-1 flex items-center justify-end gap-1">
+                                      <span
+                                        className={`text-[10px] ${isOwn ? 'text-gray-500 dark:text-gray-400' : 'text-gray-500'}`}
+                                      >
+                                        {(() => {
+                                          const date = new Date(msg.timestamp);
+                                          const now = new Date();
+                                          const diff = differenceInCalendarDays(
+                                            now,
+                                            date
+                                          );
+
+                                          if (diff >= 1) {
+                                            return format(
+                                              date,
+                                              'dd/MM/yyyy HH:mm'
+                                            );
+                                          }
+
+                                          return format(date, 'HH:mm');
+                                        })()}
+                                      </span>
+                                      {isOwn && (
+                                        <span
+                                          className={
+                                            isOwn
+                                              ? 'text-gray-600 dark:text-gray-300'
+                                              : ''
+                                          }
+                                        >
+                                          {getStatusIcon(msg.status)}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="flex flex-wrap items-end gap-2">
+                                    <p className="text-[13px] leading-normal whitespace-pre-wrap">
+                                      {msg.textBody
+                                        ? renderTextWithLinks(msg.textBody)
+                                        : null}
+                                    </p>
+                                    <div className="min-w-[60px] flex-1" />
+                                    <div className="flex flex-shrink-0 items-center gap-1.5 select-none">
+                                      <span
+                                        className={`text-[10px] leading-none font-medium ${
+                                          isOwn
+                                            ? 'text-gray-500 dark:text-gray-400'
+                                            : 'text-gray-500 dark:text-gray-400'
+                                        }`}
+                                      >
+                                        {(() => {
+                                          const date = new Date(msg.timestamp);
+                                          const now = new Date();
+                                          const diff = differenceInCalendarDays(
+                                            now,
+                                            date
+                                          );
+
+                                          if (diff >= 1) {
+                                            return format(
+                                              date,
+                                              'dd/MM/yyyy HH:mm'
+                                            );
+                                          }
+
+                                          return format(date, 'HH:mm');
+                                        })()}
+                                      </span>
+                                      {isOwn && (
+                                        <span className="flex-shrink-0 leading-none opacity-90">
+                                          {getStatusIcon(msg.status)}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
                             </div>
+                            {/* Prominent cancel button — shown outside bubble during send delay */}
+                            {isOwn && cancelableSendIds.has(msg.id) && (
+                              <button
+                                onClick={() => handleCancelSend(msg.id)}
+                                className="flex-shrink-0 self-center rounded-full bg-red-500 p-2 text-white shadow-lg transition-all hover:bg-red-600 active:scale-95"
+                                title="Batalkan pengiriman"
+                              >
+                                <PiXCircle className="h-5 w-5" />
+                              </button>
+                            )}
                           </div>
-                          {/* Prominent cancel button — shown outside bubble during send delay */}
-                          {isOwn && cancelableSendIds.has(msg.id) && (
-                            <button
-                              onClick={() => handleCancelSend(msg.id)}
-                              className="self-center flex-shrink-0 rounded-full bg-red-500 p-2 text-white shadow-lg hover:bg-red-600 active:scale-95 transition-all"
-                              title="Batalkan pengiriman"
-                            >
-                              <PiXCircle className="h-5 w-5" />
-                            </button>
-                          )}
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
                     <div ref={messagesEndRef} />
                   </div>
                 </div>
@@ -3802,72 +4155,76 @@ export default function ChatPage() {
                   className="nb-chat-composer flex-shrink-0 p-4"
                   style={
                     isNeoBrutalism
-                      ? { background: '#FFFFFF', borderTop: '3px solid #1F1F1F' }
+                      ? {
+                          background: '#FFFFFF',
+                          borderTop: '3px solid #1F1F1F',
+                        }
                       : isHandDrawn
-                      ? {
-                          background: '#e9efe6',
-                          backgroundImage:
-                            'radial-gradient(circle, rgba(45,45,45,0.06) 1px, transparent 1px)',
-                          backgroundSize: '24px 24px',
-                          borderTop: '2px solid #2d2d2d',
-                        }
-                      : isPlayfulGeometric
-                      ? {
-                          backgroundColor: '#FFFDF5',
-                          backgroundImage:
-                            'linear-gradient(90deg, rgba(226,232,240,0.5) 1px, transparent 1px), linear-gradient(rgba(226,232,240,0.5) 1px, transparent 1px), radial-gradient(circle at 16px 16px, rgba(251,191,36,0.25) 0 4px, transparent 4.5px)',
-                          backgroundSize: '28px 28px, 28px 28px, 88px 88px',
-                          borderTop: '2px solid #1E293B',
-                        }
-                      : {
-                          backgroundImage: 'url(/background.png)',
-                          backgroundRepeat: 'repeat',
-                          backgroundSize: 'auto',
-                        }
+                        ? {
+                            background: '#e9efe6',
+                            backgroundImage:
+                              'radial-gradient(circle, rgba(45,45,45,0.06) 1px, transparent 1px)',
+                            backgroundSize: '24px 24px',
+                            borderTop: '2px solid #2d2d2d',
+                          }
+                        : isPlayfulGeometric
+                          ? {
+                              backgroundColor: '#FFFDF5',
+                              backgroundImage:
+                                'linear-gradient(90deg, rgba(226,232,240,0.5) 1px, transparent 1px), linear-gradient(rgba(226,232,240,0.5) 1px, transparent 1px), radial-gradient(circle at 16px 16px, rgba(251,191,36,0.25) 0 4px, transparent 4.5px)',
+                              backgroundSize: '28px 28px, 28px 28px, 88px 88px',
+                              borderTop: '2px solid #1E293B',
+                            }
+                          : {
+                              backgroundImage: 'url(/background.png)',
+                              backgroundRepeat: 'repeat',
+                              backgroundSize: 'auto',
+                            }
                   }
                 >
-
                   {/* Reply Preview Bar */}
                   {replyToMessage && (
                     <div
-                      className={`flex items-center gap-2 rounded-lg border px-3 py-2 mb-2 ${
+                      className={`mb-2 flex items-center gap-2 rounded-lg border px-3 py-2 ${
                         isNeoBrutalism
                           ? 'border-[#1F1F1F]/20 bg-[#1F1F1F]/5'
                           : isHandDrawn
-                          ? 'border-[#8b7355]/30 bg-[#e8e5d8]'
-                          : isPlayfulGeometric
-                          ? 'border-violet-200 bg-violet-50 dark:border-violet-800 dark:bg-violet-900/20'
-                          : 'border-gray-200 bg-white dark:border-gray-700 dark:bg-[#202c33]'
+                            ? 'border-[#8b7355]/30 bg-[#e8e5d8]'
+                            : isPlayfulGeometric
+                              ? 'border-violet-200 bg-violet-50 dark:border-violet-800 dark:bg-violet-900/20'
+                              : 'border-gray-200 bg-white dark:border-gray-700 dark:bg-[#202c33]'
                       }`}
                     >
                       <div
-                        className={`w-1 self-stretch rounded-full flex-shrink-0 ${
+                        className={`w-1 flex-shrink-0 self-stretch rounded-full ${
                           replyToMessage.direction === 'outgoing'
                             ? isPlayfulGeometric
                               ? 'bg-violet-400'
                               : 'bg-emerald-500'
                             : isPlayfulGeometric
-                            ? 'bg-pink-400'
-                            : 'bg-gray-400'
+                              ? 'bg-pink-400'
+                              : 'bg-gray-400'
                         }`}
                       />
                       <div className="min-w-0 flex-1">
                         <p
-                          className={`text-xs font-semibold truncate ${
+                          className={`truncate text-xs font-semibold ${
                             replyToMessage.direction === 'outgoing'
                               ? isPlayfulGeometric
                                 ? 'text-violet-600 dark:text-violet-300'
                                 : 'text-emerald-700 dark:text-emerald-300'
                               : isPlayfulGeometric
-                              ? 'text-pink-600 dark:text-pink-300'
-                              : 'text-gray-600 dark:text-gray-300'
+                                ? 'text-pink-600 dark:text-pink-300'
+                                : 'text-gray-600 dark:text-gray-300'
                           }`}
                         >
                           {replyToMessage.direction === 'outgoing'
                             ? replyToMessage.user?.username || 'You'
-                            : selectedContact?.profileName || selectedContact?.waId || 'Contact'}
+                            : selectedContact?.profileName ||
+                              selectedContact?.waId ||
+                              'Contact'}
                         </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                        <p className="truncate text-xs text-gray-500 dark:text-gray-400">
                           {replyToMessage.textBody ||
                             replyToMessage.mediaCaption ||
                             `[${replyToMessage.messageType}]`}
@@ -3929,7 +4286,10 @@ export default function ChatPage() {
                             <ActionIcon
                               size="sm"
                               variant="text"
-                              onClick={(e) => { e.stopPropagation(); cancelAttachment(idx); }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                cancelAttachment(idx);
+                              }}
                               className="nb-cancel-attachment-btn"
                             >
                               <PiX className="h-4 w-4" />
@@ -4045,7 +4405,7 @@ export default function ChatPage() {
                       {showSuggestions && filteredQuickReplies.length > 0 && (
                         <div
                           ref={suggestionMenuRef}
-                          className="nb-suggestion-menu absolute bottom-full left-0 right-0 z-50 mb-2 max-h-64 min-w-[480px] overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800"
+                          className="nb-suggestion-menu absolute right-0 bottom-full left-0 z-50 mb-2 max-h-64 min-w-[480px] overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800"
                         >
                           {filteredQuickReplies.map((qr, index) => (
                             <button
@@ -4082,7 +4442,7 @@ export default function ChatPage() {
                           }
                           disabled={sending || !selectedContact.isSessionActive}
                           maxLength={4096}
-                          className={`w-full resize-none [&_textarea]:text-base [&_textarea]:!bg-white [&_textarea]:!placeholder-gray-900 dark:[&_textarea]:!bg-gray-800 ${
+                          className={`w-full resize-none [&_textarea]:!bg-white [&_textarea]:text-base [&_textarea]:!placeholder-gray-900 dark:[&_textarea]:!bg-gray-800 ${
                             isPlayfulGeometric
                               ? '[&_textarea]:!rounded-[24px] [&_textarea]:!border-2 [&_textarea]:!border-[#1E293B] [&_textarea]:!bg-white [&_textarea]:!text-[#1E293B] disabled:[&_textarea]:!border-[#CBD5E1] disabled:[&_textarea]:!bg-[#F8FAFC] disabled:[&_textarea]:!text-[#64748B]'
                               : ''
@@ -4110,7 +4470,7 @@ export default function ChatPage() {
                         />
                         {messageInput.length > 0 && (
                           <span
-                            className={`pointer-events-none absolute bottom-1.5 right-2 text-[10px] tabular-nums ${
+                            className={`pointer-events-none absolute right-2 bottom-1.5 text-[10px] tabular-nums ${
                               messageInput.length >= 4096
                                 ? 'text-red-500'
                                 : messageInput.length >= 3500
@@ -4174,13 +4534,17 @@ export default function ChatPage() {
                       className="nb-send-btn"
                       onClick={handleSendMessage}
                       disabled={
-                        (!messageInput?.trim() && pendingAttachments.length === 0) ||
+                        (!messageInput?.trim() &&
+                          pendingAttachments.length === 0) ||
                         sending ||
                         !selectedContact.isSessionActive
                       }
                       style={
                         isPlayfulGeometric
-                          ? (!messageInput?.trim() && pendingAttachments.length === 0) || sending || !selectedContact.isSessionActive
+                          ? (!messageInput?.trim() &&
+                              pendingAttachments.length === 0) ||
+                            sending ||
+                            !selectedContact.isSessionActive
                             ? {
                                 background: '#F8FAFC',
                                 color: '#64748B',
@@ -4206,7 +4570,6 @@ export default function ChatPage() {
                       )}
                     </Button>
                   </div>
-
                 </div>
                 {/* Quick Replies & Session Warning */}
                 <div className="nb-quickbar flex items-center gap-2 bg-white px-4 py-2 dark:bg-gray-900">
@@ -4308,19 +4671,20 @@ export default function ChatPage() {
                       >
                         <PiTimer className="h-5 w-5" />
                         {sendDelay > 0 && (
-                          <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-white">
+                          <span className="bg-primary absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold text-white">
                             {sendDelay}
                           </span>
                         )}
                       </button>
 
                       {showDelayPopup && (
-                        <div className="absolute bottom-full right-0 mb-2 w-56 rounded-lg border border-gray-200 bg-white p-3 shadow-lg">
+                        <div className="absolute right-0 bottom-full mb-2 w-56 rounded-lg border border-gray-200 bg-white p-3 shadow-lg">
                           <p className="mb-2 text-xs font-semibold text-gray-700">
                             Send Delay
                           </p>
                           <p className="mb-3 text-xs text-gray-500">
-                            Pesan ditahan selama N detik sebelum dikirim. Set 0 untuk kirim langsung.
+                            Pesan ditahan selama N detik sebelum dikirim. Set 0
+                            untuk kirim langsung.
                           </p>
                           <div className="flex items-center gap-2">
                             <input
@@ -4331,25 +4695,37 @@ export default function ChatPage() {
                               onChange={(e) => setDelayInput(e.target.value)}
                               onKeyDown={(e) => {
                                 if (e.key === 'Enter') {
-                                  const val = Math.max(0, Math.min(60, parseInt(delayInput, 10) || 0));
+                                  const val = Math.max(
+                                    0,
+                                    Math.min(60, parseInt(delayInput, 10) || 0)
+                                  );
                                   setSendDelay(val);
-                                  localStorage.setItem('chat:sendDelay', String(val));
+                                  localStorage.setItem(
+                                    'chat:sendDelay',
+                                    String(val)
+                                  );
                                   setShowDelayPopup(false);
                                 }
                               }}
-                              className="w-full rounded border border-gray-300 px-2 py-1 text-center text-sm focus:border-primary focus:outline-none"
+                              className="focus:border-primary w-full rounded border border-gray-300 px-2 py-1 text-center text-sm focus:outline-none"
                               placeholder="0"
                             />
                             <span className="text-xs text-gray-500">detik</span>
                           </div>
                           <button
                             onClick={() => {
-                              const val = Math.max(0, Math.min(60, parseInt(delayInput, 10) || 0));
+                              const val = Math.max(
+                                0,
+                                Math.min(60, parseInt(delayInput, 10) || 0)
+                              );
                               setSendDelay(val);
-                              localStorage.setItem('chat:sendDelay', String(val));
+                              localStorage.setItem(
+                                'chat:sendDelay',
+                                String(val)
+                              );
                               setShowDelayPopup(false);
                             }}
-                            className="mt-2 w-full rounded bg-primary px-3 py-1.5 text-xs font-medium text-white hover:bg-primary/90"
+                            className="bg-primary hover:bg-primary/90 mt-2 w-full rounded px-3 py-1.5 text-xs font-medium text-white"
                           >
                             Simpan
                           </button>
@@ -4375,15 +4751,23 @@ export default function ChatPage() {
       {/* Send Contact Modal — contact picker from database */}
       {showContactModal && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4">
-          <div className="flex w-full max-w-sm flex-col rounded-xl bg-white shadow-2xl dark:bg-gray-800" style={{ maxHeight: '80vh' }}>
+          <div
+            className="flex w-full max-w-sm flex-col rounded-xl bg-white shadow-2xl dark:bg-gray-800"
+            style={{ maxHeight: '80vh' }}
+          >
             {/* Header */}
             <div className="flex flex-shrink-0 items-center justify-between border-b border-gray-100 px-5 py-4 dark:border-gray-700">
               <div className="flex items-center gap-2">
                 <PiAddressBook className="h-5 w-5 text-gray-600 dark:text-gray-300" />
-                <h3 className="font-semibold text-gray-900 dark:text-gray-100">Pilih Kontak</h3>
+                <h3 className="font-semibold text-gray-900 dark:text-gray-100">
+                  Pilih Kontak
+                </h3>
               </div>
               <button
-                onClick={() => { setShowContactModal(false); setContactPickerSearch(''); }}
+                onClick={() => {
+                  setShowContactModal(false);
+                  setContactPickerSearch('');
+                }}
                 className="rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700"
               >
                 <PiX className="h-5 w-5" />
@@ -4401,10 +4785,18 @@ export default function ChatPage() {
                   const q = e.target.value;
                   setContactPickerSearch(q);
                   setContactPickerLoading(true);
-                  contactsApi.getAll({ search: q, limit: 50 }).then((res: any) => {
-                    const list = Array.isArray(res.data?.data) ? res.data.data : Array.isArray(res.data) ? res.data : [];
-                    setContactPickerList(list);
-                  }).catch(() => {}).finally(() => setContactPickerLoading(false));
+                  contactsApi
+                    .getAll({ search: q, limit: 50 })
+                    .then((res: any) => {
+                      const list = Array.isArray(res.data?.data)
+                        ? res.data.data
+                        : Array.isArray(res.data)
+                          ? res.data
+                          : [];
+                      setContactPickerList(list);
+                    })
+                    .catch(() => {})
+                    .finally(() => setContactPickerLoading(false));
                 }}
                 className="w-full rounded-lg border border-gray-200 px-3 py-2 text-base outline-none focus:border-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
               />
@@ -4418,7 +4810,9 @@ export default function ChatPage() {
                 </div>
               ) : contactPickerList.length === 0 ? (
                 <p className="py-8 text-center text-sm text-gray-400">
-                  {contactPickerSearch ? 'Kontak tidak ditemukan' : 'Ketik untuk mencari kontak'}
+                  {contactPickerSearch
+                    ? 'Kontak tidak ditemukan'
+                    : 'Ketik untuk mencari kontak'}
                 </p>
               ) : (
                 contactPickerList.map((c) => {
@@ -4435,7 +4829,9 @@ export default function ChatPage() {
                         {name.charAt(0).toUpperCase()}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium text-gray-900 dark:text-gray-100">{name}</p>
+                        <p className="truncate text-sm font-medium text-gray-900 dark:text-gray-100">
+                          {name}
+                        </p>
                         <p className="truncate text-xs text-gray-500">{sub}</p>
                       </div>
                     </button>

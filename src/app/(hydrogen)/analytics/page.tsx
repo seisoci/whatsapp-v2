@@ -1,7 +1,9 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { format, subDays } from 'date-fns';
 import PageHeader from '@/app/shared/page-header';
+import { DatePicker } from '@/ui/datepicker';
 import { analyticsApi } from '@/lib/api/analytics';
 import { phoneNumbersApi } from '@/lib/api/phone-numbers';
 import { MessagesOverTimeChart } from '@/app/shared/analytics/messages-over-time-chart';
@@ -27,16 +29,25 @@ const pageHeader = {
   ],
 };
 
-const DAYS_OPTIONS = [
-  { label: '7 Hari', value: 7 },
-  { label: '30 Hari', value: 30 },
-  { label: '90 Hari', value: 90 },
-];
+// Build a human-friendly label for a phone number that includes both the
+// custom/verified name and the actual phone number when available.
+function formatPhoneNumberLabel(pn: any): string {
+  const name = pn.name || pn.verifiedName || null;
+  const phone = pn.displayPhoneNumber || pn.phoneNumberId || '';
+  if (name && phone) return `${name} (${phone})`;
+  return name || phone || 'Phone number';
+}
 
 export default function AnalyticsPage() {
   const [phoneNumbers, setPhoneNumbers] = useState<any[]>([]);
   const [selectedPhoneNumberId, setSelectedPhoneNumberId] = useState('');
-  const [selectedDays, setSelectedDays] = useState(30);
+
+  // Date range filter — defaults to last 30 days inclusive of today.
+  const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([
+    subDays(new Date(), 29),
+    new Date(),
+  ]);
+
   const [isLoading, setIsLoading] = useState(true);
 
   const [messagesOverTime, setMessagesOverTime] = useState<MessageOverTime[]>([]);
@@ -54,10 +65,15 @@ export default function AnalyticsPage() {
   }, []);
 
   const fetchData = useCallback(() => {
+    const [start, end] = dateRange;
+    // Skip fetch until the user has picked both ends of the range.
+    if (!start || !end) return;
+
     setIsLoading(true);
     const filters = {
       phoneNumberId: selectedPhoneNumberId || undefined,
-      days: selectedDays,
+      startDate: format(start, 'yyyy-MM-dd'),
+      endDate: format(end, 'yyyy-MM-dd'),
     };
     Promise.all([
       analyticsApi.getMessagesOverTime(filters),
@@ -77,16 +93,39 @@ export default function AnalyticsPage() {
       })
       .catch(console.error)
       .finally(() => setIsLoading(false));
-  }, [selectedPhoneNumberId, selectedDays]);
+  }, [selectedPhoneNumberId, dateRange]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
+  const handleDateRangeChange = (dates: [Date | null, Date | null]) => {
+    setDateRange(dates);
+  };
+
   return (
     <>
       <PageHeader title={pageHeader.title} breadcrumb={pageHeader.breadcrumb}>
         <div className="flex flex-wrap items-center gap-2">
+          <div className="w-72">
+            <DatePicker
+              selectsRange
+              startDate={dateRange[0]}
+              endDate={dateRange[1]}
+              onChange={(dates: any) => handleDateRangeChange(dates)}
+              monthsShown={2}
+              dateFormat="dd MMM yyyy"
+              placeholderText="Pilih rentang tanggal"
+              maxDate={new Date()}
+              inputProps={{
+                size: 'sm',
+                clearable: true,
+                onClear: () =>
+                  handleDateRangeChange([subDays(new Date(), 29), new Date()]),
+              }}
+            />
+          </div>
+
           <select
             value={selectedPhoneNumberId}
             onChange={(e) => setSelectedPhoneNumberId(e.target.value)}
@@ -95,26 +134,10 @@ export default function AnalyticsPage() {
             <option value="">Semua Nomor</option>
             {phoneNumbers.map((pn: any) => (
               <option key={pn.id} value={pn.id}>
-                {pn.displayPhoneNumber || pn.phoneNumberId || pn.name}
+                {formatPhoneNumberLabel(pn)}
               </option>
             ))}
           </select>
-
-          <div className="flex overflow-hidden rounded-lg border border-gray-200 dark:border-gray-600">
-            {DAYS_OPTIONS.map((opt) => (
-              <button
-                key={opt.value}
-                onClick={() => setSelectedDays(opt.value)}
-                className={`px-3 py-2 text-sm transition-colors ${
-                  selectedDays === opt.value
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-white text-gray-600 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
 
           <button
             onClick={fetchData}

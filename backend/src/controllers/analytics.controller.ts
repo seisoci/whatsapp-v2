@@ -1,6 +1,44 @@
 import { Context } from 'hono';
 import { AppDataSource } from '../config/database';
 
+/**
+ * Resolve the date range from query params.
+ *
+ * Priority:
+ *   1. `startDate` + `endDate` (YYYY-MM-DD or ISO string) — explicit range.
+ *   2. `days` (1..365)                                    — last N days from today.
+ *   3. Default: last 30 days.
+ *
+ * `startDate` is anchored to 00:00:00 UTC of the given day; `endDate` is
+ * pushed to 23:59:59.999 of the given day so the inclusive end-of-day is
+ * captured.
+ */
+function resolveDateRange(c: Context): { startDate: Date; endDate: Date } {
+  const startStr = c.req.query('startDate');
+  const endStr = c.req.query('endDate');
+
+  if (startStr && endStr) {
+    const start = new Date(startStr);
+    const end = new Date(endStr);
+    if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
+      start.setHours(0, 0, 0, 0);
+      end.setHours(23, 59, 59, 999);
+      return { startDate: start, endDate: end };
+    }
+  }
+
+  const days = Math.min(
+    Math.max(parseInt(c.req.query('days') || '30'), 1),
+    365,
+  );
+  const start = new Date();
+  start.setDate(start.getDate() - days);
+  start.setHours(0, 0, 0, 0);
+  const end = new Date();
+  end.setHours(23, 59, 59, 999);
+  return { startDate: start, endDate: end };
+}
+
 export class AnalyticsController {
   /**
    * GET /analytics/messages-over-time
@@ -9,12 +47,9 @@ export class AnalyticsController {
   static async getMessagesOverTime(c: Context) {
     try {
       const phoneNumberId = c.req.query('phoneNumberId');
-      const days = Math.min(Math.max(parseInt(c.req.query('days') || '30'), 1), 365);
+      const { startDate, endDate } = resolveDateRange(c);
 
-      const startDate = new Date();
-      startDate.setDate(startDate.getDate() - days);
-
-      const params: any[] = [startDate];
+      const params: any[] = [startDate, endDate];
       let phoneFilter = '';
       if (phoneNumberId) {
         params.push(phoneNumberId);
@@ -28,6 +63,7 @@ export class AnalyticsController {
           SUM(CASE WHEN direction = 'outgoing' THEN 1 ELSE 0 END)::int AS outgoing
         FROM messages
         WHERE created_at >= $1
+          AND created_at <= $2
           ${phoneFilter}
         GROUP BY DATE(created_at)
         ORDER BY date ASC
@@ -56,8 +92,9 @@ export class AnalyticsController {
   static async getMessageStatus(c: Context) {
     try {
       const phoneNumberId = c.req.query('phoneNumberId');
+      const { startDate, endDate } = resolveDateRange(c);
 
-      const params: any[] = [];
+      const params: any[] = [startDate, endDate];
       let phoneFilter = '';
       if (phoneNumberId) {
         params.push(phoneNumberId);
@@ -71,6 +108,8 @@ export class AnalyticsController {
         FROM messages
         WHERE direction = 'outgoing'
           AND status IS NOT NULL
+          AND created_at >= $1
+          AND created_at <= $2
           ${phoneFilter}
         GROUP BY status
         ORDER BY count DESC
@@ -92,8 +131,9 @@ export class AnalyticsController {
   static async getTopTemplates(c: Context) {
     try {
       const phoneNumberId = c.req.query('phoneNumberId');
+      const { startDate, endDate } = resolveDateRange(c);
 
-      const params: any[] = [];
+      const params: any[] = [startDate, endDate];
       let msgFilter = '';
       let queueFilter = '';
       if (phoneNumberId) {
@@ -108,12 +148,16 @@ export class AnalyticsController {
           SELECT template_name, COUNT(*) AS cnt
           FROM messages
           WHERE template_name IS NOT NULL
+            AND created_at >= $1
+            AND created_at <= $2
             ${msgFilter}
           GROUP BY template_name
           UNION ALL
           SELECT template_name, COUNT(*) AS cnt
           FROM message_queues
           WHERE template_name IS NOT NULL
+            AND created_at >= $1
+            AND created_at <= $2
             ${queueFilter}
           GROUP BY template_name
         ) sub
@@ -138,8 +182,9 @@ export class AnalyticsController {
   static async getResponseTime(c: Context) {
     try {
       const phoneNumberId = c.req.query('phoneNumberId');
+      const { startDate, endDate } = resolveDateRange(c);
 
-      const params: any[] = [];
+      const params: any[] = [startDate, endDate];
       let incomingFilter = '';
       let outgoingFilter = '';
       if (phoneNumberId) {
@@ -169,6 +214,8 @@ export class AnalyticsController {
             LIMIT 1
           ) o ON true
           WHERE i.direction = 'incoming'
+            AND i.created_at >= $1
+            AND i.created_at <= $2
             ${incomingFilter}
         ) sub
         WHERE diff_minutes < 1440
@@ -201,8 +248,9 @@ export class AnalyticsController {
   static async getMessagesPerAgent(c: Context) {
     try {
       const phoneNumberId = c.req.query('phoneNumberId');
+      const { startDate, endDate } = resolveDateRange(c);
 
-      const params: any[] = [];
+      const params: any[] = [startDate, endDate];
       let phoneFilter = '';
       if (phoneNumberId) {
         params.push(phoneNumberId);
@@ -218,6 +266,8 @@ export class AnalyticsController {
         JOIN users u ON u.id = m.user_id
         WHERE m.direction = 'outgoing'
           AND m.user_id IS NOT NULL
+          AND m.created_at >= $1
+          AND m.created_at <= $2
           ${phoneFilter}
         GROUP BY u.id, u.username
         ORDER BY count DESC
@@ -239,12 +289,9 @@ export class AnalyticsController {
   static async getContactGrowth(c: Context) {
     try {
       const phoneNumberId = c.req.query('phoneNumberId');
-      const days = Math.min(Math.max(parseInt(c.req.query('days') || '30'), 1), 365);
+      const { startDate, endDate } = resolveDateRange(c);
 
-      const startDate = new Date();
-      startDate.setDate(startDate.getDate() - days);
-
-      const params: any[] = [startDate];
+      const params: any[] = [startDate, endDate];
       let phoneFilter = '';
       if (phoneNumberId) {
         params.push(phoneNumberId);
@@ -258,6 +305,7 @@ export class AnalyticsController {
           SUM(COUNT(*)) OVER (ORDER BY DATE(created_at))::int AS cumulative
         FROM contacts
         WHERE created_at >= $1
+          AND created_at <= $2
           ${phoneFilter}
         GROUP BY DATE(created_at)
         ORDER BY date ASC
@@ -287,12 +335,9 @@ export class AnalyticsController {
   static async getTopActiveContacts(c: Context) {
     try {
       const phoneNumberId = c.req.query('phoneNumberId');
-      const days = Math.min(Math.max(parseInt(c.req.query('days') || '30'), 1), 365);
+      const { startDate, endDate } = resolveDateRange(c);
 
-      const startDate = new Date();
-      startDate.setDate(startDate.getDate() - days);
-
-      const params: any[] = [startDate];
+      const params: any[] = [startDate, endDate];
       let phoneFilter = '';
       if (phoneNumberId) {
         params.push(phoneNumberId);
@@ -309,6 +354,7 @@ export class AnalyticsController {
         JOIN contacts c ON c.id = m.contact_id
         WHERE m.direction = 'incoming'
           AND m.created_at >= $1
+          AND m.created_at <= $2
           ${phoneFilter}
         GROUP BY c.id, c.wa_id, c.profile_name
         ORDER BY "activeDays" DESC

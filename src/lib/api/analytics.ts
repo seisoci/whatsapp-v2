@@ -44,13 +44,23 @@ export interface TopActiveContact {
 
 export interface AnalyticsFilters {
   phoneNumberId?: string;
+  /** Inclusive date range start (YYYY-MM-DD or ISO string). Takes priority over `days` when paired with `endDate`. */
+  startDate?: string;
+  /** Inclusive date range end (YYYY-MM-DD or ISO string). */
+  endDate?: string;
+  /** Fallback: last N days from today. Only used when `startDate`/`endDate` are not both set. */
   days?: number;
 }
 
 function buildParams(filters: AnalyticsFilters): Record<string, string> {
   const p: Record<string, string> = {};
   if (filters.phoneNumberId) p.phoneNumberId = filters.phoneNumberId;
-  if (filters.days) p.days = String(filters.days);
+  if (filters.startDate && filters.endDate) {
+    p.startDate = filters.startDate;
+    p.endDate = filters.endDate;
+  } else if (filters.days) {
+    p.days = String(filters.days);
+  }
   return p;
 }
 
