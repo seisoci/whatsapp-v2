@@ -4,6 +4,7 @@ export interface PhoneNumber {
   wabaId: string;
   name: string | null;
   isActive: boolean;
+  isHidden?: boolean;
   displayPhoneNumber?: string;
   verifiedName?: string | null;
   qualityRating?: string;

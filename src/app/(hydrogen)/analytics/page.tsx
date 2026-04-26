@@ -49,7 +49,7 @@ export default function AnalyticsPage() {
   useEffect(() => {
     phoneNumbersApi.getAll().then((res: any) => {
       const list = Array.isArray(res) ? res : res?.data ?? [];
-      setPhoneNumbers(list);
+      setPhoneNumbers(list.filter((pn: any) => !pn.isHidden));
     }).catch(() => {});
   }, []);
 

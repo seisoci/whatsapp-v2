@@ -36,7 +36,7 @@ export default function ContactsTable() {
       try {
         const res: any = await phoneNumbersApi.getAll();
         const list = Array.isArray(res) ? res : res?.data || [];
-        setPhoneNumbers(list);
+        setPhoneNumbers(list.filter((pn: any) => !pn.isHidden));
       } catch (error) {
         console.error('Failed to fetch phone numbers:', error);
       }

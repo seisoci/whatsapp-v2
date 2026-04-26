@@ -48,8 +48,11 @@ export class ChatController {
 
       const phoneNumberRepository = AppDataSource.getRepository(PhoneNumber);
 
+      const baseWhere: any = { isHidden: false };
+      if (allowedIds !== null) baseWhere.id = In([...allowedIds]);
+
       const phoneNumbers = await phoneNumberRepository.find({
-        where: allowedIds !== null ? { id: In([...allowedIds]) } : {},
+        where: baseWhere,
         relations: ['creator'],
         select: {
           id: true,

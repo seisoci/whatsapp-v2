@@ -64,14 +64,16 @@ export default function CreateEditApiEndpoint({
   useEffect(() => {
     phoneNumbersApi.getAll().then((res: any) => {
       const data = res?.data || [];
-      const options: PhoneNumberOption[] = (Array.isArray(data) ? data : []).map((p: any) => {
-        const display = p.displayPhoneNumber && p.displayPhoneNumber !== 'Error fetching data'
-          ? p.displayPhoneNumber
-          : p.phoneNumberId;
-        const businessName = p.verifiedName || p.name;
-        const label = businessName ? `${display} - ${businessName}` : display;
-        return { value: p.id, label };
-      });
+      const options: PhoneNumberOption[] = (Array.isArray(data) ? data : [])
+        .filter((p: any) => !p.isHidden)
+        .map((p: any) => {
+          const display = p.displayPhoneNumber && p.displayPhoneNumber !== 'Error fetching data'
+            ? p.displayPhoneNumber
+            : p.phoneNumberId;
+          const businessName = p.verifiedName || p.name;
+          const label = businessName ? `${display} - ${businessName}` : display;
+          return { value: p.id, label };
+        });
       const allOptions = [{ value: '', label: '— No specific number —' }, ...options];
       setPhoneNumberOptions(allOptions);
 

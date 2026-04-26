@@ -6,7 +6,7 @@ import { ActionIcon, Tooltip, Badge } from 'rizzui';
 import PencilIcon from '@core/components/icons/pencil';
 import DeletePopover from '@/components/delete-popover';
 import { getStatusBadge } from '@core/components/table-utils/get-status-badge';
-import { PiArrowsClockwise, PiPlugsConnected, PiShieldCheck, PiDeviceMobile, PiInfo, PiNotePencil } from 'react-icons/pi';
+import { PiArrowsClockwise, PiPlugsConnected, PiShieldCheck, PiDeviceMobile, PiInfo, PiNotePencil, PiEyeSlash } from 'react-icons/pi';
 
 const columnHelper = createColumnHelper<PhoneNumber>();
 
@@ -105,6 +105,20 @@ export const createPhoneNumbersColumns = ({
     header: 'Status',
     enableSorting: false,
     cell: ({ row }) => getStatusBadge(row.original.isActive ? 'active' : 'inactive'),
+  }),
+  columnHelper.accessor('isHidden', {
+    id: 'isHidden',
+    size: 100,
+    header: 'Visibility',
+    enableSorting: false,
+    cell: ({ row }) =>
+      row.original.isHidden ? (
+        <Badge color="warning" className="flex items-center gap-1">
+          <PiEyeSlash className="h-3 w-3" /> Hidden
+        </Badge>
+      ) : (
+        <Badge color="success">Visible</Badge>
+      ),
   }),
   columnHelper.display({
     id: 'actions',

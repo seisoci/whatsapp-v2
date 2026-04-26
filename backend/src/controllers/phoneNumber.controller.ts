@@ -44,6 +44,7 @@ export class PhoneNumberController {
           wabaId: true,
           name: true,
           isActive: true,
+          isHidden: true,
           createdAt: true,
           updatedAt: true,
           creator: {
@@ -72,6 +73,7 @@ export class PhoneNumberController {
               wabaId: phone.wabaId,
               name: phone.name,
               isActive: phone.isActive,
+              isHidden: phone.isHidden,
               // Real-time data dari WhatsApp API
               displayPhoneNumber: phoneInfo.display_phone_number,
               verifiedName: phoneInfo.verified_name,
@@ -90,6 +92,7 @@ export class PhoneNumberController {
               wabaId: phone.wabaId,
               name: phone.name,
               isActive: phone.isActive,
+              isHidden: phone.isHidden,
               displayPhoneNumber: 'Error fetching data',
               verifiedName: null,
               qualityRating: 'UNKNOWN',
@@ -308,6 +311,7 @@ export class PhoneNumberController {
       // Update allowed fields
       if (body.name !== undefined) phoneNumber.name = body.name;
       if (body.isActive !== undefined) phoneNumber.isActive = body.isActive;
+      if (body.isHidden !== undefined) phoneNumber.isHidden = body.isHidden;
 
       // Hanya verify jika access token benar-benar diubah (berbeda dari yang lama)
       if (body.accessToken && body.accessToken !== phoneNumber.accessToken) {
@@ -339,6 +343,7 @@ export class PhoneNumberController {
             wabaId: phoneNumber.wabaId,
             name: phoneNumber.name,
             isActive: phoneNumber.isActive,
+            isHidden: phoneNumber.isHidden,
             updatedAt: phoneNumber.updatedAt,
           },
         },

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import Table from '@core/components/table';
 import { useTanStackTable } from '@core/components/table/custom/use-TanStack-Table';
 import { Template } from '.';
@@ -12,15 +12,23 @@ import { Button } from 'rizzui';
 import { PiPlusBold } from 'react-icons/pi';
 import TemplatesFilters from '@/app/shared/templates/templates-filters';
 import { templatesApi } from '@/lib/api/templates';
+import { phoneNumbersApi } from '@/lib/api/phone-numbers';
 import toast from 'react-hot-toast';
 import WebhookExampleModal from '@/app/shared/templates/webhook-example-modal';
 
 export default function TemplatesTable() {
   const [templateData, setTemplateData] = useState<Template[]>([]);
   const [filteredData, setFilteredData] = useState<Template[]>([]);
-  const [phoneNumbers, setPhoneNumbers] = useState<
-    { value: string; label: string }[]
-  >([]);
+  const [hiddenPhoneIds, setHiddenPhoneIds] = useState<Set<string>>(new Set());
+
+  const phoneNumbers = useMemo(() => {
+    return templateData.reduce((acc: { value: string; label: string }[], t: any) => {
+      if (!acc.find((item) => item.value === t.phoneNumberId) && !hiddenPhoneIds.has(t.phoneNumberId)) {
+        acc.push({ value: t.phoneNumberId, label: t.phoneNumberName || t.displayPhoneNumber || t.phoneNumberId });
+      }
+      return acc;
+    }, []);
+  }, [templateData, hiddenPhoneIds]);
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [totalRecords, setTotalRecords] = useState(0);
@@ -33,6 +41,16 @@ export default function TemplatesTable() {
 
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+
+  useEffect(() => {
+    phoneNumbersApi.getAll().then((res: any) => {
+      const list = Array.isArray(res) ? res : res?.data ?? [];
+      const ids = new Set<string>(
+        list.filter((pn: any) => pn.isHidden).map((pn: any) => pn.id as string)
+      );
+      setHiddenPhoneIds(ids);
+    }).catch(() => {});
+  }, []);
 
   const fetchTemplateData = async (isInitialLoad = false) => {
     try {
@@ -52,34 +70,16 @@ export default function TemplatesTable() {
           setFilteredData(templateData as Template[]);
           setTotalRecords(templateData.length);
 
-          // Extract unique phone numbers for filter
-          const uniquePhoneNumbers = Array.from(
-            new Set(
-              templateData.map((t: any) => ({
-                value: t.phoneNumberId,
-                label:
-                  t.phoneNumberName || t.displayPhoneNumber || t.phoneNumberId,
-              }))
-            )
-          ).reduce((acc: any[], curr) => {
-            if (!acc.find((item) => item.value === curr.value)) {
-              acc.push(curr);
-            }
-            return acc;
-          }, []);
-          setPhoneNumbers(uniquePhoneNumbers);
         } else {
           setTemplateData([]);
           setFilteredData([]);
           setTotalRecords(0);
-          setPhoneNumbers([]);
         }
       } else {
         toast.error('Failed to load templates');
         setTemplateData([]);
         setFilteredData([]);
         setTotalRecords(0);
-        setPhoneNumbers([]);
       }
     } catch (error: any) {
       console.error('Error fetching templates:', error);
@@ -87,7 +87,6 @@ export default function TemplatesTable() {
       setTemplateData([]);
       setFilteredData([]);
       setTotalRecords(0);
-      setPhoneNumbers([]);
     } finally {
       setLoading(false);
       setIsRefreshing(false);

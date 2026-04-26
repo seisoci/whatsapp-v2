@@ -6,7 +6,6 @@ import { QuickReply } from '../models/QuickReply';
 export class QuickReplyController {
   static async index(c: Context) {
     try {
-      const user = c.get('user');
       const quickReplies = await AppDataSource.getRepository(QuickReply).find({
         order: { createdAt: 'DESC' },
       });
@@ -28,7 +27,7 @@ export class QuickReplyController {
 
   static async create(c: Context) {
     try {
-      const user = c.get('user');
+      const { userId } = c.get('user');
       const { shortcut, text } = await c.req.json();
 
       if (!text) {
@@ -42,7 +41,7 @@ export class QuickReplyController {
       }
 
       const quickReply = new QuickReply();
-      quickReply.userId = user.userId;
+      quickReply.userId = userId;
       quickReply.shortcut = shortcut;
       quickReply.text = text;
 
@@ -66,13 +65,12 @@ export class QuickReplyController {
 
   static async update(c: Context) {
     try {
-      const user = c.get('user');
       const id = c.req.param('id');
       const { shortcut, text } = await c.req.json();
 
       const quickReplyRepository = AppDataSource.getRepository(QuickReply);
       const quickReply = await quickReplyRepository.findOne({
-        where: { id, userId: user.userId },
+        where: { id },
       });
 
       if (!quickReply) {
@@ -108,12 +106,11 @@ export class QuickReplyController {
 
   static async delete(c: Context) {
     try {
-      const user = c.get('user');
       const id = c.req.param('id');
 
       const quickReplyRepository = AppDataSource.getRepository(QuickReply);
       const quickReply = await quickReplyRepository.findOne({
-        where: { id, userId: user.userId },
+        where: { id },
       });
 
       if (!quickReply) {

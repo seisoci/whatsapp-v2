@@ -15,14 +15,16 @@ const createPhoneNumberSchema = z.object({
   wabaId: z.string().min(1, 'WhatsApp Business Account ID is required'),
   name: z.string().optional(),
   isActive: z.boolean().optional(),
+  isHidden: z.boolean().optional(),
 });
 
 const editPhoneNumberSchema = z.object({
   phoneNumberId: z.string().min(1, 'Phone Number ID is required'),
-  accessToken: z.string().optional(), // Optional saat edit
+  accessToken: z.string().optional(),
   wabaId: z.string().min(1, 'WhatsApp Business Account ID is required'),
   name: z.string().optional(),
   isActive: z.boolean().optional(),
+  isHidden: z.boolean().optional(),
 });
 
 type PhoneNumberFormData = z.infer<typeof createPhoneNumberSchema>;
@@ -55,6 +57,7 @@ export default function CreateEditPhoneNumber({
       wabaId: '',
       name: '',
       isActive: true,
+      isHidden: false,
     },
   });
 
@@ -62,10 +65,11 @@ export default function CreateEditPhoneNumber({
     if (phoneNumber) {
       reset({
         phoneNumberId: phoneNumber.phoneNumberId || '',
-        accessToken: '', // Jangan populate access token saat edit (security)
+        accessToken: '',
         wabaId: phoneNumber.wabaId || '',
         name: phoneNumber.name || '',
         isActive: phoneNumber.isActive ?? true,
+        isHidden: phoneNumber.isHidden ?? false,
       });
     }
   }, [phoneNumber, reset]);
@@ -79,6 +83,7 @@ export default function CreateEditPhoneNumber({
         const updateData: any = {
           name: data.name,
           isActive: data.isActive,
+          isHidden: data.isHidden,
         };
 
         // Hanya kirim accessToken jika user mengisi (untuk update token)
@@ -186,6 +191,23 @@ export default function CreateEditPhoneNumber({
               />
               <Text className="mt-1 text-xs text-gray-500">
                 Enable or disable this phone number
+              </Text>
+            </div>
+          )}
+        />
+
+        <Controller
+          name="isHidden"
+          control={control}
+          render={({ field: { value, onChange } }) => (
+            <div className="col-span-full">
+              <Switch
+                label="Hidden"
+                checked={value}
+                onChange={onChange}
+              />
+              <Text className="mt-1 text-xs text-gray-500">
+                Hidden phone numbers are not shown in any select or dropdown across the app
               </Text>
             </div>
           )}

@@ -37,6 +37,9 @@ export class PhoneNumber {
   @Column({ name: 'is_active', default: true })
   isActive: boolean; // Status aktif/non-aktif di sistem kita
 
+  @Column({ name: 'is_hidden', default: false })
+  isHidden: boolean; // Jika true, tidak ditampilkan di select/dropdown manapun
+
   // Cached fields dari WhatsApp API (di-sync secara berkala)
   @Column({ name: 'display_phone_number', type: 'varchar', nullable: true })
   displayPhoneNumber: string | null;

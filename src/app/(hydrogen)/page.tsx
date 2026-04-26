@@ -105,10 +105,12 @@ export default function DashboardPage() {
 
   const phoneNumberOptions = [
     { label: 'Semua Nomor', value: '' },
-    ...phoneNumbers.map((pn) => ({
-      label: pn.displayPhoneNumber || pn.phoneNumberId,
-      value: pn.id,
-    })),
+    ...phoneNumbers
+      .filter((pn) => !pn.isHidden)
+      .map((pn) => ({
+        label: pn.displayPhoneNumber || pn.phoneNumberId,
+        value: pn.id,
+      })),
   ];
 
   if (isLoading) {

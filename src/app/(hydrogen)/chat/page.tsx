@@ -242,6 +242,7 @@ export default function ChatPage() {
   >(null);
   const contactOptionsMenuRef = useRef<HTMLDivElement>(null);
   const contactListRef = useRef<HTMLDivElement>(null);
+  const pendingScrollRestoreRef = useRef<number | null>(null);
   const closingViaUI = useRef(false);
   const [chatTheme, setChatTheme] = useState<'default' | 'neo-brutalism' | 'hand-drawn' | 'playful-geometric'>(() => {
     if (typeof window !== 'undefined') {
@@ -354,13 +355,23 @@ export default function ChatPage() {
 
   // Attachment state
   const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
-  const [pendingAttachment, setPendingAttachment] = useState<{
+  const [pendingAttachments, setPendingAttachments] = useState<Array<{
     file: File;
     preview?: string;
     type: 'image' | 'video' | 'document' | 'audio';
-  } | null>(null);
+  }>>([]);
+  const [selectedAttachmentIdx, setSelectedAttachmentIdx] = useState(0);
   const [uploadingAttachment, setUploadingAttachment] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+
+  // Auto-select the latest attachment whenever one is added
+  useEffect(() => {
+    if (pendingAttachments.length > 0) {
+      setSelectedAttachmentIdx(pendingAttachments.length - 1);
+    } else {
+      setSelectedAttachmentIdx(0);
+    }
+  }, [pendingAttachments.length]);
 
   // Refs
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -376,6 +387,7 @@ export default function ChatPage() {
   const suggestionMenuRef = useRef<HTMLDivElement>(null);
   const refocusAfterSendRef = useRef(false); // signal to refocus textarea after send completes
   const isMobileRef = useRef(false);
+  const pasteSeqRef = useRef(0);
 
   // Refs that give WebSocket handlers always-fresh values without stale closures.
   // Updated synchronously via useLayoutEffect so they're current before any render-triggered effects.
@@ -390,6 +402,14 @@ export default function ChatPage() {
   useLayoutEffect(() => { selectedContactRef.current = selectedContact; }, [selectedContact]);
   useLayoutEffect(() => { selectedPhoneNumberIdRef.current = selectedPhoneNumberId; }, [selectedPhoneNumberId]);
   useLayoutEffect(() => { chatFilterRef.current = chatFilter; }, [chatFilter]);
+
+  // Restore contact list scroll position after WS-triggered contact reordering
+  useLayoutEffect(() => {
+    if (pendingScrollRestoreRef.current !== null && contactListRef.current) {
+      contactListRef.current.scrollTop = pendingScrollRestoreRef.current;
+      pendingScrollRestoreRef.current = null;
+    }
+  }, [contacts]);
 
   // Load phone numbers on mount
   useEffect(() => {
@@ -668,9 +688,14 @@ export default function ChatPage() {
           contextFrom: rawMessage.contextFrom || null,
         };
 
-        // Update contact list locally without full reload
-        // Preserve contact list scroll position before reordering
-        const wsContactScrollTop = contactListRef.current?.scrollTop ?? 0;
+        // Update contact list locally without full reload.
+        // Scroll position is captured inside the reducer (only when we're actually
+        // returning a new array) so the useLayoutEffect restorer doesn't fire
+        // with a stale value when nothing actually changed.
+        const captureScroll = () => {
+          pendingScrollRestoreRef.current =
+            contactListRef.current?.scrollTop ?? 0;
+        };
         setContacts((prevContacts) => {
           const contactId = event.data.contactId;
           const contactIndex = prevContacts.findIndex(
@@ -754,12 +779,14 @@ export default function ChatPage() {
             // Archived contact on a non-archived tab: remove from list, don't bubble
             if (updatedContact.isArchived && currentFilter !== 'archived') {
               loadContactsStats();
+              captureScroll();
               return prevContacts.filter((c) => c.id !== contactId);
             }
 
             // Non-archived contact on the archived tab: remove from list
             if (!updatedContact.isArchived && currentFilter === 'archived') {
               loadContactsStats();
+              captureScroll();
               return prevContacts.filter((c) => c.id !== contactId);
             }
 
@@ -771,6 +798,7 @@ export default function ChatPage() {
             // Refresh stats from backend for accurate counts
             loadContactsStats();
 
+            captureScroll();
             return finalContacts;
           }
 
@@ -819,6 +847,7 @@ export default function ChatPage() {
               // Refresh stats from backend for accurate counts
               loadContactsStats();
 
+              captureScroll();
               return updatedContacts;
             }
 
@@ -829,11 +858,6 @@ export default function ChatPage() {
 
           // Otherwise keep current state, will reload outside
           return prevContacts;
-        });
-        requestAnimationFrame(() => {
-          if (contactListRef.current) {
-            contactListRef.current.scrollTop = wsContactScrollTop;
-          }
         });
 
         // If contact doesn't exist in full list (not just filtered), reload all contacts
@@ -1016,7 +1040,8 @@ export default function ChatPage() {
   const loadPhoneNumbers = async () => {
     try {
       const response = await chatApi.getPhoneNumbers();
-      const numbers = Array.isArray(response) ? response : response.data || [];
+      const all = Array.isArray(response) ? response : response.data || [];
+      const numbers = all.filter((n: any) => !n.isHidden);
       setPhoneNumbers(numbers);
 
       // Restore previously selected number, or fall back to first
@@ -1425,50 +1450,88 @@ export default function ChatPage() {
   const handleSendMessage = async () => {
     // Allow sending if there's text OR an attachment
     if (
-      (!messageInput.trim() && !pendingAttachment) ||
+      (!messageInput.trim() && pendingAttachments.length === 0) ||
       !selectedContact ||
       sending
     )
       return;
 
-    const hasAttachment = !!pendingAttachment;
     const messageText = messageInput.trim();
+    const replyContext = replyToMessage;
+    const capturedContact = selectedContact;
+    const capturedPhoneNumberId = selectedPhoneNumberId;
 
-    // Determine message type
-    const messageType = hasAttachment ? pendingAttachment.type : 'text';
+    // Reorder so the selected attachment is sent first (gets the caption + reply context).
+    // The rest follow in their original paste order.
+    const capturedSelectedIdx = Math.min(
+      selectedAttachmentIdx,
+      pendingAttachments.length - 1,
+    );
+    const orderedAttachments =
+      pendingAttachments.length > 0
+        ? [
+            pendingAttachments[capturedSelectedIdx],
+            ...pendingAttachments.filter((_, i) => i !== capturedSelectedIdx),
+          ]
+        : [];
+    const hasAttachments = orderedAttachments.length > 0;
 
-    const optimisticMessage = {
-      id: `temp-${Date.now()}`, // Temporary ID
+    type SendEntry = {
+      id: string;
+      attachment:
+        | { file: File; preview?: string; type: 'image' | 'video' | 'document' | 'audio' }
+        | null;
+      caption: string;
+      isFirst: boolean;
+    };
+
+    const baseTs = Date.now();
+    const entries: SendEntry[] = hasAttachments
+      ? orderedAttachments.map((att, i) => ({
+          id: `temp-${baseTs}-${i}-${Math.random().toString(36).slice(2)}`,
+          attachment: att,
+          caption: i === 0 ? messageText : '',
+          isFirst: i === 0,
+        }))
+      : [
+          {
+            id: `temp-${baseTs}-${Math.random().toString(36).slice(2)}`,
+            attachment: null,
+            caption: messageText,
+            isFirst: true,
+          },
+        ];
+
+    // Build all optimistic messages up front so the user sees every queued message immediately.
+    const optimisticMessages = entries.map((entry) => ({
+      id: entry.id,
       wamid: null,
-      contactId: selectedContact.id,
-      messageType: messageType,
-      textBody: hasAttachment ? messageText || null : messageText, // Caption for media or text body
-      mediaUrl: pendingAttachment?.preview || null,
-      mediaCaption: hasAttachment ? messageText : null,
-      mediaFilename: pendingAttachment?.file?.name || null,
-      mediaMimeType: pendingAttachment?.file?.type || null,
+      contactId: capturedContact.id,
+      messageType: entry.attachment ? entry.attachment.type : 'text',
+      textBody: entry.attachment ? entry.caption || null : entry.caption,
+      mediaUrl: entry.attachment?.preview || null,
+      mediaCaption: entry.attachment ? entry.caption || null : null,
+      mediaFilename: entry.attachment?.file?.name || null,
+      mediaMimeType: entry.attachment?.file?.type || null,
       direction: 'outgoing' as const,
       timestamp: new Date().toISOString(),
       status: 'pending',
       readAt: null,
-      contextMessageId: replyToMessage?.wamid || null,
+      contextMessageId: entry.isFirst ? replyContext?.wamid || null : null,
       contextFrom: null,
-    };
+    }));
 
-    const messageToSend = messageText;
-    const attachmentToSend = pendingAttachment;
-    const replyContext = replyToMessage; // Capture before clearing
+    setMessageInput('');
+    clearDraft(capturedContact.id);
+    setPendingAttachments([]);
+    setSelectedAttachmentIdx(0);
+    setReplyToMessage(null);
+    setMessages((prev) => [...prev, ...optimisticMessages]);
+    scrollToBottom('smooth');
 
-    setMessageInput(''); // Clear input immediately
-    clearDraft(selectedContact.id); // Clear draft for this contact
-    setPendingAttachment(null); // Clear attachment
-    setReplyToMessage(null); // Clear reply context
-    setMessages((prev) => [...prev, optimisticMessage]); // Add to UI optimistically
-    scrollToBottom('smooth'); // Scroll to show optimistic message immediately
-
-    // If send delay is set, hold before sending so user can cancel
+    // Send-delay applies to the entire batch, anchored on the first optimistic message.
     if (sendDelay > 0) {
-      const msgId = optimisticMessage.id;
+      const msgId = entries[0].id;
       setCancelableSendIds((prev) => new Set([...prev, msgId]));
 
       const cancelled = await new Promise<boolean>((resolve) => {
@@ -1486,34 +1549,35 @@ export default function ChatPage() {
       if (cancelled) {
         const isSilent = cancelSendSilentIds.current.has(msgId);
         cancelSendSilentIds.current.delete(msgId);
-        setMessages((prev) => prev.filter((m) => m.id !== msgId));
+        const idsToRemove = new Set(entries.map((e) => e.id));
+        setMessages((prev) => prev.filter((m) => !idsToRemove.has(m.id)));
         if (!isSilent) {
-          setMessageInput(messageToSend);
-          if (attachmentToSend) setPendingAttachment(attachmentToSend);
+          setMessageInput(messageText);
+          if (orderedAttachments.length > 0) setPendingAttachments(orderedAttachments);
         }
         return;
       }
     }
 
-    // Update contact list order: Move active contact to top and update last message
-    // Preserve contact list scroll position so it doesn't jump to top
+    // Update contact list order once for the whole batch.
     const savedContactScrollTop = contactListRef.current?.scrollTop ?? 0;
+    const lastOptimistic = optimisticMessages[optimisticMessages.length - 1];
     setContacts((prev) => {
-      const contactIndex = prev.findIndex((c) => c.id === selectedContact.id);
+      const contactIndex = prev.findIndex((c) => c.id === capturedContact.id);
       if (contactIndex === -1) return prev;
 
-      const lastMessageText = hasAttachment
-        ? messageToSend
-          ? `📎 ${messageToSend}`
-          : `📎 ${attachmentToSend?.type}`
-        : messageToSend;
+      const lastMessageText = hasAttachments
+        ? messageText
+          ? `📎 ${messageText}`
+          : `📎 ${orderedAttachments[orderedAttachments.length - 1].type}`
+        : messageText;
 
       const updatedContact = {
         ...prev[contactIndex],
         lastMessage: {
           ...prev[contactIndex].lastMessage,
           textBody: lastMessageText,
-          timestamp: optimisticMessage.timestamp,
+          timestamp: lastOptimistic.timestamp,
           status: 'pending',
         },
       };
@@ -1534,97 +1598,96 @@ export default function ChatPage() {
     }
 
     setSending(true);
-    setUploadingAttachment(hasAttachment);
+    setUploadingAttachment(hasAttachments);
+
+    let firstFailureAlert: string | null = null;
 
     try {
-      let mediaUrl: string | null = null;
-      let mediaFilename: string | null = null;
-
-      // Step 1: Upload attachment if present
-      if (attachmentToSend) {
-        setUploadingAttachment(true);
+      // Send each entry sequentially. Each iteration is isolated so one failure
+      // does not prevent the rest from being sent.
+      for (const entry of entries) {
         try {
-          const uploadResult = await uploadApi.uploadFile(
-            attachmentToSend.file,
-            'internal'
-          );
-          if (!uploadResult.success || !uploadResult.data) {
-            throw new Error('Upload failed');
+          let mediaUrl: string | null = null;
+          let mediaFilename: string | null = null;
+
+          if (entry.attachment) {
+            setUploadingAttachment(true);
+            const uploadResult = await uploadApi.uploadFile(
+              entry.attachment.file,
+              'internal',
+            );
+            if (!uploadResult.success || !uploadResult.data) {
+              throw new Error('Upload failed');
+            }
+            mediaUrl = uploadResult.data.fileUrl || uploadResult.data.url;
+            mediaFilename =
+              uploadResult.data.fileName || entry.attachment.file.name;
+            setUploadingAttachment(false);
           }
-          mediaUrl = uploadResult.data.fileUrl || uploadResult.data.url;
-          mediaFilename =
-            uploadResult.data.fileName || attachmentToSend.file.name;
-        } finally {
+
+          let sendPayload: any;
+          if (entry.attachment) {
+            sendPayload = {
+              contactId: capturedContact.id,
+              phoneNumberId: capturedPhoneNumberId,
+              type: entry.attachment.type,
+              media: {
+                mediaUrl,
+                caption: entry.caption || undefined,
+                filename:
+                  entry.attachment.type === 'document' ? mediaFilename : undefined,
+              },
+              ...(entry.isFirst && replyContext?.wamid
+                ? { context: { message_id: replyContext.wamid } }
+                : {}),
+            };
+          } else {
+            sendPayload = {
+              contactId: capturedContact.id,
+              phoneNumberId: capturedPhoneNumberId,
+              type: 'text',
+              text: { body: entry.caption },
+              ...(entry.isFirst && replyContext?.wamid
+                ? { context: { message_id: replyContext.wamid } }
+                : {}),
+            };
+          }
+
+          const result = await chatApi.sendMessage(sendPayload);
+
+          setMessages((prev) =>
+            prev.map((msg) => {
+              if (msg.id === entry.id) {
+                return {
+                  ...msg,
+                  ...(result.message || {}),
+                  ...(mediaUrl && !result.message?.mediaUrl ? { mediaUrl } : {}),
+                };
+              }
+              return msg;
+            }),
+          );
+          scrollToBottom();
+        } catch (err: any) {
+          console.error('Failed to send message:', err);
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === entry.id ? { ...msg, status: 'failed' } : msg,
+            ),
+          );
+          if (!firstFailureAlert) {
+            firstFailureAlert =
+              err?.response?.data?.message ||
+              err?.message ||
+              'Failed to send message';
+          }
           setUploadingAttachment(false);
         }
       }
 
-      // Step 2: Send message via chat API
-      let sendPayload: any;
-
-      if (hasAttachment && attachmentToSend) {
-        // Send media message - payload must match backend sendMessageSchema
-        sendPayload = {
-          contactId: selectedContact.id,
-          phoneNumberId: selectedPhoneNumberId,
-          type: attachmentToSend.type,
-          media: {
-            mediaUrl: mediaUrl,
-            caption: messageToSend || undefined,
-            filename:
-              attachmentToSend.type === 'document' ? mediaFilename : undefined,
-          },
-          ...(replyContext?.wamid ? { context: { message_id: replyContext.wamid } } : {}),
-        };
-      } else {
-        // Send text message
-        sendPayload = {
-          contactId: selectedContact.id,
-          phoneNumberId: selectedPhoneNumberId,
-          type: 'text',
-          text: {
-            body: messageToSend,
-          },
-          ...(replyContext?.wamid ? { context: { message_id: replyContext.wamid } } : {}),
-        };
+      if (firstFailureAlert) {
+        alert(firstFailureAlert);
       }
-
-      const result = await chatApi.sendMessage(sendPayload);
-
-      // Update optimistic message with real data from backend
-      // result is already unwrapped: { whatsapp: {...}, message: {...} }
-      setMessages((prev) =>
-        prev.map((msg) => {
-          if (msg.id === optimisticMessage.id) {
-            const updated = {
-              ...msg,
-              // Override with saved message from backend (includes user info)
-              ...(result.message || {}),
-              // Only override these if they're not in the backend response
-              ...(mediaUrl && !result.message?.mediaUrl ? { mediaUrl } : {}),
-            };
-            return updated;
-          }
-          return msg;
-        })
-      );
-
-      scrollToBottom();
-    } catch (error: any) {
-      console.error('Failed to send message:', error);
-
-      // Mark optimistic message as failed
-      setMessages((prev) =>
-        prev.map((msg) =>
-          msg.id === optimisticMessage.id ? { ...msg, status: 'failed' } : msg
-        )
-      );
-
-      alert(
-        error.response?.data?.message ||
-          error.message ||
-          'Failed to send message'
-      );
     } finally {
       refocusAfterSendRef.current = true;
       setSending(false);
@@ -1951,11 +2014,11 @@ export default function ChatPage() {
     if (type === 'image' && file.type.startsWith('image/')) {
       const reader = new FileReader();
       reader.onload = (ev) => {
-        setPendingAttachment({ file, preview: ev.target?.result as string, type });
+        setPendingAttachments((prev) => [...prev, { file, preview: ev.target?.result as string, type }]);
       };
       reader.readAsDataURL(file);
     } else {
-      setPendingAttachment({ file, preview: undefined, type });
+      setPendingAttachments((prev) => [...prev, { file, preview: undefined, type }]);
     }
   };
 
@@ -1971,6 +2034,7 @@ export default function ChatPage() {
   ]);
 
   const attachFileFromClipboard = (items: DataTransferItemList) => {
+    let found = false;
     for (const item of items) {
       if (item.kind !== 'file') continue;
 
@@ -1978,30 +2042,24 @@ export default function ChatPage() {
       if (!file) continue;
 
       if (item.type.startsWith('image/')) {
+        found = true;
         const reader = new FileReader();
         reader.onload = (ev) => {
-          setPendingAttachment({ file, preview: ev.target?.result as string, type: 'image' });
+          setPendingAttachments((prev) => [...prev, { file, preview: ev.target?.result as string, type: 'image' }]);
         };
         reader.readAsDataURL(file);
-        return true;
-      }
-
-      if (item.type.startsWith('video/')) {
-        setPendingAttachment({ file, preview: undefined, type: 'video' });
-        return true;
-      }
-
-      if (item.type.startsWith('audio/')) {
-        setPendingAttachment({ file, preview: undefined, type: 'audio' });
-        return true;
-      }
-
-      if (DOCUMENT_MIME_TYPES.has(item.type)) {
-        setPendingAttachment({ file, preview: undefined, type: 'document' });
-        return true;
+      } else if (item.type.startsWith('video/')) {
+        found = true;
+        setPendingAttachments((prev) => [...prev, { file, preview: undefined, type: 'video' }]);
+      } else if (item.type.startsWith('audio/')) {
+        found = true;
+        setPendingAttachments((prev) => [...prev, { file, preview: undefined, type: 'audio' }]);
+      } else if (DOCUMENT_MIME_TYPES.has(item.type)) {
+        found = true;
+        setPendingAttachments((prev) => [...prev, { file, preview: undefined, type: 'document' }]);
       }
     }
-    return false;
+    return found;
   };
 
   // Handle paste event on textarea (image, video, audio, document, or text)
@@ -2013,9 +2071,9 @@ export default function ChatPage() {
     }
   };
 
-  // Cancel pending attachment
-  const cancelAttachment = () => {
-    setPendingAttachment(null);
+  // Cancel pending attachment by index
+  const cancelAttachment = (index: number) => {
+    setPendingAttachments((prev) => prev.filter((_, i) => i !== index));
   };
 
   // Drag and drop handlers
@@ -2072,11 +2130,11 @@ export default function ChatPage() {
     if (type === 'image') {
       const reader = new FileReader();
       reader.onload = (ev) => {
-        setPendingAttachment({ file, preview: ev.target?.result as string, type });
+        setPendingAttachments((prev) => [...prev, { file, preview: ev.target?.result as string, type }]);
       };
       reader.readAsDataURL(file);
     } else {
-      setPendingAttachment({ file, preview: undefined, type });
+      setPendingAttachments((prev) => [...prev, { file, preview: undefined, type }]);
     }
   };
 
@@ -3778,39 +3836,59 @@ export default function ChatPage() {
                     </div>
                   )}
 
-                  {/* Attachment Preview */}
-                  {pendingAttachment && (
-                    <div className="mb-3 flex items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
-                      {pendingAttachment.preview ? (
-                        <img
-                          src={pendingAttachment.preview}
-                          alt="Preview"
-                          className="h-16 w-16 rounded object-cover"
-                        />
-                      ) : (
-                        <div className="flex h-16 w-16 items-center justify-center rounded bg-gray-200">
-                          {pendingAttachment.type === 'video' && (
-                            <PiVideoCamera className="h-6 w-6 text-gray-500" />
-                          )}
-                          {pendingAttachment.type === 'audio' && (
-                            <PiMicrophone className="h-6 w-6 text-gray-500" />
-                          )}
-                          {pendingAttachment.type === 'document' && (
-                            <PiFileText className="h-6 w-6 text-gray-500" />
-                          )}
-                        </div>
-                      )}
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium">
-                          {pendingAttachment.file.name}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {(pendingAttachment.file.size / 1024).toFixed(1)} KB
-                        </p>
-                      </div>
-                      <ActionIcon variant="text" onClick={cancelAttachment} className="nb-cancel-attachment-btn">
-                        <PiX className="h-5 w-5" />
-                      </ActionIcon>
+                  {/* Attachment Previews */}
+                  {pendingAttachments.length > 0 && (
+                    <div className="mb-3 flex flex-wrap gap-2">
+                      {pendingAttachments.map((att, idx) => {
+                        const isSelected = idx === selectedAttachmentIdx;
+                        return (
+                          <div
+                            key={idx}
+                            onClick={() => setSelectedAttachmentIdx(idx)}
+                            className={`relative flex cursor-pointer items-center gap-2 rounded-lg border-2 bg-gray-50 p-2 transition-all ${
+                              isSelected
+                                ? 'border-blue-500 shadow-sm ring-2 ring-blue-200'
+                                : 'border-gray-200 hover:border-gray-400'
+                            }`}
+                          >
+                            {att.preview ? (
+                              <img
+                                src={att.preview}
+                                alt="Preview"
+                                className="h-14 w-14 rounded object-cover"
+                              />
+                            ) : (
+                              <div className="flex h-14 w-14 items-center justify-center rounded bg-gray-200">
+                                {att.type === 'video' && (
+                                  <PiVideoCamera className="h-5 w-5 text-gray-500" />
+                                )}
+                                {att.type === 'audio' && (
+                                  <PiMicrophone className="h-5 w-5 text-gray-500" />
+                                )}
+                                {att.type === 'document' && (
+                                  <PiFileText className="h-5 w-5 text-gray-500" />
+                                )}
+                              </div>
+                            )}
+                            <div className="min-w-0">
+                              <p className="max-w-[100px] truncate text-xs font-medium">
+                                {att.file.name}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                {(att.file.size / 1024).toFixed(1)} KB
+                              </p>
+                            </div>
+                            <ActionIcon
+                              size="sm"
+                              variant="text"
+                              onClick={(e) => { e.stopPropagation(); cancelAttachment(idx); }}
+                              className="nb-cancel-attachment-btn"
+                            >
+                              <PiX className="h-4 w-4" />
+                            </ActionIcon>
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
 
@@ -4048,13 +4126,13 @@ export default function ChatPage() {
                       className="nb-send-btn"
                       onClick={handleSendMessage}
                       disabled={
-                        (!messageInput?.trim() && !pendingAttachment) ||
+                        (!messageInput?.trim() && pendingAttachments.length === 0) ||
                         sending ||
                         !selectedContact.isSessionActive
                       }
                       style={
                         isPlayfulGeometric
-                          ? (!messageInput?.trim() && !pendingAttachment) || sending || !selectedContact.isSessionActive
+                          ? (!messageInput?.trim() && pendingAttachments.length === 0) || sending || !selectedContact.isSessionActive
                             ? {
                                 background: '#F8FAFC',
                                 color: '#64748B',

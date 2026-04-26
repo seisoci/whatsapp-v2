@@ -36,7 +36,7 @@ export default function CreateEditContact({
       try {
         const res: any = await phoneNumbersApi.getAll();
         const data = Array.isArray(res) ? res : res?.data || [];
-        setPhoneNumbers(data);
+        setPhoneNumbers(data.filter((pn: any) => !pn.isHidden));
       } catch (error) {
         console.error('Failed to fetch phone numbers:', error);
       }
