@@ -2992,7 +2992,7 @@ export default function ChatPage() {
                             contact.profileName ||
                             contact.phoneNumber}
                         </h6>
-                        <p className="truncate text-[10px] text-gray-500">
+                        <p className="truncate text-[10px] text-gray-500 no-underline">
                           {contact.phoneNumber}
                         </p>
                         {drafts[contact.id] ? (
