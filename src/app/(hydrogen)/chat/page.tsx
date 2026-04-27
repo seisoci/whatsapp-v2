@@ -1185,7 +1185,7 @@ export default function ChatPage() {
           })
         : await chatApi.getContacts({
             phoneNumberId: selectedPhoneNumberId,
-            filter: chatFilter,
+            filter: chatFilterRef.current,
             page,
             limit: 50,
           });
@@ -1217,9 +1217,13 @@ export default function ChatPage() {
             )
             .map((r) => r.value);
           // Prepend fetched pinned contacts (preserving pin order) before the rest
+          // Only include pinned contacts that match the current tab (archived vs non-archived)
           const orderedPinned = pinnedIds
             .map((id) => fetchedContacts.find((c) => c.id === id))
-            .filter((c): c is Contact => c !== undefined);
+            .filter((c): c is Contact => c !== undefined)
+            .filter((c) =>
+              chatFilterRef.current === 'archived' ? c.isArchived : !c.isArchived
+            );
           setContacts([...orderedPinned, ...newContacts]);
         } else {
           setContacts(newContacts);

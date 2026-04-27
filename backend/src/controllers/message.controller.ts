@@ -396,6 +396,23 @@ export class MessageController {
           type: 'message:new',
           data: {
             contactId: contact.id,
+            contact: {
+              id: contact.id,
+              waId: contact.waId,
+              phoneNumber: contact.phoneNumber,
+              profileName: contact.profileName,
+              profilePictureUrl: contact.profilePictureUrl,
+              businessName: contact.businessName,
+              isBusinessAccount: contact.isBusinessAccount,
+              isBlocked: contact.isBlocked,
+              notes: contact.notes,
+              lastCustomerMessageAt: contact.lastCustomerMessageAt,
+              sessionExpiresAt: contact.sessionExpiresAt,
+              isSessionActive: contact.isSessionActive,
+              isArchived: contact.isArchived,
+              tags: contact.tags || [],
+              unreadCount: contact.unreadCount || 0,
+            },
             message: {
               id: savedMessage.id,
               wamid: savedMessage.wamid,
