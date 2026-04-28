@@ -46,4 +46,5 @@ export const routes = {
   },
   templateRoles: '/template-roles',
   meilisearch: '/meilisearch',
+  webhookJobs: '/webhook-jobs',
 };

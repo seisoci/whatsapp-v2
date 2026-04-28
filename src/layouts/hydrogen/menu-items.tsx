@@ -89,6 +89,10 @@ export const menuItems = [
         name: 'Meilisearch',
         href: routes.meilisearch,
       },
+      {
+        name: 'Webhook Jobs',
+        href: routes.webhookJobs,
+      },
     ],
   },
 ];
