@@ -35,7 +35,7 @@ export const whatsappWebhookQueue = new Queue('whatsapp-webhook', {
     attempts: 3,
     backoff: { type: 'exponential', delay: 3000 },
     removeOnComplete: 500,
-    removeOnFail: 200,
+    removeOnFail: 10000,
   },
 });
 

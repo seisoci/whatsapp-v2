@@ -7,6 +7,7 @@ import { Context } from 'hono';
 import { WhatsAppWebhookService } from '../services/whatsapp-webhook.service';
 import { validateWebhookPayload } from '../validators/webhook.validator';
 import { whatsappWebhookQueue } from '../config/queue';
+import { extractRealIp } from '../utils/cloudflare-ip';
 
 export class WhatsAppWebhookController {
   /**
@@ -86,7 +87,11 @@ export class WhatsAppWebhookController {
         }, 400);
       }
 
-      const ip = c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || 'unknown';
+      const ip = extractRealIp({
+        cfConnectingIp: c.req.header('cf-connecting-ip'),
+        xForwardedFor: c.req.header('x-forwarded-for'),
+        xRealIp: c.req.header('x-real-ip'),
+      });
       const userAgent = c.req.header('user-agent') || null;
 
       const idempotencyKey = WhatsAppWebhookService.generateIdempotencyKey(validation.data!);
