@@ -48,7 +48,7 @@ export const webhookForwardingQueue = new Queue('webhook-forwarding', {
   defaultJobOptions: {
     attempts: 5,
     backoff: { type: 'exponential', delay: 5000 },
-    removeOnComplete: 200,
-    removeOnFail: 100,
+    removeOnComplete: 10000,
+    removeOnFail: 10000,
   },
 });
